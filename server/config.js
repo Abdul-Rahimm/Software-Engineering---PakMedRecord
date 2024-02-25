@@ -1,4 +1,4 @@
-const port = 3009;
+const port = 3009 || process.env.port;
 
 const connection_string = '';
 
