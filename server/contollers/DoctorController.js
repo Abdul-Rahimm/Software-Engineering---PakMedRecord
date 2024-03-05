@@ -23,7 +23,7 @@ const Signup = expressAsyncHandler(async (req, res) => {
 
         await newDoctor.save();
 
-        res.status(201).json({ message: 'Signup successful' });
+        res.status(201).json({ message: 'Signup successful', newDoctor });
     } catch (error) {
         console.error(error);
         res.status(500).json({ error: 'Internal server error' });
@@ -55,7 +55,7 @@ const Signin = expressAsyncHandler(async (req, res) => {
         return res.status(401).json({ error: 'Invalid credentials' });
       }
   
-      res.status(200).json({ message: 'Signin successful' });
+      res.status(200).json({ message: 'Signin successful', doctor });
     } catch (error) {
       console.error(error);
       res.status(500).json({ error: 'Internal server error' });

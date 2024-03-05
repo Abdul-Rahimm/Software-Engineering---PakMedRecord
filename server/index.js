@@ -4,7 +4,6 @@ const cors = require('cors');
 const app = express();
 const { port, connection_string } = require('./config');
 const DoctorRoutes = require('./routes/DoctorRoutes');
-const {Signup} = require('./contollers/DoctorController');
 
 app.use(express.json());
 app.use(cors());
