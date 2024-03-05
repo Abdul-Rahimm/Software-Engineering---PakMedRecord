@@ -16,4 +16,4 @@ mongoose.connect(connection_string)
     })
     .catch((err) => {
         console.log(err);
-    })
+    });
