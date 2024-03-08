@@ -5,7 +5,8 @@ import { Navigate } from 'react-router-dom';
 const Signup = () => {
     const [formData, setFormData] = useState({
         cnic: '',
-        username: '',
+        firstName: '',
+        lastName: '',
         email: '',
         password: '',
         hospital: '',
@@ -52,13 +53,24 @@ const Signup = () => {
                     />
                 </div>
                 <div className="form-group">
-                    <label htmlFor="username">Username:</label>
+                    <label htmlFor="firstName">FirstName:</label>
                     <input
                         type="text"
                         className="form-control"
-                        id="username"
-                        name="username"
-                        value={formData.username}
+                        id="firstName"
+                        name="firstName"
+                        value={formData.firstName}
+                        onChange={handleChange}
+                    />
+                </div>
+                <div className="form-group">
+                    <label htmlFor="lastName">LastName:</label>
+                    <input
+                        type="text"
+                        className="form-control"
+                        id="lastName"
+                        name="lastName"
+                        value={formData.lastName}
                         onChange={handleChange}
                     />
                 </div>

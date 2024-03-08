@@ -4,15 +4,22 @@ const doctorSchema = mongoose.Schema (
     {
         cnic:{
             type: Number,
-            required: [true, 'Please enter your unique CNIC Number!']
+            required: [true, 'Please enter your unique CNIC Number!'],
+            unique: true,
         },
-        username: {
+        firstName: {
             type: String,
-            required: [true, 'Please add doctor name!']
+            required: [true, 'Please add first name!']
+        },
+        lastName: {
+            type: String,
+            required: [true, 'Please add last name!']
         },
         email: {
             type: String,
-            required: [true, 'Please enter your email!']
+            required: [true, 'Please enter your email!'],
+            unique: true,
+            
         },
         password: {
             type: String,
