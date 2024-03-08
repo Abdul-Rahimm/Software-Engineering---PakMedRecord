@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import axios from 'axios';
 import { Navigate } from 'react-router-dom';
+import { Link } from 'react-router-dom';
+import bg2 from '../../assets/bg2.jpg';
 
 const Signup = () => {
     const [formData, setFormData] = useState({
@@ -28,7 +30,7 @@ const Signup = () => {
             setSignupSuccess(true);
         } catch (error) {
             console.error('Signup error:', error.response.data.error);
-            alert('SignUp Unsuccessful:(', error.response.data.error);
+            alert('SignUp Unsuccessful :(', error.response.data.error);
         }
     };
 
@@ -37,9 +39,25 @@ const Signup = () => {
     }
 
     return (
-        <div className="container mt-5" style={{ marginLeft: '350px' }}>
-            <h1 className="mb-4" style={{ marginLeft: '220px' }}>PakMedRecord</h1>
-            <h2 className="mb-4"  >Signup</h2>
+        <div
+            className="container mt-5"
+            style={{
+                marginLeft: '75px',
+                backgroundImage: `url(${bg2})`,
+                backgroundSize: 'cover',
+                backgroundPosition: 'center',
+                height: '100vh',
+                width: '100vw',
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                justifyContent: 'center',
+            }}
+        >
+            <h1 className="mb-4" style={{ marginLeft: '60px', color:'white' }}>
+                PakMedRecord
+            </h1>
+            <h2 className="mb-4" style={{ color:'white' }}>Signup</h2>
             <form onSubmit={handleSubmit}>
                 <div className="form-group">
                     <label htmlFor="cnic">CNIC:</label>
@@ -111,6 +129,9 @@ const Signup = () => {
                     Signup
                 </button>
             </form>
+            <p className="mt-3" >
+                Already have an account? <Link to="/doctor/signin" style={{ fontWeight: 'bold', color:'darkblue'}}>Sign In</Link>.
+            </p>
         </div>
     );
 };
