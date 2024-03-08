@@ -23,7 +23,7 @@ const Signup = expressAsyncHandler(async (req, res) => {
 
         await newDoctor.save();
 
-        res.status(201).json({ message: 'Signup successful', newDoctor });
+        res.status(201).json({ message: 'Signup successful' });
     } catch (error) {
         console.error(error);
         res.status(500).json({ error: 'Internal server error' });
