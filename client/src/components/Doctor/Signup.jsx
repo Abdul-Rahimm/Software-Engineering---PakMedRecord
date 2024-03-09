@@ -1,8 +1,7 @@
 import React, { useState } from 'react';
 import axios from 'axios';
-import { Navigate } from 'react-router-dom';
-import { Link } from 'react-router-dom';
-import bg2 from '../../assets/bg2.jpg';
+import { Navigate, Link } from 'react-router-dom';
+import bg3 from '../../assets/bg3.png';
 
 const Signup = () => {
     const [formData, setFormData] = useState({
@@ -43,7 +42,7 @@ const Signup = () => {
             className="container mt-5"
             style={{
                 marginLeft: '75px',
-                backgroundImage: `url(${bg2})`,
+                backgroundImage: `url(${bg3})`,
                 backgroundSize: 'cover',
                 backgroundPosition: 'center',
                 height: '100vh',
@@ -54,84 +53,94 @@ const Signup = () => {
                 justifyContent: 'center',
             }}
         >
-            <h1 className="mb-4" style={{ marginLeft: '60px', color:'white' }}>
+            <h1 className="mb-4" style={{ marginLeft: '30px', color: 'green' }}>
                 PakMedRecord
             </h1>
-            <h2 className="mb-4" style={{ color:'white' }}>Signup</h2>
-            <form onSubmit={handleSubmit}>
-                <div className="form-group">
-                    <label htmlFor="cnic">CNIC:</label>
-                    <input
-                        type="text"
-                        className="form-control"
-                        id="cnic"
-                        name="cnic"
-                        value={formData.cnic}
-                        onChange={handleChange}
-                    />
-                </div>
-                <div className="form-group">
-                    <label htmlFor="firstName">FirstName:</label>
-                    <input
-                        type="text"
-                        className="form-control"
-                        id="firstName"
-                        name="firstName"
-                        value={formData.firstName}
-                        onChange={handleChange}
-                    />
-                </div>
-                <div className="form-group">
-                    <label htmlFor="lastName">LastName:</label>
-                    <input
-                        type="text"
-                        className="form-control"
-                        id="lastName"
-                        name="lastName"
-                        value={formData.lastName}
-                        onChange={handleChange}
-                    />
-                </div>
-                <div className="form-group">
-                    <label htmlFor="email">Email:</label>
-                    <input
-                        type="email"
-                        className="form-control"
-                        id="email"
-                        name="email"
-                        value={formData.email}
-                        onChange={handleChange}
-                    />
-                </div>
-                <div className="form-group">
-                    <label htmlFor="password">Password:</label>
-                    <input
-                        type="password"
-                        className="form-control"
-                        id="password"
-                        name="password"
-                        value={formData.password}
-                        onChange={handleChange}
-                    />
-                </div>
-                <div className="form-group">
-                    <label htmlFor="hospital">Hospital:</label>
-                    <input
-                        type="text"
-                        className="form-control"
-                        id="hospital"
-                        name="hospital"
-                        value={formData.hospital}
-                        onChange={handleChange}
-                    />
-                </div>
-                <button type="submit" className="btn btn-success">
-                    Signup
-                </button>
-            </form>
-            <p className="mt-3" >
-                Already have an account? <Link to="/doctor/signin" style={{ fontWeight: 'bold', color:'darkblue'}}>Sign In</Link>.
-            </p>
+            <div
+                style={{
+                    border: '1px solid #ccc',
+                    padding: '20px',
+                    borderRadius: '10px',
+                    backgroundColor: 'white',
+                    boxShadow: '0 0 10px rgba(0, 0, 0, 0.2)',
+                }}
+            >
+                <h2 className="mb-4" style={{ color: 'black' }}>Sign up</h2>
+                <form onSubmit={handleSubmit}>
+                    <div className="form-group">
+                        <label htmlFor="cnic">CNIC:</label>
+                        <input
+                            type="text"
+                            className="form-control"
+                            id="cnic"
+                            name="cnic"
+                            value={formData.cnic}
+                            onChange={handleChange}
+                        />
+                    </div>
+                    <div className="form-group">
+                        <label htmlFor="firstName">First Name:</label>
+                        <input
+                            type="text"
+                            className="form-control"
+                            id="firstName"
+                            name="firstName"
+                            value={formData.firstName}
+                            onChange={handleChange}
+                        />
+                    </div>
+                    <div className="form-group">
+                        <label htmlFor="lastName">Last Name:</label>
+                        <input
+                            type="text"
+                            className="form-control"
+                            id="lastName"
+                            name="lastName"
+                            value={formData.lastName}
+                            onChange={handleChange}
+                        />
+                    </div>
+                    <div className="form-group">
+                        <label htmlFor="email">Email:</label>
+                        <input
+                            type="email"
+                            className="form-control"
+                            id="email"
+                            name="email"
+                            value={formData.email}
+                            onChange={handleChange}
+                        />
+                    </div>
+                    <div className="form-group">
+                        <label htmlFor="password">Password:</label>
+                        <input
+                            type="password"
+                            className="form-control"
+                            id="password"
+                            name="password"
+                            value={formData.password}
+                            onChange={handleChange}
+                        />
+                    </div>
+                    <div className="form-group">
+                        <label htmlFor="hospital">Hospital:</label>
+                        <input
+                            type="text"
+                            className="form-control"
+                            id="hospital"
+                            name="hospital"
+                            value={formData.hospital}
+                            onChange={handleChange}
+                        />
+                    </div>
+                    <button type="submit" className="btn btn-success" style={{ marginTop: '15px' }}>
+                        Sign up
+                    </button>
+                </form>
+                <p className="mt-3">
+                    Already have an account? <Link to="/doctor/signin" style={{ fontWeight: 'bold', color: 'darkblue' }}>Sign In</Link>.
+                </p>
+            </div>
         </div>
     );
 };

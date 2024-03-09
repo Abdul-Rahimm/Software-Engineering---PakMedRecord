@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import axios from 'axios';
 import { Link } from 'react-router-dom';
-import bg from '../../assets/bg2.jpg';
+import bg3 from '../../assets/bg3.png';
 
 const Signin = () => {
     const [formData, setFormData] = useState({
@@ -42,7 +42,7 @@ const Signin = () => {
             className="container mt-5"
             style={{
                 marginLeft: '75px',
-                backgroundImage: `url(${bg})`, // Replace with the actual path to your image
+                backgroundImage: `url(${bg3})`, // Replace with the actual path to your image
                 backgroundSize: 'cover', // Adjust as needed
                 backgroundPosition: 'center', // Adjust as needed
                 height: '100vh', // Make the container full height of the viewport
@@ -53,15 +53,24 @@ const Signin = () => {
                 justifyContent: 'center',
             }}
         >
-            <h1 className="mb-4" style={{ marginLeft: '60px', color: 'white' }}>
+            <h1 className="mb-4" style={{ marginLeft: '60px', color: 'green' }}>
                 PakMedRecord
             </h1>
-            <h2 className="mb-4" style={{ color: 'white' }}>
+            <h2 className="mb-4" style={{ color: 'black' }}>
                 Sign in
             </h2>
-            <form onSubmit={handleSubmit}>
+            <form
+                onSubmit={handleSubmit}
+                style={{
+                    border: '1px solid #ccc',
+                    padding: '20px',
+                    borderRadius: '10px',
+                    backgroundColor: 'white',
+                    boxShadow: '0 0 10px rgba(0, 0, 0, 0.2)',
+                }}
+            >
                 <div className="form-group">
-                    <label htmlFor="cnic" style={{ color: 'white' }}>
+                    <label htmlFor="cnic" style={{ color: 'black' }}>
                         CNIC:
                     </label>
                     <input
@@ -74,7 +83,7 @@ const Signin = () => {
                     />
                 </div>
                 <div className="form-group">
-                    <label htmlFor="password" style={{ color: 'white' }}>
+                    <label htmlFor="password" style={{ color: 'black' }}>
                         Password:
                     </label>
                     <input
@@ -86,7 +95,7 @@ const Signin = () => {
                         onChange={handleChange}
                     />
                 </div>
-                <button type="submit" className="btn btn-primary">
+                <button type="submit" className="btn btn-primary" style={{ backgroundColor: 'darkblue', marginTop: '15px' }}>
                     Sign in
                 </button>
             </form>
