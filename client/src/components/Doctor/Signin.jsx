@@ -57,7 +57,7 @@ const Signin = () => {
                 PakMedRecord
             </h1>
             <h2 className="mb-4" style={{ color: 'white' }}>
-                Signin
+                Sign in
             </h2>
             <form onSubmit={handleSubmit}>
                 <div className="form-group">
@@ -87,7 +87,7 @@ const Signin = () => {
                     />
                 </div>
                 <button type="submit" className="btn btn-primary">
-                    Signin
+                    Sign in
                 </button>
             </form>
             <p className="mt-3">
