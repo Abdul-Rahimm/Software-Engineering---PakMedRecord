@@ -14,6 +14,7 @@ const Signup = () => {
     });
 
     const [signupSuccess, setSignupSuccess] = useState(false);
+    const [loading, setLoading] = useState(false);
 
     const handleChange = (e) => {
         const { name, value } = e.target;
@@ -24,12 +25,16 @@ const Signup = () => {
         e.preventDefault();
 
         try {
+            setLoading(true); // Set loading to true when the form is being submitted
+
             await axios.post('http://localhost:3009/doctor/signup', formData);
             console.log('Signup successful!');
             setSignupSuccess(true);
         } catch (error) {
             console.error('Signup error:', error.response.data.error);
             alert('SignUp Unsuccessful :(', error.response.data.error);
+        } finally {
+            setLoading(false); // Reset loading regardless of success or failure
         }
     };
 
@@ -134,7 +139,7 @@ const Signup = () => {
                         />
                     </div>
                     <button type="submit" className="btn btn-success" style={{ marginTop: '15px' }}>
-                        Sign up
+                        {loading ? 'Signing up...' : 'Sign up'}
                     </button>
                 </form>
                 <p className="mt-3">

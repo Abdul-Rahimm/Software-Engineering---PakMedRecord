@@ -124,10 +124,11 @@ In essence, PakMedRecord is dedicated to transforming the healthcare landscape b
           </div>
           <div className="col">
             <div className={`collapse ${collapse2 ? 'show' : ''}`} id="multiCollapseExample2">
-              <div className="card card-body" style={{ backgroundColor: 'green', color: 'white' }}>
-                
-Explore the myriad benefits of PakMedRecord, a cutting-edge healthcare platform designed to revolutionize the doctor-patient experience. Enjoy the convenience of centralized medical records accessible anytime, anywhere, fostering a streamlined and efficient healthcare journey. With PakMedRecord, patients can effortlessly schedule appointments, securely communicate with their healthcare providers, and access their comprehensive medical history in one centralized location. For doctors, this platform offers a seamless way to manage patient information, ensuring accurate diagnoses and personalized care. Embrace the future of healthcare with PakMedRecord, where connectivity, convenience, and the highest standards of data security converge for a transformative and trustworthy healthcare experience. Read more to discover how PakMedRecord is reshaping the landscape of healthcare interactions, prioritizing user-friendly accessibility and safeguarding the integrity of medical records.
-              </div>
+            <div className="card card-body" style={{ backgroundColor: 'green', color: 'white' }}>
+    Explore the myriad benefits of <span style={{ fontStyle: 'italic', fontSize: '40px' }}>PakMedRecord</span>a cutting-edge healthcare platform designed to revolutionize the doctor-patient experience. Enjoy the convenience of centralized medical records accessible anytime, anywhere, fostering a streamlined and efficient healthcare journey. With PakMedRecord, patients can effortlessly schedule appointments, securely communicate with their healthcare providers, and access their comprehensive medical history in one centralized location. For doctors, this platform offers a seamless way to manage patient information, ensuring accurate diagnoses and personalized care. Embrace the future of healthcare with PakMedRecord, where connectivity, convenience, and the highest standards of data security converge for a transformative and trustworthy healthcare experience. Read more to discover how PakMedRecord is reshaping the landscape of healthcare interactions, prioritizing user-friendly accessibility and safeguarding the integrity of medical records.
+</div>
+
+
             </div>
           </div>
         </div>
