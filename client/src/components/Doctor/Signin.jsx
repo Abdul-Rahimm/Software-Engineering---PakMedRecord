@@ -56,11 +56,11 @@ const Signin = () => {
         justifyContent: 'center',
       }}
     >
-      <h1 className="mb-4" style={{ marginLeft: '60px', color: 'green' }}>
-        PakMedRecord
+      <h1 className="mb-4" style={{ marginLeft: '0px', color: 'green' }}>
+        PakMedRecord.
       </h1>
       <h2 className="mb-4" style={{ color: 'black' }}>
-        Sign in
+        Doctor Sign in
       </h2>
       <form
         onSubmit={handleSubmit}

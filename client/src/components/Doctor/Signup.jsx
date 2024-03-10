@@ -58,9 +58,9 @@ const Signup = () => {
                 justifyContent: 'center',
             }}
         >
-            <h1 className="mb-4" style={{ marginLeft: '30px', color: 'green' }}>
+            {/* <h2 className="mb-4" style={{ marginLeft: '30px', color: 'green' }}>
                 PakMedRecord
-            </h1>
+            </h2> */}
             <div
                 style={{
                     border: '1px solid #ccc',
@@ -70,9 +70,9 @@ const Signup = () => {
                     boxShadow: '0 0 10px rgba(0, 0, 0, 0.2)',
                 }}
             >
-                <h2 className="mb-4" style={{ color: 'black' }}>Sign up</h2>
+                <h2 className="mb-4" style={{ color: 'black' }}>Doctor Sign up</h2>
                 <form onSubmit={handleSubmit}>
-                    <div className="form-group">
+                    <div className="form-group" style={{ paddingBottom: '-100px' }}>
                         <label htmlFor="cnic">CNIC:</label>
                         <input
                             type="text"
@@ -138,7 +138,7 @@ const Signup = () => {
                             onChange={handleChange}
                         />
                     </div>
-                    <button type="submit" className="btn btn-success" style={{ marginTop: '15px' }}>
+                    <button type="submit" className="btn btn-success">
                         {loading ? 'Signing up...' : 'Sign up'}
                     </button>
                 </form>

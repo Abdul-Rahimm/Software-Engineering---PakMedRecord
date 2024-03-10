@@ -57,16 +57,17 @@ const Home = () => {
     backgroundSize: 'cover',
     backgroundPosition: 'center',
     height: '100vh',
+    marginLeft: '80px'
   };
 
   return (
     <div className="container" style={backgroundStyle}>
       <div className="row justify-content-center">
         <div className="col-md-8">
-          <div className="text-center mt-5">
-            <h2 style={{ color: 'black', marginLeft: '200px' }}>Welcome, {doctorData && `${doctorData.firstName} ${doctorData.lastName}`}!</h2>
-            <h2 style={{ color: 'green', marginLeft: '180px' }}>PakMedRecord</h2>
-            <button className="btn btn-success" onClick={handleOpenMedicalRecordForm} style={{ marginTop: '20px' }}>
+          <div className="text-center mt-5" >
+            <h2 style={{ color: 'black', marginLeft: '50px' }}>Welcome, Dr. {doctorData && `${doctorData.firstName} ${doctorData.lastName}`}!</h2>
+            <h2 style={{ color: 'green', marginLeft: '40px' }}>PakMedRecord.</h2>
+            <button className="btn btn-success" onClick={handleOpenMedicalRecordForm} style={{ marginTop: '20px', marginLeft: '20px' }}>
               Open Medical Record Form
             </button>
           </div>
