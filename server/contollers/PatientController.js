@@ -4,7 +4,7 @@ const Doctor = require('../models/DoctorModel');
 const expressAsyncHandler = require('express-async-handler');
 
 const Signup = expressAsyncHandler(async (req, res) => {
-    const { cnic, firstName, lastName, email, dateOfBirth, gender, password } = req.body;
+    const { cnic, firstName, lastName, email, hospital, gender, password } = req.body;
 
     try {
       const doctorWithSameCNIC = await Doctor.findOne({ cnic });
@@ -23,7 +23,7 @@ const Signup = expressAsyncHandler(async (req, res) => {
             firstName,
             lastName,
             email,
-            dateOfBirth,
+            hospital,
             gender,
             password: hashedPassword
         });
@@ -64,4 +64,25 @@ const Signin = expressAsyncHandler(async (req, res) => {
     }
 });
 
-module.exports = { Signup, Signin };
+const getPatient = expressAsyncHandler(async (req, res) => {
+    try {
+      const { cnic } = req.params; // Access the doctor ID from URL parameters
+      console.log('Fetching patient with cnic:', cnic);
+  
+      // Validate that id is a valid ObjectId (assuming you're using MongoDB)
+    
+      const patient = await Patient.findOne({cnic: cnic});
+  
+      if (patient !== null) {
+        res.status(200).json(patient);
+        console.log({ message: 'Successfully fetched!', patient });
+      } else {
+        res.status(404).json({ message: 'Patient not found' });
+      }
+    } catch (error) {
+      console.error('Error fetching patient data:', error);
+      res.status(500).json({ message: 'Internal Server Error' });
+    }
+  });
+
+module.exports = { Signup, Signin, getPatient };

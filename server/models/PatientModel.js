@@ -22,8 +22,8 @@ const patientSchema = mongoose.Schema({
         type: String,
         required: true,
     },
-    dateOfBirth: {
-        type: Date,
+    hospital: {
+        type: String,
         required: true,
     },
     gender: {
