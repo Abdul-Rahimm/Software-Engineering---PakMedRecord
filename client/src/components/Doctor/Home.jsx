@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { useParams, useNavigate, Link } from 'react-router-dom';
-import homebg from '../../assets/homebg.jpeg';
+import Header from '../Header';
 import bg3 from '../../assets/bg3.png';
 
 const Home = () => {
@@ -62,6 +62,7 @@ const Home = () => {
 
   return (
     <div className="container" style={backgroundStyle}>
+      <Header/>
       <div className="row justify-content-center">
         <div className="col-md-8">
           <div className="text-center mt-5" >
@@ -118,7 +119,7 @@ const Home = () => {
           </div>
 
           {doctorData && (
-            <button className="btn btn-danger" onClick={handleLogout} style={{ marginLeft: '1300px', marginBottom: '-1000px' }}>
+            <button className="btn btn-danger" onClick={handleLogout} style={{ marginLeft: '1300px', marginBottom: '-800px' }}>
               Logout
             </button>
           )}

@@ -35,12 +35,11 @@ const HomePage = () => {
     // For now, we'll just log the selected hospitalId
     console.log('Selected Hospital:', hospitalId);
   };
-
   const handleLogout = () => {
     const confirmLogout = window.confirm('Are you sure you want to log out?');
     
     if (confirmLogout) {
-      navigate('/');
+      navigate('/'); // Navigate to the homepage (heropage)
     }
   };
 
@@ -119,7 +118,7 @@ const HomePage = () => {
           </div>
 
           {patientData && (
-            <button className="btn btn-danger" onClick={handleLogout} style={{ marginLeft: '1300px', marginBottom: '-1000px' }}>
+            <button className="btn btn-danger" onClick={handleLogout} style={{ marginLeft: '1300px', marginBottom: '-800px' }}>
               Logout
             </button>
           )}
