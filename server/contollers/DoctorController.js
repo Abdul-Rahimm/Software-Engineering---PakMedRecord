@@ -5,15 +5,15 @@ const Patient = require('../models/PatientModel');
 const mongoose = require('mongoose');
 
 const Signup = expressAsyncHandler(async (req, res) => {
-  const { cnic, firstName, lastName, email, password, hospital } = req.body;
+  const { doctorCNIC, firstName, lastName, email, password, hospital } = req.body;
 
   try {
-    const patientWithSameCNIC = await Patient.findOne({ cnic });
+    const patientWithSameCNIC = await Patient.findOne({ doctorCNIC });
       if (patientWithSameCNIC) {
         return res.status(409).json({ error: 'CNIC already registered as a patient!' });
     }
 
-    const existingDoctor = await Doctor.findOne({ cnic });
+    const existingDoctor = await Doctor.findOne({ doctorCNIC });
     if (existingDoctor) {
       return res.status(409).json({ error: 'Doctor already registered!' });
     }
@@ -21,7 +21,7 @@ const Signup = expressAsyncHandler(async (req, res) => {
     const hashedPassword = await bcrypt.hash(password, 10);
 
     const newDoctor = new Doctor({
-      cnic,
+      doctorCNIC,
       firstName,
       lastName,
       email,
@@ -40,14 +40,14 @@ const Signup = expressAsyncHandler(async (req, res) => {
 });
 
 const Signin = expressAsyncHandler(async (req, res) => {
-  const { cnic, password } = req.body;
+  const { doctorCNIC, password } = req.body;
 
-  if (!cnic || !password ) {
+  if (!doctorCNIC || !password ) {
     return res.status(400).json({ error: 'All fields are required' });
   }
 
   try {
-    const doctor = await Doctor.findOne({ cnic });
+    const doctor = await Doctor.findOne({ doctorCNIC });
 
     if (!doctor) {
       return res.status(401).json({ error: 'Please Signup First!' });
@@ -68,12 +68,12 @@ const Signin = expressAsyncHandler(async (req, res) => {
 
 const getDoctor = expressAsyncHandler(async (req, res) => {
   try {
-    const { cnic } = req.params; // Access the doctor ID from URL parameters
-    console.log('Fetching doctor with cnic:', cnic);
+    const { doctorCNIC } = req.params; // Access the doctor ID from URL parameters
+    console.log('Fetching doctor with cnic:', doctorCNIC);
 
     // Validate that id is a valid ObjectId (assuming you're using MongoDB)
   
-    const doctor = await Doctor.findOne({cnic: cnic});
+    const doctor = await Doctor.findOne({doctorCNIC: doctorCNIC});
 
     if (doctor !== null) {
       res.status(200).json(doctor);

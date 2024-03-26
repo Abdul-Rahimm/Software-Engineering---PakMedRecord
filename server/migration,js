@@ -1,0 +1,38 @@
+const mongoose = require('mongoose');
+const Patient = require('./models/PatientModel');
+const Doctor = require('./models/DoctorModel');
+const { connection_string } = require('./config');
+
+mongoose.connect(connection_string);
+
+async function migratePatients() {
+    try {
+        const patients = await Patient.find();
+        for (const patient of patients) {
+            patient.patientCNIC = patient.cnic;
+            delete patient.cnic; // Remove old field
+            await patient.save();
+        }
+        console.log('Patient migration completed.');
+    } catch (error) {
+        console.error('Error migrating patients:', error);
+    }
+}
+
+async function migrateDoctors() {
+    try {
+        const doctors = await Doctor.find();
+        for (const doctor of doctors) {
+            doctor.doctorCNIC = doctor.cnic;
+            delete doctor.cnic; // Remove old field
+            await doctor.save();
+        }
+        console.log('Doctor migration completed.');
+    } catch (error) {
+        console.error('Error migrating doctors:', error);
+    }
+}
+
+// Run migration for patients and doctors
+migratePatients();
+migrateDoctors();

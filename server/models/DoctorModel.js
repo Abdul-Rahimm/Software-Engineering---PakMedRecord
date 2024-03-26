@@ -2,7 +2,7 @@ const mongoose = require('mongoose');
 
 const doctorSchema = mongoose.Schema (
     {
-        cnic:{
+        doctorCNIC:{
             type: Number,
             required: [true, 'Please enter your unique CNIC Number!'],
             unique: true,

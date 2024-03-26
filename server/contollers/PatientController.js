@@ -4,14 +4,14 @@ const Doctor = require('../models/DoctorModel');
 const expressAsyncHandler = require('express-async-handler');
 
 const Signup = expressAsyncHandler(async (req, res) => {
-    const { cnic, firstName, lastName, email, hospital, gender, password } = req.body;
+    const { patientCNIC, firstName, lastName, email, hospital, gender, password, doctor } = req.body;
 
     try {
-      const doctorWithSameCNIC = await Doctor.findOne({ cnic });
+      const doctorWithSameCNIC = await Doctor.findOne({ patientCNIC });
       if (doctorWithSameCNIC) {
         return res.status(409).json({ error: 'CNIC already registered as a doctor!' });
     }
-        const existingPatient = await Patient.findOne({ cnic });
+        const existingPatient = await Patient.findOne({ patientCNIC });
         if (existingPatient) {
             return res.status(409).json({ error: 'Patient already registered!' });
         }
@@ -19,13 +19,14 @@ const Signup = expressAsyncHandler(async (req, res) => {
         const hashedPassword = await bcrypt.hash(password, 10);
 
         const newPatient = new Patient({
-            cnic,
+            patientCNIC,
             firstName,
             lastName,
             email,
             hospital,
             gender,
-            password: hashedPassword
+            password: hashedPassword,
+            doctor
         });
 
         await newPatient.save();
@@ -38,14 +39,14 @@ const Signup = expressAsyncHandler(async (req, res) => {
 });
 
 const Signin = expressAsyncHandler(async (req, res) => {
-    const { cnic, password } = req.body;
+    const { patientCNIC, password } = req.body;
 
-    if (!cnic || !password) {
+    if (!patientCNIC || !password) {
         return res.status(400).json({ error: 'All fields are required' });
     }
 
     try {
-        const patient = await Patient.findOne({ cnic });
+        const patient = await Patient.findOne({ patientCNIC });
 
         if (!patient) {
             return res.status(401).json({ error: 'Authentication failed' });
@@ -66,12 +67,12 @@ const Signin = expressAsyncHandler(async (req, res) => {
 
 const getPatient = expressAsyncHandler(async (req, res) => {
     try {
-      const { cnic } = req.params; // Access the doctor ID from URL parameters
-      console.log('Fetching patient with cnic:', cnic);
+      const { patientCNIC } = req.params; // Access the doctor ID from URL parameters
+      console.log('Fetching patient with cnic:', patientCNIC);
   
       // Validate that id is a valid ObjectId (assuming you're using MongoDB)
     
-      const patient = await Patient.findOne({cnic: cnic});
+      const patient = await Patient.findOne({patientCNIC: patientCNIC});
   
       if (patient !== null) {
         res.status(200).json(patient);
@@ -85,4 +86,23 @@ const getPatient = expressAsyncHandler(async (req, res) => {
     }
   });
 
-module.exports = { Signup, Signin, getPatient };
+
+  const deleteAllPatients = expressAsyncHandler(async (req, res) => {
+    try {
+      // Delete all doctors from the database
+      const result = await Patient.deleteMany({});
+  
+      // Check if any doctors were deleted
+      if (result.deletedCount > 0) {
+        // If doctors are deleted, send a success message in the response
+        res.status(200).json({ message: 'All patientd deleted successfully' });
+      } else {
+        // If no doctors are found, send a 404 status
+        res.status(404).json({ message: 'No patients found to delete' });
+      }
+    } catch (error) {
+      // Handle other errors that might occur during the database query or processing
+      res.status(500).json({ message: 'Internal Server Error' });
+    }
+  });
+module.exports = { Signup, Signin, getPatient, deleteAllPatients };

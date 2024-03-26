@@ -1,7 +1,7 @@
 const mongoose = require('mongoose');
 
 const patientSchema = mongoose.Schema({
-    cnic: {
+    patientCNIC: {
         type: Number,
         required: true,
         unique: true,
@@ -29,6 +29,11 @@ const patientSchema = mongoose.Schema({
     gender: {
         type: String,
         enum: ['Male', 'Female', 'Other'],
+        required: true,
+    },
+    doctor: { // Change type to mongoose.Schema.Types.ObjectId
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Doctor', // Referencing the Doctor model
         required: true,
     },
 }, {
