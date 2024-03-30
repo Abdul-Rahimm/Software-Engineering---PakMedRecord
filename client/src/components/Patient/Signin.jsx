@@ -6,7 +6,7 @@ import bg3 from '../../assets/bg3.png';
 const Sign_in = () => {
     const navigate = useNavigate();
   const [formData, setFormData] = useState({
-    cnic: '',
+    patientCNIC: '',
     password: '',
   });
 
@@ -15,8 +15,8 @@ const Sign_in = () => {
     setFormData((prevData) => ({ ...prevData, [name]: value }));
   };
 
-  const handleSuccessfulSignin = (cnic) => {
-    navigate(`/patient/home/${cnic}`);
+  const handleSuccessfulSignin = (patientCNIC) => {
+    navigate(`/patient/home/${patientCNIC}`);
   };
 
   const handleSubmit = async (e) => {
@@ -28,11 +28,11 @@ const Sign_in = () => {
       console.log('API Response:', response.data);
 
       const { patient } = response.data;
-      const { cnic } = patient; // Assuming 'cnic' is the identifier
+      const { patientCNIC } = patient; // Assuming 'cnic' is the identifier
 
-      console.log('Extracted CNIC:', cnic);
+      console.log('Extracted CNIC:', patientCNIC);
 
-      handleSuccessfulSignin(cnic);
+      handleSuccessfulSignin(patientCNIC);
     } catch (error) {
       console.error('Signin error:', error.response.data.error);
       alert('SignIn Unsuccessful :(', error.response.data.error);
@@ -73,15 +73,15 @@ const Sign_in = () => {
         }}
       >
         <div className="form-group">
-          <label htmlFor="cnic" style={{ color: 'black' }}>
+          <label htmlFor="patientCNIC" style={{ color: 'black' }}>
             CNIC:
           </label>
           <input
             type="text"
             className="form-control"
-            id="cnic"
-            name="cnic"
-            value={formData.cnic}
+            id="patientCNIC"
+            name="patientCNIC"
+            value={formData.patientCNIC}
             onChange={handleChange}
           />
         </div>

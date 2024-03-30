@@ -2,13 +2,12 @@ const bcrypt = require('bcrypt');
 const Doctor = require('../models/DoctorModel');
 const expressAsyncHandler = require('express-async-handler');
 const Patient = require('../models/PatientModel');
-const mongoose = require('mongoose');
 
 const Signup = expressAsyncHandler(async (req, res) => {
   const { doctorCNIC, firstName, lastName, email, password, hospital } = req.body;
 
   try {
-    const patientWithSameCNIC = await Patient.findOne({ doctorCNIC });
+    const patientWithSameCNIC = await Patient.findOne({ patientCNIC: doctorCNIC });
       if (patientWithSameCNIC) {
         return res.status(409).json({ error: 'CNIC already registered as a patient!' });
     }
@@ -87,6 +86,25 @@ const getDoctor = expressAsyncHandler(async (req, res) => {
   }
 });
 
+const getAllDoctors = expressAsyncHandler(async (req, res) => {
+  try {
+    // Fetch all doctors from the database
+    const doctors = await Doctor.find();
+
+    // Check if any doctors were found
+    if (doctors.length > 0) {
+      res.status(200).json(doctors);
+      console.log('Successfully fetched all doctors:', doctors);
+    } else {
+      res.status(404).json({ message: 'No doctors found' });
+    }
+  } catch (error) {
+    console.error('Error fetching doctors:', error);
+    res.status(500).json({ message: 'Internal Server Error' });
+  }
+});
+
+
 const deleteDoctor = expressAsyncHandler(async (req, res) => {
   try {
     // Extract doctorId from the request parameters
@@ -128,4 +146,4 @@ const deleteAllDoctors = expressAsyncHandler(async (req, res) => {
   }
 });
 
-module.exports = { Signup, Signin, getDoctor, deleteDoctor, deleteAllDoctors };
+module.exports = { Signup, Signin, getDoctor,getAllDoctors, deleteDoctor, deleteAllDoctors };

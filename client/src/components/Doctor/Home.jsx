@@ -6,7 +6,7 @@ import bg3 from '../../assets/bg3.png';
 
 const Home = () => {
   const [doctorData, setDoctorData] = useState(null);
-  const { cnic } = useParams();
+  const { doctorCNIC } = useParams();
   const navigate = useNavigate();
   const [showHospitals, setShowHospitals] = useState(false);
   const [showMedicalRecordForm, setShowMedicalRecordForm] = useState(false);
@@ -14,8 +14,8 @@ const Home = () => {
   useEffect(() => {
     const fetchDoctorData = async () => {
       try {
-        if (cnic) {
-          const response = await axios.get(`http://localhost:3009/doctor/home/${cnic}`);
+        if (doctorCNIC) {
+          const response = await axios.get(`http://localhost:3009/doctor/home/${doctorCNIC}`);
           setDoctorData(response.data);
         }
       } catch (error) {
@@ -24,7 +24,7 @@ const Home = () => {
     };
 
     fetchDoctorData();
-  }, [cnic]);
+  }, [doctorCNIC]);
 
   const handleViewHospitals = () => {
     setShowHospitals(!showHospitals);

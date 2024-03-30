@@ -6,16 +6,15 @@ import bg3 from '../../assets/bg3.png';
 
 const HomePage = () => {
   const [patientData, setPatientData] = useState(null);
-  const { cnic } = useParams();
+  const { patientCNIC } = useParams();
   const navigate = useNavigate();
   const [showHospitals, setShowHospitals] = useState(false);
-  const [showMedicalRecordForm, setShowMedicalRecordForm] = useState(false);
 
   useEffect(() => {
     const fetchPatientData = async () => {
       try {
-        if (cnic) {
-          const response = await axios.get(`http://localhost:3009/patient/home/${cnic}`);
+        if (patientCNIC) {
+          const response = await axios.get(`http://localhost:3009/patient/home/${patientCNIC}`);
           setPatientData(response.data);
         }
       } catch (error) {
@@ -24,7 +23,7 @@ const HomePage = () => {
     };
 
     fetchPatientData();
-  }, [cnic]);
+  }, [patientCNIC]);
 
   const handleViewHospitals = () => {
     setShowHospitals(!showHospitals);
@@ -43,14 +42,6 @@ const HomePage = () => {
     }
   };
 
-  const handleOpenMedicalRecordForm = () => {
-    setShowMedicalRecordForm(true);
-  };
-
-  const handleCloseMedicalRecordForm = () => {
-    setShowMedicalRecordForm(false);
-  };
-
   const backgroundStyle = {
     backgroundImage: `url(${bg3})`, // Replace with the path to your image
     backgroundSize: 'cover',
@@ -67,40 +58,13 @@ const HomePage = () => {
           <div className="text-center mt-5" >
             <h2 style={{ color: 'black', marginLeft: '50px' }}>Welcome,  {patientData && `${patientData.firstName} ${patientData.lastName}`}!</h2>
             <h2 style={{ color: 'green', marginLeft: '40px' }}>PakMedRecord.</h2>
-            <button className="btn btn-success" onClick={handleOpenMedicalRecordForm} style={{ marginTop: '20px', marginLeft: '20px' }}>
-              Open Medical Record Form
-            </button>
+            <p style={{ color: 'black', marginTop: '20px', marginLeft: '20px' }}>To get affiliated with doctor(s), click below:</p>
+            <Link to="/doctor/doctors">
+              <button className="btn btn-primary" style={{ marginLeft: '20px' }}>Find Doctors</button>
+            </Link>
           </div>
         </div>
       </div>
-
-      {showMedicalRecordForm && (
-        <div className="row justify-content-center">
-          <div className="col-md-8">
-            <div className="text-center mt-5">
-              <h2>Medical Record Form</h2>
-              <form>
-                <div className="form-group">
-                  <label htmlFor="patientName">Patient Name:</label>
-                  <input type="text" className="form-control" id="patientName" placeholder="Enter patient's name" />
-                </div>
-                <div className="form-group">
-                  <label htmlFor="diagnosis">Diagnosis:</label>
-                  <textarea className="form-control" id="diagnosis" rows="3" placeholder="Enter diagnosis"></textarea>
-                </div>
-                <div className="form-group">
-                  <label htmlFor="medications">Medications:</label>
-                  <input type="text" className="form-control" id="medications" placeholder="Enter medications" />
-                </div>
-                <button type="submit" className="btn btn-primary">Submit</button>
-              </form>
-              <button className="btn btn-secondary" onClick={handleCloseMedicalRecordForm}>
-                Close Form
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
 
       <div className="d-flex justify-content-end mt-3">
         <div className="ml-auto">

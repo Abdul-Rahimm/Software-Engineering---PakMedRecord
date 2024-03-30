@@ -5,7 +5,7 @@ import bg3 from '../../assets/bg3.png';
 
 const Signup = () => {
     const [formData, setFormData] = useState({
-        cnic: '',
+        doctorCNIC: '', // Changed from cnic to doctorCNIC
         firstName: '',
         lastName: '',
         email: '',
@@ -27,7 +27,9 @@ const Signup = () => {
         try {
             setLoading(true); // Set loading to true when the form is being submitted
 
+            // Send signup data to the backend endpoint
             await axios.post('http://localhost:3009/doctor/signup', formData);
+
             console.log('Signup successful!');
             setSignupSuccess(true);
         } catch (error) {
@@ -58,9 +60,6 @@ const Signup = () => {
                 justifyContent: 'center',
             }}
         >
-            {/* <h2 className="mb-4" style={{ marginLeft: '30px', color: 'green' }}>
-                PakMedRecord
-            </h2> */}
             <div
                 style={{
                     border: '1px solid #ccc',
@@ -72,14 +71,14 @@ const Signup = () => {
             >
                 <h2 className="mb-4" style={{ color: 'black' }}>Doctor Sign up</h2>
                 <form onSubmit={handleSubmit}>
-                    <div className="form-group" style={{ paddingBottom: '-100px' }}>
-                        <label htmlFor="cnic">CNIC:</label>
+                    <div className="form-group">
+                        <label htmlFor="doctorCNIC">CNIC:</label>
                         <input
                             type="text"
                             className="form-control"
-                            id="cnic"
-                            name="cnic"
-                            value={formData.cnic}
+                            id="doctorCNIC"
+                            name="doctorCNIC"
+                            value={formData.doctorCNIC}
                             onChange={handleChange}
                         />
                     </div>

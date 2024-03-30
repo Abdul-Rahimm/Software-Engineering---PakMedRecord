@@ -5,11 +5,14 @@ const app = express();
 const { port, connection_string } = require('./config');
 const DoctorRoutes = require('./routes/DoctorRoutes');
 const PatientRoutes = require('./routes/PatientRoutes');
+const AffiliationRoutes = require('./routes/AffiliationRoute');
 
 app.use(express.json());
 app.use(cors());
 app.use('/doctor', DoctorRoutes);
 app.use('/patient', PatientRoutes);
+app.use('/affiliation', AffiliationRoutes);
+
 
 mongoose.connect(connection_string)
     .then(() => {

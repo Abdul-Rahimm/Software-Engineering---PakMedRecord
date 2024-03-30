@@ -5,7 +5,7 @@ import bg3 from '../../assets/bg3.png';
 
 const Sign_up = () => {
     const [formData, setFormData] = useState({
-        cnic: '',
+        patientCNIC: '',
         firstName: '',
         lastName: '',
         email: '',
@@ -71,13 +71,13 @@ const Sign_up = () => {
                 <h2 className="mb-4" style={{ color: 'black' }}>Patient Sign up</h2>
                 <form onSubmit={handleSubmit}>
                     <div className="form-group">
-                        <label htmlFor="cnic">CNIC:</label>
+                        <label htmlFor="patientCNIC">CNIC:</label>
                         <input
                             type="text"
                             className="form-control"
-                            id="cnic"
-                            name="cnic"
-                            value={formData.cnic}
+                            id="patientCNIC"
+                            name="patientCNIC"
+                            value={formData.patientCNIC}
                             onChange={handleChange}
                         />
                     </div>

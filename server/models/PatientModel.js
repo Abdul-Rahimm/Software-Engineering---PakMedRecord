@@ -30,12 +30,7 @@ const patientSchema = mongoose.Schema({
         type: String,
         enum: ['Male', 'Female', 'Other'],
         required: true,
-    },
-    doctor: { // Change type to mongoose.Schema.Types.ObjectId
-        type: mongoose.Schema.Types.ObjectId,
-        ref: 'Doctor', // Referencing the Doctor model
-        required: true,
-    },
+    }
 }, {
     timestamps: true,
 });
