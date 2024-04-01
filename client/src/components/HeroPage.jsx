@@ -29,6 +29,7 @@ const HeroPage = () => {
         backgroundSize: 'cover',
         backgroundPosition: 'center',
         height: '100vh',
+        width: '100vw'
       }}
     >
       <div>

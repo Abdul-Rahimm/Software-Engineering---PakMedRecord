@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { useParams, useNavigate, Link } from 'react-router-dom';
+import { FaUserMd, FaFileAlt, FaStickyNote, FaSignOutAlt, FaPlus, FaMinus } from 'react-icons/fa'; // Importing icons
 import Header from '../Header';
 import bg3 from '../../assets/bg3.png';
 
@@ -77,15 +78,20 @@ const HomePage = () => {
             <h2 style={{ color: 'green', marginLeft: '40px' }}>PakMedRecord.</h2>
             <br />
             <Link to="/doctor/doctors">
-              <button className="btn btn-success" style={{ marginLeft: '20px', borderRadius: '100px' }}>Find Doctors</button>
+              <button className="btn btn-success" style={{ marginLeft: '20px', borderRadius: '100px' }}>
+                <FaUserMd /> Find Doctors
+              </button>
             </Link>
             <Link to="/affiliation/getmydoctors/:patientCNIC">
-              <button className="btn btn-outline-success btn-md mr-2" style={{ marginLeft: '20px', borderRadius: '100px' }}>My Doctors</button>
+              <button className="btn btn-outline-success btn-md mr-2" style={{ marginLeft: '20px', borderRadius: '100px' }}>
+                <FaFileAlt /> My Doctors
+              </button>
             </Link>
             <Link to={`/patient/${patientCNIC}/getnote`}>
-  <button className="btn btn-outline-primary btn-md mr-2" style={{ marginLeft: '20px', borderRadius: '100px' }}>View Notes</button>
-</Link>
-
+              <button className="btn btn-outline-success btn-md mr-2" style={{ marginLeft: '20px', borderRadius: '100px' }}>
+                <FaStickyNote /> View Notes
+              </button>
+            </Link>
           </div>
         </div>
       </div>
@@ -103,15 +109,15 @@ const HomePage = () => {
           </div>
 
           {patientData && (
-            <button className="btn btn-danger" onClick={handleLogout} style={{ marginLeft: '1300px', marginBottom: '-800px' }}>
-              Logout
+            <button className="btn btn-danger" onClick={handleLogout} style={{ marginLeft: '1300px', marginBottom: '-775px' }}>
+             Logout <FaSignOutAlt /> 
             </button>
           )}
         </div>
       </div>
 
       <div className="container mt-5">
-        {showAddNoteForm && ( // Step 3
+        {showAddNoteForm && (
           <div className="form-group">
             <label htmlFor="newNote" style={{ color: 'black' }}>Add Note:</label>
             <textarea
@@ -121,10 +127,14 @@ const HomePage = () => {
               value={newNoteText}
               onChange={(e) => setNewNoteText(e.target.value)}
             ></textarea>
-            <button className="btn btn-primary mt-2" onClick={handleAddNote}>Add</button>
+            <button className="btn btn-secondary mt-2" onClick={handleAddNote}>
+              <FaPlus /> Add
+            </button>
           </div>
         )}
-        <button className="btn btn-primary" onClick={() => setShowAddNoteForm(!showAddNoteForm)}>Open Note Form</button> {/* Step 2 */}
+        <button className="btn btn-success" onClick={() => setShowAddNoteForm(!showAddNoteForm)}>
+          {showAddNoteForm ? <span><FaMinus /> Close Note Form</span> : <span><FaPlus /> Open Note Form</span>}
+        </button>
       </div>
     </div>
   );

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { useParams } from 'react-router-dom';
-import { FaStickyNote, FaRegCalendarAlt } from 'react-icons/fa';
+import { FaStickyNote, FaRegCalendarAlt, FaTimesCircle } from 'react-icons/fa';
 import { BsCardText } from 'react-icons/bs';
 import bg3 from '../../assets/bg3.png';
 
@@ -29,6 +29,15 @@ const Notes = () => {
     setShowPopup(true);
   };
 
+  const handleRemoveNote = async (noteId) => {
+    try {
+      await axios.delete(`http://localhost:3009/patient/${patientCNIC}/removenote/${noteId}`);
+      setNotes(notes.filter((note) => note._id !== noteId));
+    } catch (error) {
+      console.error('Error removing note:', error);
+    }
+  };
+
   const handleClosePopup = () => {
     setShowPopup(false);
     setTimeout(() => {
@@ -37,7 +46,8 @@ const Notes = () => {
   };
 
   return (
-    <div style={{ backgroundImage: `url(${bg3})`, backgroundSize: 'cover', minHeight: '100vh', padding: '20px' }}>
+    <div style={{ backgroundImage: `url(${bg3})`, backgroundSize: 'cover', backgroundPosition: 'center', minHeight: '100vh', padding: '20px', position: 'relative', minWidth: '100vw' }}>
+      <h1 style={{ textAlign: 'center', color: 'green', position: 'absolute', top: '20px', left: '50%', transform: 'translateX(-50%)', zIndex: '999', width: '100%' }}>PakMedRecord</h1>
       <style>
         {`
           @keyframes fadeIn {
@@ -59,8 +69,7 @@ const Notes = () => {
           }
         `}
       </style>
-      <h1 style={{ textAlign: 'center', color: 'green', position: 'fixed', top: '20px', left: '50%', transform: 'translateX(-50%)', zIndex: '999' }}>PakMedRecord</h1>
-      <h2 style={{ textAlign: 'center', marginTop: '60px' }}><FaStickyNote /> Notes</h2>
+      <h2 style={{ textAlign: 'center', marginTop: '60px' }}><FaStickyNote /> My Notes</h2> <br />
       <div className="card-container" style={{ display: 'flex', justifyContent: 'space-around', flexWrap: 'wrap', marginTop: '20px' }}>
         {notes.map((note, index) => (
           <div key={index} className="card" style={{ backgroundColor: index % 2 === 0 ? 'grey' : 'green', width: '30%', margin: '10px', padding: '10px', color: 'white', boxShadow: '0px 0px 10px rgba(0, 0, 0, 0.1)', borderRadius: '10px', cursor: 'pointer' }} onClick={() => handleCardClick(index)}>
@@ -68,6 +77,7 @@ const Notes = () => {
               <h5 className="card-title"><BsCardText /> Note {index + 1}</h5>
               <p className="card-text" style={{ color: 'white', fontWeight: 'bold' }}>{note.note}</p>
               <p className="card-text" style={{ color: 'white'}}><FaRegCalendarAlt /> {new Date(note.createdAt).toLocaleString()}</p>
+              <FaTimesCircle style={{ color: 'red', cursor: 'pointer' }} onClick={() => handleRemoveNote(note._id)} />
             </div>
           </div>
         ))}
