@@ -8,6 +8,8 @@ import Sign_up from './components/Patient/Signup';
 import Sign_in from './components/Patient/Signin';
 import HomePage from './components/Patient/Home';
 import DoctorList from './components/Patient/doctorList';
+import ViewMyDoctors from './components/Patient/viewDoctors';
+import Notes from './components/Patient/Notes';
 
 const Routes = () => {
   return (
@@ -20,6 +22,9 @@ const Routes = () => {
       <Route path="/patient/signup" element={<Sign_up />} />
       <Route path="/patient/signin" element={<Sign_in />} />
       <Route path="/patient/home/:patientCNIC" element={<HomePage />} />
+      <Route path="/affiliation/getmydoctors/:patientCNIC" element={<ViewMyDoctors />} />
+      <Route path="/patient/:patientCNIC/getnote" element={<Notes />} />
+
 
     </RouterRoutes>
   );

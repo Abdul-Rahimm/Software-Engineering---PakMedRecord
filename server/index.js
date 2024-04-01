@@ -13,7 +13,6 @@ app.use('/doctor', DoctorRoutes);
 app.use('/patient', PatientRoutes);
 app.use('/affiliation', AffiliationRoutes);
 
-
 mongoose.connect(connection_string)
     .then(() => {
         console.log('App is connected to database!');

@@ -21,23 +21,25 @@ const Sign_in = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-
+  
     try {
       const response = await axios.post('http://localhost:3009/patient/signin', formData);
-
+  
       console.log('API Response:', response.data);
-
+  
       const { patient } = response.data;
       const { patientCNIC } = patient; // Assuming 'cnic' is the identifier
-
+  
       console.log('Extracted CNIC:', patientCNIC);
-
+  
       handleSuccessfulSignin(patientCNIC);
     } catch (error) {
       console.error('Signin error:', error.response.data.error);
-      alert('SignIn Unsuccessful :(', error.response.data.error);
+      // Display an alert for incorrect sign-in credentials
+      alert('Sign in failed!');
     }
   };
+  
   
 
   return (

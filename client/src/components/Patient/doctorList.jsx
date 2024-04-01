@@ -25,10 +25,10 @@ const DoctorList = () => {
   }, []);
 
   const handleSelectDoctor = (doctorCNIC) => {
-    setSelectedDoctors(prevSelected => {
+    setSelectedDoctors((prevSelected) => {
       if (prevSelected.includes(doctorCNIC)) {
         // If doctor is already selected, unselect it
-        return prevSelected.filter(cnic => cnic !== doctorCNIC);
+        return prevSelected.filter((cnic) => cnic !== doctorCNIC);
       } else {
         // If doctor is not selected, select it
         return [...prevSelected, doctorCNIC];
@@ -36,25 +36,33 @@ const DoctorList = () => {
     });
   };
 
-  const handleConfirmSelection = () => {
-    // Make the post request to the affiliation collection here
-    // Use selectedDoctors state to get the selected doctors
-    // Show popup confirmation
-    setShowConfirmation(true);
+  const handleConfirmSelection = async () => {
+    try {
+      console.log('Selected Doctors:', selectedDoctors); // Log selectedDoctors array
+      const response = await axios.post('http://localhost:3009/affiliation/affiliate', {
+        patientCNIC: '9', // Replace with the actual patient CNIC
+        doctorCNIC: selectedDoctors,
+      });
+      console.log(response.data); // Log response from backend
+      setShowConfirmation(true); // Show confirmation message
+    } catch (error) {
+      console.error('Error creating affiliation:', error);
+      // Handle error
+    }
   };
 
-  const filteredDoctors = doctors.filter(doctor =>
-    doctor.firstName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    doctor.lastName.toLowerCase().includes(searchQuery.toLowerCase())
+  const filteredDoctors = doctors.filter(
+    (doctor) =>
+      doctor.firstName.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      doctor.lastName.toLowerCase().includes(searchQuery.toLowerCase())
   );
-
-  if (loading) {
-    return <div>Loading...</div>;
-  }
 
   return (
     <div style={{ marginLeft: '500px' }}>
-      <h2 className="mb-4" style={{ marginLeft: '100px' }}>List of Doctors</h2>
+      <h1 style={{ color: 'green', marginLeft: '100px' }}>PakMedRecord</h1>
+      <h2 className="mb-4" style={{ marginLeft: '150px' }}>
+        List of Doctors
+      </h2>
       {showConfirmation && (
         <div className="alert alert-success" role="alert">
           Affiliation confirmed successfully!
@@ -64,7 +72,7 @@ const DoctorList = () => {
         <input
           type="text"
           className="form-control"
-          placeholder="Search by name..."
+          placeholder="Search doctor by name..."
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
         />
@@ -99,7 +107,11 @@ const DoctorList = () => {
           ))}
         </tbody>
       </table>
-      <button className="btn btn-success" onClick={handleConfirmSelection}>
+      <button
+        className="btn btn-outline-success btn-md mr-2"
+        onClick={handleConfirmSelection}
+        disabled={selectedDoctors.length === 0} // Disable button if no doctors are selected
+      >
         Confirm Selection
       </button>
     </div>
