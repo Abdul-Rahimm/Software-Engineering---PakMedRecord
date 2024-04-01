@@ -1,7 +1,9 @@
 import React, { useState } from 'react';
 import axios from 'axios';
 import { Navigate, Link } from 'react-router-dom';
+import { FaUser, FaEnvelope, FaLock, FaHospitalAlt, FaVenusMars } from 'react-icons/fa'; // Import React icons
 import bg3 from '../../assets/bg3.png';
+import { Button } from '@mui/material';
 
 const Sign_up = () => {
     const [formData, setFormData] = useState({
@@ -71,7 +73,7 @@ const Sign_up = () => {
                 <h2 className="mb-4" style={{ color: 'black' }}>Patient Sign up</h2>
                 <form onSubmit={handleSubmit}>
                     <div className="form-group">
-                        <label htmlFor="patientCNIC">CNIC:</label>
+                        <label htmlFor="patientCNIC"><FaUser /> CNIC:</label>
                         <input
                             type="text"
                             className="form-control"
@@ -82,7 +84,7 @@ const Sign_up = () => {
                         />
                     </div>
                     <div className="form-group">
-                        <label htmlFor="firstName">First Name:</label>
+                        <label htmlFor="firstName"><FaUser /> First Name:</label>
                         <input
                             type="text"
                             className="form-control"
@@ -93,7 +95,7 @@ const Sign_up = () => {
                         />
                     </div>
                     <div className="form-group">
-                        <label htmlFor="lastName">Last Name:</label>
+                        <label htmlFor="lastName"><FaUser /> Last Name:</label>
                         <input
                             type="text"
                             className="form-control"
@@ -104,7 +106,7 @@ const Sign_up = () => {
                         />
                     </div>
                     <div className="form-group">
-                        <label htmlFor="email">Email:</label>
+                        <label htmlFor="email"><FaEnvelope /> Email:</label>
                         <input
                             type="email"
                             className="form-control"
@@ -115,7 +117,7 @@ const Sign_up = () => {
                         />
                     </div>
                     <div className="form-group">
-                        <label htmlFor="password">Password:</label>
+                        <label htmlFor="password"><FaLock /> Password:</label>
                         <input
                             type="password"
                             className="form-control"
@@ -126,7 +128,7 @@ const Sign_up = () => {
                         />
                     </div>
                     <div className="form-group">
-                        <label htmlFor="hospital">Hospital:</label>
+                        <label htmlFor="hospital"><FaHospitalAlt /> Hospital:</label>
                         <input
                             type="text"
                             className="form-control"
@@ -137,7 +139,7 @@ const Sign_up = () => {
                         />
                     </div>
                     <div className="form-group">
-                        <label htmlFor="gender">Gender:</label>
+                        <label htmlFor="gender"><FaVenusMars /> Gender:</label>
                         <select
                             className="form-control"
                             id="gender"
@@ -151,9 +153,9 @@ const Sign_up = () => {
                             <option value="Other">Other</option>
                         </select>
                     </div>
-                    <button type="submit" className="btn btn-success">
-                        {loading ? 'Signing up...' : 'Sign up'}
-                    </button>
+                    <Button type="submit" variant="contained" style={{ marginTop: '15px', backgroundColor: 'green' }}>
+                    Sign up
+                </Button>
                 </form>
                 <p className="mt-3">
                     Already have an account? <Link to="/patient/signin" style={{ fontWeight: 'bold', color: 'darkblue' }}>Sign In</Link>.

@@ -4,6 +4,7 @@ import { useParams, useNavigate, Link } from 'react-router-dom';
 import { FaUserMd, FaFileAlt, FaStickyNote, FaSignOutAlt, FaPlus, FaMinus } from 'react-icons/fa'; // Importing icons
 import Header from '../Header';
 import bg3 from '../../assets/bg3.png';
+import { Button, Container, Typography, Grid, Card, CardContent, TextareaAutosize, FormControl, InputLabel, Input, CardActions } from '@mui/material'; // Importing Material-UI components
 
 const HomePage = () => {
   const [patientData, setPatientData] = useState(null);
@@ -65,36 +66,30 @@ const HomePage = () => {
     backgroundSize: 'cover',
     backgroundPosition: 'center',
     height: '100vh',
-    marginLeft: '80px'
+    marginLeft: '80px',
   };
 
   return (
-    <div className="container" style={backgroundStyle}>
-      <Header/>
-      <div className="row justify-content-center">
-        <div className="col-md-8">
+    <Container style={backgroundStyle} >
+      <Header />
+      <Grid container justifyContent="center">
+        <Grid item xs={12} md={8}>
           <div className="text-center mt-5" >
-            <h2 style={{ color: 'black', marginLeft: '50px' }}>Welcome, {patientData && `${patientData.firstName} ${patientData.lastName}`}!</h2>
-            <h2 style={{ color: 'green', marginLeft: '40px' }}>PakMedRecord.</h2>
+            <Typography variant="h4" style={{ color: 'black', marginLeft: '50px' }}>Welcome, {patientData && `${patientData.firstName} ${patientData.lastName}`}!</Typography>
+            <Typography variant="h4" style={{ color: 'green', marginLeft: '40px' }}>PakMedRecord.</Typography>
             <br />
             <Link to="/doctor/doctors">
-              <button className="btn btn-success" style={{ marginLeft: '20px', borderRadius: '100px' }}>
-                <FaUserMd /> Find Doctors
-              </button>
+              <Button variant="contained" color="success" style={{ marginLeft: '20px', borderRadius: '100px' }} startIcon={<FaUserMd />}>Find Doctors</Button>
             </Link>
             <Link to="/affiliation/getmydoctors/:patientCNIC">
-              <button className="btn btn-outline-success btn-md mr-2" style={{ marginLeft: '20px', borderRadius: '100px' }}>
-                <FaFileAlt /> My Doctors
-              </button>
+              <Button variant="outlined" color="success" style={{ marginLeft: '20px', borderRadius: '100px' }} startIcon={<FaFileAlt />}>My Doctors</Button>
             </Link>
             <Link to={`/patient/${patientCNIC}/getnote`}>
-              <button className="btn btn-outline-success btn-md mr-2" style={{ marginLeft: '20px', borderRadius: '100px' }}>
-                <FaStickyNote /> View Notes
-              </button>
+              <Button variant="outlined" color="success" style={{ marginLeft: '20px', borderRadius: '100px' }} startIcon={<FaStickyNote />}>View Notes</Button>
             </Link>
           </div>
-        </div>
-      </div>
+        </Grid>
+      </Grid>
 
       <div className="d-flex justify-content-end mt-3">
         <div className="ml-auto">
@@ -109,34 +104,34 @@ const HomePage = () => {
           </div>
 
           {patientData && (
-            <button className="btn btn-danger" onClick={handleLogout} style={{ marginLeft: '1300px', marginBottom: '-775px' }}>
-             Logout <FaSignOutAlt /> 
-            </button>
+            <Button variant="contained" color="error" onClick={handleLogout} style={{ marginLeft: '1300px', marginBottom: '-775px' }}>
+              Logout <FaSignOutAlt />
+            </Button>
           )}
         </div>
       </div>
 
-      <div className="container mt-5">
+      <Container mt-5>
         {showAddNoteForm && (
           <div className="form-group">
-            <label htmlFor="newNote" style={{ color: 'black' }}>Add Note:</label>
-            <textarea
+            <InputLabel htmlFor="newNote" style={{ color: 'black' }}>Add Note:</InputLabel>
+            <TextareaAutosize
               id="newNote"
               className="form-control"
               rows="3"
               value={newNoteText}
               onChange={(e) => setNewNoteText(e.target.value)}
-            ></textarea>
-            <button className="btn btn-secondary mt-2" onClick={handleAddNote}>
-              <FaPlus /> Add
-            </button>
+            ></TextareaAutosize>
+            <CardActions>
+              <Button variant="contained" color="secondary" onClick={handleAddNote} startIcon={<FaPlus />}>Add</Button>
+            </CardActions>
           </div>
         )}
-        <button className="btn btn-success" onClick={() => setShowAddNoteForm(!showAddNoteForm)}>
+        <Button variant="contained" color="success" onClick={() => setShowAddNoteForm(!showAddNoteForm)}>
           {showAddNoteForm ? <span><FaMinus /> Close Note Form</span> : <span><FaPlus /> Open Note Form</span>}
-        </button>
-      </div>
-    </div>
+        </Button>
+      </Container>
+    </Container>
   );
 };
 
