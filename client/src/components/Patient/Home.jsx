@@ -71,12 +71,12 @@ const HomePage = () => {
 
   return (
     <Container style={backgroundStyle} >
-      <Header />
+      {/* <Header /> */}
       <Grid container justifyContent="center">
         <Grid item xs={12} md={8}>
           <div className="text-center mt-5" >
+          <Typography variant="h4" style={{ color: 'green', marginLeft: '40px', marginTop: '-50px', fontSize: '50px' }}>PakMedRecord.</Typography> <br />
             <Typography variant="h4" style={{ color: 'black', marginLeft: '50px' }}>Welcome, {patientData && `${patientData.firstName} ${patientData.lastName}`}!</Typography>
-            <Typography variant="h4" style={{ color: 'green', marginLeft: '40px' }}>PakMedRecord.</Typography>
             <br />
             <Link to="/doctor/doctors">
               <Button variant="contained" color="success" style={{ marginLeft: '20px', borderRadius: '100px' }} startIcon={<FaUserMd />}>Find Doctors</Button>

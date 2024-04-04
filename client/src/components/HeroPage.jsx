@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import bgImage from '../assets/bg3.png';
+import { FaSignInAlt, FaUserMd, FaFacebook, FaTwitter, FaInstagram } from 'react-icons/fa'; // Import icons
+import { useSpring, animated } from 'react-spring'; // Import react-spring
 
 const HeroPage = () => {
   const [collapse1, setCollapse1] = useState(false);
@@ -16,67 +18,129 @@ const HeroPage = () => {
     setCollapse1(false);
   };
 
+  // Animation for navigation bar
+  const navBarAnimation = useSpring({
+    from: { opacity: 0, transform: 'translateY(-50px)' },
+    to: { opacity: 1, transform: 'translateY(0)' },
+  });
+
+  // Animation for testimonials
+  const testimonialAnimation = useSpring({
+    from: { opacity: 0, transform: 'translateX(-50px)' },
+    to: { opacity: 1, transform: 'translateX(0)' },
+    delay: 500, // Delay the animation
+  });
+
+  // Animation for footer
+  const footerAnimation = useSpring({
+    from: { opacity: 0, transform: 'translateY(50px)' },
+    to: { opacity: 1, transform: 'translateY(0)' },
+  });
+
   return (
-    <div
+    <animated.div // Wrap the content with animated.div for animations
       className="hero-page"
       style={{
+        ...navBarAnimation, // Apply navigation bar animation
         display: 'flex',
         flexDirection: 'column',
         alignItems: 'center',
         justifyContent: 'space-between',
         margin: '20px',
-        backgroundImage: `url(${bgImage})`,
+        backgroundImage: `linear-gradient(rgba(0, 0, 0, 0.5), rgba(0, 0, 0, 0.5)), url(${bgImage})`, // Apply overlay to the background image
         backgroundSize: 'cover',
         backgroundPosition: 'center',
-        height: '100vh',
+        minHeight: '100vh', // Change height to minHeight to ensure the content stretches the full height
         width: '100vw'
       }}
     >
-      <div>
-        <h2 style={{ color: 'green' }}>PakMedRecord.</h2>
-        <h6 style={{ color: 'black', marginLeft: '50px' }}>h e a l t h c a r e</h6>
-      </div>
-
-      <div style={{ display: 'flex', justifyContent: 'flex-end', margin: '20px' }}>
-        <Link to="/doctor/signin" className="btn btn-outline-success btn-md mr-2">
-          Sign in as Doctor
-        </Link>
-        <Link to="/patient/signin" className="btn btn-success btn-md">
-          Sign in as Patient
-        </Link>
-      </div>
-
-      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', marginTop: '20px' }}>
-        <p>
-          <button className="btn btn-secondary" onClick={toggleCollapse1} type="button" aria-expanded={collapse1} aria-controls="multiCollapseExample1" style={{ marginBottom: '100px' }}>
-            Info
+      {/* Navigation Bar/Header */}
+      <animated.nav // Wrap the navigation bar with animated.nav for animations
+        className="navbar navbar-expand-lg navbar-dark bg-dark"
+        style={{ minWidth: '100vw' }}
+      >
+        <div className="container">
+          <Link className="navbar-brand" to="/">PakMedRecord</Link>
+          <button className="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+            <span className="navbar-toggler-icon"></span>
           </button>
-          <button className="btn btn-outline-secondary" onClick={toggleCollapse2} type="button" aria-expanded={collapse2} aria-controls="multiCollapseExample2" style={{ marginBottom: '100px' }}>
-            Read More
-          </button>
-        </p>
-        <div className="row">
-          <div className="col">
-            <div className={`collapse ${collapse1 ? 'show' : ''}`} id="multiCollapseExample1">
-              <div className="card card-body" style={{ color: 'green', backgroundColor: 'white' }}>
-                <h2>PakMedRecord</h2> is a revolutionary platform designed with the primary objective of centralizing healthcare interactions between doctors and patients. Our core focus is to establish seamless connections, fostering unparalleled convenience and enhancing the credibility and safety of medical records. By providing a centralized hub, PakMedRecord ensures that both doctors and patients can effortlessly access and manage their medical information. This not only streamlines communication between healthcare professionals and their patients but also contributes to the overall efficiency of the healthcare ecosystem. Moreover, our platform places a strong emphasis on the credibility and safety of medical records. We understand the critical nature of healthcare data, and PakMedRecord employs robust security measures to safeguard sensitive information. This commitment to data integrity not only builds trust among users but also ensures a reliable and secure environment for all medical interactions. In essence, PakMedRecord is dedicated to transforming the healthcare landscape by offering a unified space for doctors and patients, ultimately creating a more connected, convenient, and secure healthcare experience.
-              </div>
-            </div>
+          <div className="collapse navbar-collapse" id="navbarNav">
+            <ul className="navbar-nav ml-auto">
+              <li className="nav-item">
+                <Link className="nav-link" to="/doctor/signin"><FaUserMd /> Sign in as Doctor</Link>
+              </li>
+              <li className="nav-item">
+                <Link className="nav-link" to="/patient/signin"><FaSignInAlt /> Sign in as Patient</Link>
+              </li>
+            </ul>
           </div>
-          <div className="col">
-            <div className={`collapse ${collapse2 ? 'show' : ''}`} id="multiCollapseExample2">
-              <div className="card card-body" style={{ backgroundColor: 'green', color: 'white' }}>
-                <h2>How to Use PakMedRecord</h2>
-                <h5>For Patients:</h5>
-                Sign up for an account on PakMedRecord as a patient. Sign in to your account using your credentials. Explore your dashboard to view medical records, appointments, and other features. Update your medical information as needed. Schedule appointments with healthcare providers.
-                <h5>For Doctors:</h5>
-                Sign up for an account on PakMedRecord as a doctor. Sign in to your account using your credentials. Access patient medical records and update them as needed. Manage appointments and communicate with patients. Utilize other features such as prescription management and billing.
+        </div>
+      </animated.nav>
+
+      <div className="text-center text-light">
+        <h1 style={{ color: 'darkgreen', fontSize: '3rem', marginTop: '50px' }}>Welcome to PakMedRecord</h1>
+        <p style={{ color: 'white', fontSize: '1.5rem', marginBottom: '50px' }}>Empowering Healthcare</p>
+      </div>
+
+      {/* Content */}
+      <animated.div // Wrap the content with animated.div for animations
+        style={{ ...testimonialAnimation, maxWidth: '800px', textAlign: 'center', color: 'white', marginBottom: '100px' }}
+      >
+        <p>
+          PakMedRecord is a revolutionary platform designed to centralize healthcare interactions between doctors and patients. Our platform ensures seamless connections, fosters unparalleled convenience, and enhances the credibility and safety of medical records.
+        </p>
+        <p>
+          Sign up now and experience a connected, convenient, and secure healthcare experience.
+        </p>
+
+        {/* Testimonials */}
+        <div className="row justify-content-center">
+          <div className="col-md-6">
+            <div className="card mb-4">
+              {/* <img src={testimonialImage1} className="card-img-top" alt="Testimonial 1" style={{ borderRadius: '50%' }} /> */}
+              <div className="card-body">
+                <h5 className="card-title">Abdullah Siddiqui</h5>
+                <p className="card-text">"PakMedRecord has made managing my medical records so much easier. I can access them from anywhere and communicate with my doctors seamlessly."</p>
               </div>
             </div>
           </div>
         </div>
-      </div>
-    </div>
+      </animated.div>
+
+      {/* Footer */}
+      <animated.footer // Wrap the footer with animated.footer for animations
+        className="footer mt-auto py-3 bg-dark"
+        style={{ minWidth: '100vw', ...footerAnimation }} // Apply footer animation
+      >
+        <div className="container text-center text-light">
+          <div className="row">
+            <div className="col-md-4">
+              <h5>Quick Links</h5>
+              <ul className="list-unstyled">
+                <li><Link to="/about">About Us</Link></li>
+                <li><Link to="/contact">Contact Us</Link></li>
+                <li><Link to="/privacy">Privacy Policy</Link></li>
+              </ul>
+            </div>
+            <div className="col-md-4">
+              <h5>Connect with Us</h5>
+              <ul className="list-unstyled">
+                <li><a href="https://www.facebook.com"><FaFacebook /></a></li>
+                <li><a href="https://www.twitter.com"><FaTwitter /></a></li>
+                <li><a href="https://www.instagram.com"><FaInstagram /></a></li>
+              </ul>
+            </div>
+            <div className="col-md-4">
+              <h5>Contact Information</h5>
+              <p>Email: info@pakmedrecord.com</p>
+              <p>Phone: +1-123-456-7890</p>
+            </div>
+          </div>
+          <hr />
+          <p>© 2024 PakMedRecord. All rights reserved.</p>
+        </div>
+      </animated.footer>
+    </animated.div>
   );
 };
 
