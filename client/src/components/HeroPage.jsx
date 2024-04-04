@@ -1,12 +1,15 @@
-import React, { useState } from 'react';
+// Import useState, useEffect from react
+import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import bgImage from '../assets/bg3.png';
-import { FaSignInAlt, FaUserMd, FaFacebook, FaTwitter, FaInstagram } from 'react-icons/fa'; // Import icons
+import { FaSignInAlt, FaUserMd, FaFacebook, FaTwitter, FaInstagram, FaMoon, FaSun, FaStar, FaQuoteLeft } from 'react-icons/fa'; // Import icons
 import { useSpring, animated } from 'react-spring'; // Import react-spring
+import { Carousel } from 'react-bootstrap'; // Import Carousel component from react-bootstrap
 
 const HeroPage = () => {
   const [collapse1, setCollapse1] = useState(false);
   const [collapse2, setCollapse2] = useState(false);
+  const [darkMode, setDarkMode] = useState(false); // State for theme
 
   const toggleCollapse1 = () => {
     setCollapse1(!collapse1);
@@ -16,6 +19,10 @@ const HeroPage = () => {
   const toggleCollapse2 = () => {
     setCollapse2(!collapse2);
     setCollapse1(false);
+  };
+
+  const toggleTheme = () => {
+    setDarkMode(!darkMode); // Toggle theme
   };
 
   // Animation for navigation bar
@@ -37,6 +44,49 @@ const HeroPage = () => {
     to: { opacity: 1, transform: 'translateY(0)' },
   });
 
+  // State for controlling the active index of testimonials
+  const [activeIndex, setActiveIndex] = useState(0);
+
+  // Function to handle the interval change
+  const handleSelect = (selectedIndex, e) => {
+    setActiveIndex(selectedIndex);
+  };
+
+  // Use useEffect to set an interval for automatic sliding
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setActiveIndex((prevIndex) =>
+        prevIndex === testimonials.length - 1 ? 0 : prevIndex + 1
+      );
+    }, 5000); // Set interval for 5 seconds
+
+    return () => clearInterval(interval);
+  }, []);
+
+  // Testimonials data
+  const testimonials = [
+    {
+      author: "Abdullah Siddiqui",
+      role: "- Patient",
+      text: "PakMedRecord has made managing my medical records so much easier. I can access them from anywhere and communicate with my doctors seamlessly.",
+    },
+    {
+      author: "Abdul Rahim",
+      role: "- Patient",
+      text: "PakMedRecord has made managing my medical records so much easier. I can access them from anywhere and communicate with my doctors seamlessly.",
+    },
+    {
+      author: "Amna Shahid",
+      role: "- Patient",
+      text: "PakMedRecord has made managing my medical records so much easier. I can access them from anywhere and communicate with my doctors seamlessly.",
+    },
+    {
+      author: "Dr. Ali Khan",
+      role: "- Doctor",
+      text: "PakMedRecord has been an invaluable tool for managing my patient's records efficiently. It has improved communication and streamlined processes in my clinic.",
+    },
+  ];
+
   return (
     <animated.div // Wrap the content with animated.div for animations
       className="hero-page"
@@ -51,7 +101,9 @@ const HeroPage = () => {
         backgroundSize: 'cover',
         backgroundPosition: 'center',
         minHeight: '100vh', // Change height to minHeight to ensure the content stretches the full height
-        width: '100vw'
+        width: '100vw',
+        backgroundColor: darkMode ? '#121212' : 'inherit', // Adjust background color based on theme
+        color: darkMode ? '#ffffff' : 'inherit', // Adjust text color based on theme
       }}
     >
       {/* Navigation Bar/Header */}
@@ -60,7 +112,9 @@ const HeroPage = () => {
         style={{ minWidth: '100vw' }}
       >
         <div className="container">
+          
           <Link className="navbar-brand" to="/">PakMedRecord</Link>
+          
           <button className="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
             <span className="navbar-toggler-icon"></span>
           </button>
@@ -93,18 +147,44 @@ const HeroPage = () => {
           Sign up now and experience a connected, convenient, and secure healthcare experience.
         </p>
 
-        {/* Testimonials */}
-        <div className="row justify-content-center">
-          <div className="col-md-6">
-            <div className="card mb-4">
-              {/* <img src={testimonialImage1} className="card-img-top" alt="Testimonial 1" style={{ borderRadius: '50%' }} /> */}
-              <div className="card-body">
-                <h5 className="card-title">Abdullah Siddiqui</h5>
-                <p className="card-text">"PakMedRecord has made managing my medical records so much easier. I can access them from anywhere and communicate with my doctors seamlessly."</p>
+        {/* Testimonials Carousel */}
+        <Carousel activeIndex={activeIndex} onSelect={handleSelect} interval={5000}>
+          {testimonials.map((testimonial, index) => (
+            <Carousel.Item key={index}>
+              <div className="row justify-content-center">
+                <div className="col-md-6">
+                  <animated.div
+                    className="card mb-4 shadow testimonial-card"
+                    style={{
+                      ...testimonialAnimation,
+                      opacity: 1,
+                      transform: index === activeIndex ? 'translateX(0)' : 'translateX(-100%)',
+                    }}
+                  >
+                    <div className="card-body">
+                      <FaQuoteLeft className="quote-icon" />
+                      <p className="card-text">{testimonial.text}</p>
+                      <div className="rating">
+                        {[...Array(5)].map((star, i) => {
+                          const ratingValue = i + 1;
+                          return (
+                            <span key={i}>
+                              <FaStar className="star" color={ratingValue <= 4 ? 'gold' : '#ddd'} size={20} />
+                            </span>
+                          );
+                        })}
+                      </div>
+                      <div className="testimonial-author">
+                        <span className="author-name">{testimonial.author}</span>
+                        <span className="author-info">{testimonial.role}</span>
+                      </div>
+                    </div>
+                  </animated.div>
+                </div>
               </div>
-            </div>
-          </div>
-        </div>
+            </Carousel.Item>
+          ))}
+        </Carousel>
       </animated.div>
 
       {/* Footer */}
@@ -140,6 +220,7 @@ const HeroPage = () => {
           <p>© 2024 PakMedRecord. All rights reserved.</p>
         </div>
       </animated.footer>
+
     </animated.div>
   );
 };

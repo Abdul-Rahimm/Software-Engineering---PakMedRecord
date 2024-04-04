@@ -1,10 +1,23 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { useParams, useNavigate, Link } from 'react-router-dom';
-import { FaUserMd, FaFileAlt, FaStickyNote, FaSignOutAlt, FaPlus, FaMinus } from 'react-icons/fa'; // Importing icons
-import Header from '../Header';
+import { FaUserMd, FaFileAlt, FaStickyNote, FaSignOutAlt, FaPlus, FaMinus } from 'react-icons/fa';
 import bg3 from '../../assets/bg3.png';
-import { Button, Container, Typography, Grid, Card, CardContent, TextareaAutosize, FormControl, InputLabel, Input, CardActions } from '@mui/material'; // Importing Material-UI components
+import {
+  Button,
+  Container,
+  Typography,
+  Grid,
+  Card,
+  CardContent,
+  TextareaAutosize,
+  FormControl,
+  InputLabel,
+  Input,
+  CardActions,
+  Avatar,
+  CircularProgress, // Added for loading indicator
+} from '@mui/material';
 
 const HomePage = () => {
   const [patientData, setPatientData] = useState(null);
@@ -13,17 +26,21 @@ const HomePage = () => {
   const navigate = useNavigate();
   const [showHospitals, setShowHospitals] = useState(false);
   const [notes, setNotes] = useState([]);
-  const [showAddNoteForm, setShowAddNoteForm] = useState(false); // Step 1
+  const [showAddNoteForm, setShowAddNoteForm] = useState(false);
+  const [loading, setLoading] = useState(false); // Added for loading indicator
 
   useEffect(() => {
     const fetchPatientData = async () => {
       try {
+        setLoading(true); // Show loading indicator
         if (patientCNIC) {
           const response = await axios.get(`http://localhost:3009/patient/home/${patientCNIC}`);
           setPatientData(response.data);
         }
+        setLoading(false); // Hide loading indicator
       } catch (error) {
         console.error('Error fetching patient data:', error);
+        setLoading(false); // Hide loading indicator
       }
     };
 
@@ -42,7 +59,7 @@ const HomePage = () => {
     const confirmLogout = window.confirm('Are you sure you want to log out?');
     
     if (confirmLogout) {
-      navigate('/'); // Navigate to the homepage
+      navigate('/');
     }
   };
 
@@ -52,12 +69,15 @@ const HomePage = () => {
 
   const handleAddNote = async () => {
     try {
+      setLoading(true); // Show loading indicator
       const response = await axios.post(`http://localhost:3009/patient/${patientCNIC}/addnote`, { patientCNIC, note: newNoteText });
       console.log('Note added successfully:', response.data.message);
-      setNewNoteText(''); // Clear the input field after adding the note
-      setNotes([...notes, newNoteText]); // Update the notes list
+      setNewNoteText('');
+      setNotes([...notes, newNoteText]);
+      setLoading(false); // Hide loading indicator
     } catch (error) {
       console.error('Error adding note:', error);
+      setLoading(false); // Hide loading indicator
     }
   };
 
@@ -67,16 +87,19 @@ const HomePage = () => {
     backgroundPosition: 'center',
     height: '100vh',
     marginLeft: '80px',
+    minwidth: '100%',
   };
 
   return (
-    <Container style={backgroundStyle} >
-      {/* <Header /> */}
+    <Container style={backgroundStyle}>
       <Grid container justifyContent="center">
         <Grid item xs={12} md={8}>
-          <div className="text-center mt-5" >
-          <Typography variant="h4" style={{ color: 'green', marginLeft: '40px', marginTop: '-50px', fontSize: '50px' }}>PakMedRecord.</Typography> <br />
-            <Typography variant="h4" style={{ color: 'black', marginLeft: '50px' }}>Welcome, {patientData && `${patientData.firstName} ${patientData.lastName}`}!</Typography>
+          <div className="text-center mt-5">
+            <Typography variant="h4" style={{ color: 'green', marginLeft: '40px', marginTop: '-50px', fontSize: '50px' }}>PakMedRecord.</Typography> <br />
+            <Typography variant="h4" style={{ color: 'black', marginLeft: '50px' }}>
+              Welcome, {patientData && `${patientData.firstName} ${patientData.lastName}`}!
+              {patientData && <Avatar alt="Profile Picture" src={patientData.profilePicture} />} {/* Added profile picture */}
+            </Typography>
             <br />
             <Link to="/doctor/doctors">
               <Button variant="contained" color="success" style={{ marginLeft: '20px', borderRadius: '100px' }} startIcon={<FaUserMd />}>Find Doctors</Button>
@@ -104,7 +127,7 @@ const HomePage = () => {
           </div>
 
           {patientData && (
-            <Button variant="contained" color="error" onClick={handleLogout} style={{ marginLeft: '1300px', marginBottom: '-775px' }}>
+            <Button variant="contained" color="error" onClick={handleLogout} style={{ marginLeft: '1300px', marginBottom: '-1000px' }}>
               Logout <FaSignOutAlt />
             </Button>
           )}
@@ -112,24 +135,32 @@ const HomePage = () => {
       </div>
 
       <Container mt-5>
-        {showAddNoteForm && (
-          <div className="form-group">
-            <InputLabel htmlFor="newNote" style={{ color: 'black' }}>Add Note:</InputLabel>
-            <TextareaAutosize
-              id="newNote"
-              className="form-control"
-              rows="3"
-              value={newNoteText}
-              onChange={(e) => setNewNoteText(e.target.value)}
-            ></TextareaAutosize>
-            <CardActions>
-              <Button variant="contained" color="secondary" onClick={handleAddNote} startIcon={<FaPlus />}>Add</Button>
-            </CardActions>
+        {loading ? ( // Show loading indicator
+          <div style={{ textAlign: 'center' }}>
+            <CircularProgress />
           </div>
+        ) : (
+          <>
+            {showAddNoteForm && (
+              <div className="form-group">
+                <InputLabel htmlFor="newNote" style={{ color: 'black' }}>Add Note:</InputLabel>
+                <TextareaAutosize
+                  id="newNote"
+                  className="form-control"
+                  rows="3"
+                  value={newNoteText}
+                  onChange={(e) => setNewNoteText(e.target.value)}
+                ></TextareaAutosize>
+                <CardActions>
+                  <Button variant="contained" color="secondary" onClick={handleAddNote} startIcon={<FaPlus />}>Add</Button>
+                </CardActions>
+              </div>
+            )}
+            <Button variant="contained" color="success" onClick={() => setShowAddNoteForm(!showAddNoteForm)}>
+              {showAddNoteForm ? <span><FaMinus /> Close Note Form</span> : <span><FaPlus /> Open Note Form</span>}
+            </Button>
+          </>
         )}
-        <Button variant="contained" color="success" onClick={() => setShowAddNoteForm(!showAddNoteForm)}>
-          {showAddNoteForm ? <span><FaMinus /> Close Note Form</span> : <span><FaPlus /> Open Note Form</span>}
-        </Button>
       </Container>
     </Container>
   );
