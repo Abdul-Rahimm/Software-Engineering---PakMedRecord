@@ -1,7 +1,8 @@
+// Import necessary modules and models
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { useParams, useNavigate, Link } from 'react-router-dom';
-import { FaUserMd, FaFileAlt, FaStickyNote, FaSignOutAlt, FaPlus, FaMinus } from 'react-icons/fa';
+import { FaUserMd, FaFileAlt, FaStickyNote, FaSignOutAlt, FaPlus, FaMinus, FaFileMedical } from 'react-icons/fa'; // Added FaFileMedical icon
 import bg3 from '../../assets/bg3.png';
 import {
   Button,
@@ -81,6 +82,10 @@ const HomePage = () => {
     }
   };
 
+  const handleViewRecords = () => {
+    navigate(`/record/getrecords/${patientCNIC}`); // Navigate to My Records page
+  };
+
   const backgroundStyle = {
     backgroundImage: `url(${bg3})`,
     backgroundSize: 'cover',
@@ -95,7 +100,7 @@ const HomePage = () => {
       <Grid container justifyContent="center">
         <Grid item xs={12} md={8}>
           <div className="text-center mt-5">
-            <Typography variant="h4" style={{ color: 'green', marginLeft: '40px', marginTop: '-50px', fontSize: '50px' }}>PakMedRecord.</Typography> <br />
+            <Typography variant="h4" style={{ color: 'green', marginLeft: '40px', marginTop: '-50px', fontSize: '50px', fontWeight: 'bold' }}>PakMedRecord.</Typography> <br />
             <Typography variant="h4" style={{ color: 'black', marginLeft: '50px' }}>
               Welcome, {patientData && `${patientData.firstName} ${patientData.lastName}`}!
               {patientData && <Avatar alt="Profile Picture" src={patientData.profilePicture} />} {/* Added profile picture */}
@@ -110,6 +115,7 @@ const HomePage = () => {
             <Link to={`/patient/${patientCNIC}/getnote`}>
               <Button variant="outlined" color="success" style={{ marginLeft: '20px', borderRadius: '100px' }} startIcon={<FaStickyNote />}>View Notes</Button>
             </Link>
+            <Button variant="outlined" color="primary" style={{ marginLeft: '20px', borderRadius: '100px' }} startIcon={<FaFileMedical />} onClick={handleViewRecords}>View Medical Records</Button> {/* Added button for viewing medical records */}
           </div>
         </Grid>
       </Grid>
@@ -127,7 +133,7 @@ const HomePage = () => {
           </div>
 
           {patientData && (
-            <Button variant="contained" color="error" onClick={handleLogout} style={{ marginLeft: '1300px', marginBottom: '-1000px' }}>
+            <Button variant="contained" color="error" onClick={handleLogout} style={{ marginLeft: '1300px', marginBottom: '-950px' }}>
               Logout <FaSignOutAlt />
             </Button>
           )}

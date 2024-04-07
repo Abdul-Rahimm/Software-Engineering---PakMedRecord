@@ -6,6 +6,7 @@ import bg3 from '../../assets/bg3.png';
 
 const Home = () => {
   const [doctorData, setDoctorData] = useState(null);
+  const [medicalRecord, setMedicalRecord] = useState(null); // State to store the medical record
   const { doctorCNIC } = useParams();
   const navigate = useNavigate();
   const [showHospitals, setShowHospitals] = useState(false);
@@ -52,6 +53,19 @@ const Home = () => {
     setShowMedicalRecordForm(false);
   };
 
+  const handleSubmitMedicalRecord = async (formData) => {
+    try {
+      const response = await axios.post('http://localhost:3009/record/create', {
+        patientCNIC: formData.patientCNIC, // Get the patient CNIC from the form
+        doctorCNIC,
+        recordData: formData.recordData,
+      });
+      setMedicalRecord(response.data); // Update the state with the created medical record
+    } catch (error) {
+      console.error('Error creating medical record:', error);
+    }
+  };
+
   const backgroundStyle = {
     backgroundImage: `url(${bg3})`, // Replace with the path to your image
     backgroundSize: 'cover',
@@ -80,18 +94,18 @@ const Home = () => {
           <div className="col-md-8">
             <div className="text-center mt-5">
               <h2>Medical Record Form</h2>
-              <form>
+              <form onSubmit={(e) => {
+                e.preventDefault();
+                const formData = new FormData(e.target);
+                handleSubmitMedicalRecord(Object.fromEntries(formData));
+              }}>
                 <div className="form-group">
-                  <label htmlFor="patientName">Patient Name:</label>
-                  <input type="text" className="form-control" id="patientName" placeholder="Enter patient's name" />
+                  <label htmlFor="patientCNIC">Patient CNIC:</label>
+                  <input type="text" className="form-control" id="patientCNIC" name="patientCNIC" placeholder="Enter patient's CNIC" />
                 </div>
                 <div className="form-group">
-                  <label htmlFor="diagnosis">Diagnosis:</label>
-                  <textarea className="form-control" id="diagnosis" rows="3" placeholder="Enter diagnosis"></textarea>
-                </div>
-                <div className="form-group">
-                  <label htmlFor="medications">Medications:</label>
-                  <input type="text" className="form-control" id="medications" placeholder="Enter medications" />
+                  <label htmlFor="recordData">Medical Record:</label>
+                  <textarea className="form-control" id="recordData" name="recordData" rows="3" placeholder="Enter medical record"></textarea>
                 </div>
                 <button type="submit" className="btn btn-primary">Submit</button>
               </form>

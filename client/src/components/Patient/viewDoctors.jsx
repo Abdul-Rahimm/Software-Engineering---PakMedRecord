@@ -10,7 +10,7 @@ const ViewMyDoctors = () => {
   useEffect(() => {
     const fetchMyDoctors = async () => {
       try {
-        const patientCNIC = '9'; // Replace with the actual patient's CNIC
+        const patientCNIC = '100'; // Replace with the actual patient's CNIC
 
         const response = await axios.get(`http://localhost:3009/affiliation/getmydoctors/${patientCNIC}`);
         const affiliations = response.data;
@@ -39,7 +39,7 @@ const ViewMyDoctors = () => {
 
   const handleRemoveDoctor = async (doctorCNIC) => {
     try {
-      const patientCNIC = 9; // Replace with the actual patient's CNIC
+      const patientCNIC = 100; // Replace with the actual patient's CNIC
   
       // Ask for confirmation before removing the doctor
       const confirmed = window.confirm('Are you sure you want to remove this doctor?');

@@ -10,6 +10,7 @@ import HomePage from './components/Patient/Home';
 import DoctorList from './components/Patient/doctorList';
 import ViewMyDoctors from './components/Patient/viewDoctors';
 import Notes from './components/Patient/Notes';
+import MyRecordsPage from './components/Patient/myRecords';
 
 const Routes = () => {
   return (
@@ -24,6 +25,8 @@ const Routes = () => {
       <Route path="/patient/home/:patientCNIC" element={<HomePage />} />
       <Route path="/affiliation/getmydoctors/:patientCNIC" element={<ViewMyDoctors />} />
       <Route path="/patient/:patientCNIC/getnote" element={<Notes />} />
+      <Route path="/record/getrecords/:patientCNIC" element={<MyRecordsPage />} />
+
 
 
     </RouterRoutes>
