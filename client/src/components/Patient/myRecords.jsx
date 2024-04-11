@@ -92,6 +92,10 @@ const MyRecordsPage = () => {
             <Text style={styles.label}>Date:</Text>
             <Text>{new Date(selectedRecord.createdAt).toLocaleDateString()}</Text>
           </View>
+          <View style={styles.row}>
+            <Text style={styles.label}>Added By:</Text>
+            <Text>{`This medical record was added by ${selectedRecord.doctor}`}</Text>
+          </View>
         </View>
       </Page>
     </Document>
@@ -108,45 +112,45 @@ const MyRecordsPage = () => {
           </div>
         ) : (
           <>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '20px', marginTop: '20px' }}>
-            {medicalRecords.map((record, index) => (
-  <Card key={record._id} style={{ backgroundColor: index % 2 === 0 ? 'green' : 'grey', width: '50%', margin: '0 auto' }}>
-    <CardContent>
-      <Typography variant="h6" component="div" style={{ display: 'flex', alignItems: 'center', color: 'white' }}>
-        <MdDescription style={{ marginRight: '10px' }} /> Record ID: {record._id}
-      </Typography>
-      <Typography variant="body1" component="div" style={{ color: 'white' }}>
-        Data: {record.recordData}
-      </Typography>
-      <Typography variant="body2" component="div" style={{ marginTop: '10px', color: 'white' }}>
-        Date: {new Date(record.createdAt).toLocaleDateString()}
-      </Typography>
-      <Button variant="contained" color="success" onClick={() => setSelectedRecord(record)}>
-        View PDF
-      </Button>
-    </CardContent>
-  </Card>
-))}
-
-
+            <div style={{ display: 'flex', justifyContent: 'center', gap: '20px', marginTop: '20px', flexWrap: 'wrap' }}>
+              {medicalRecords.map((record, index) => (
+                <Card key={record._id} style={{ backgroundColor: index % 2 === 0 ? 'green' : 'grey', width: '30%', margin: '0 auto' }}>
+                  <CardContent>
+                    <Typography variant="h6" component="div" style={{ display: 'flex', alignItems: 'center', color: 'white' }}>
+                      <MdDescription style={{ marginRight: '10px' }} /> Record ID: {record._id}
+                    </Typography>
+                    <Typography variant="body1" component="div" style={{ color: 'white' }}>
+                      Data: {record.recordData}
+                    </Typography>
+                    <Typography variant="body2" component="div" style={{ marginTop: '10px', color: 'white' }}>
+                      Date: {new Date(record.createdAt).toLocaleDateString()}
+                    </Typography>
+                    <Typography variant="body2" component="div" style={{ marginTop: '10px', color: 'white' }}>
+                      {`This medical record was added by ${record.doctor}`}
+                    </Typography>
+                    <Button variant="contained" color="success" onClick={() => setSelectedRecord(record)}>
+                      View PDF
+                    </Button>
+                  </CardContent>
+                </Card>
+              ))}
             </div>
             <div style={{ marginTop: '20px' }}>
-            {selectedRecord && (
-  <PDFDownloadLink
-    document={<MedicalRecordDocument />}
-    fileName="medical_record.pdf"
-    ref={pdfRef}
-    style={{ color: 'green', textDecoration: 'none', cursor: 'pointer' }}
-    className="download-link"
-    onMouseOver={e => e.target.style.textDecoration = 'underline'}
-    onMouseOut={e => e.target.style.textDecoration = 'none'}
-  >
-    {({ blob, url, loading, error }) => (
-      <span>{loading ? 'Loading document...' : 'Download PDF'}</span>
-    )}
-  </PDFDownloadLink>
-)}
-
+              {selectedRecord && (
+                <PDFDownloadLink
+                  document={<MedicalRecordDocument />}
+                  fileName="medical_record.pdf"
+                  ref={pdfRef}
+                  style={{ color: 'green', textDecoration: 'none', cursor: 'pointer' }}
+                  className="download-link"
+                  onMouseOver={e => e.target.style.textDecoration = 'underline'}
+                  onMouseOut={e => e.target.style.textDecoration = 'none'}
+                >
+                  {({ blob, url, loading, error }) => (
+                    <span>{loading ? 'Loading document...' : 'Download PDF'}</span>
+                  )}
+                </PDFDownloadLink>
+              )}
             </div>
           </>
         )}

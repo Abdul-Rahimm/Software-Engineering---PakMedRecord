@@ -1,8 +1,7 @@
-// Import necessary modules and models
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { useParams, useNavigate, Link } from 'react-router-dom';
-import { FaUserMd, FaFileAlt, FaStickyNote, FaSignOutAlt, FaPlus, FaMinus, FaFileMedical } from 'react-icons/fa'; // Added FaFileMedical icon
+import { FaUserMd, FaFileAlt, FaStickyNote, FaSignOutAlt, FaPlus, FaMinus, FaFileMedical } from 'react-icons/fa';
 import bg3 from '../../assets/bg3.png';
 import {
   Button,
@@ -17,7 +16,9 @@ import {
   Input,
   CardActions,
   Avatar,
-  CircularProgress, // Added for loading indicator
+  CircularProgress,
+  MenuItem, // Added for dropdown menu
+  Menu, // Added for dropdown menu
 } from '@mui/material';
 
 const HomePage = () => {
@@ -28,20 +29,21 @@ const HomePage = () => {
   const [showHospitals, setShowHospitals] = useState(false);
   const [notes, setNotes] = useState([]);
   const [showAddNoteForm, setShowAddNoteForm] = useState(false);
-  const [loading, setLoading] = useState(false); // Added for loading indicator
+  const [loading, setLoading] = useState(false);
+  const [anchorEl, setAnchorEl] = useState(null); // Added for dropdown menu
 
   useEffect(() => {
     const fetchPatientData = async () => {
       try {
-        setLoading(true); // Show loading indicator
+        setLoading(true);
         if (patientCNIC) {
           const response = await axios.get(`http://localhost:3009/patient/home/${patientCNIC}`);
           setPatientData(response.data);
         }
-        setLoading(false); // Hide loading indicator
+        setLoading(false);
       } catch (error) {
         console.error('Error fetching patient data:', error);
-        setLoading(false); // Hide loading indicator
+        setLoading(false);
       }
     };
 
@@ -70,20 +72,28 @@ const HomePage = () => {
 
   const handleAddNote = async () => {
     try {
-      setLoading(true); // Show loading indicator
+      setLoading(true);
       const response = await axios.post(`http://localhost:3009/patient/${patientCNIC}/addnote`, { patientCNIC, note: newNoteText });
       console.log('Note added successfully:', response.data.message);
       setNewNoteText('');
       setNotes([...notes, newNoteText]);
-      setLoading(false); // Hide loading indicator
+      setLoading(false);
     } catch (error) {
       console.error('Error adding note:', error);
-      setLoading(false); // Hide loading indicator
+      setLoading(false);
     }
   };
 
   const handleViewRecords = () => {
-    navigate(`/record/getrecords/${patientCNIC}`); // Navigate to My Records page
+    navigate(`/record/getrecords/${patientCNIC}`);
+  };
+
+  const handleDropdownButtonClick = (event) => {
+    setAnchorEl(event.currentTarget);
+  };
+
+  const handleDropdownClose = () => {
+    setAnchorEl(null);
   };
 
   const backgroundStyle = {
@@ -100,22 +110,36 @@ const HomePage = () => {
       <Grid container justifyContent="center">
         <Grid item xs={12} md={8}>
           <div className="text-center mt-5">
-            <Typography variant="h4" style={{ color: 'green', marginLeft: '40px', marginTop: '-50px', fontSize: '50px', fontWeight: 'bold' }}>PakMedRecord.</Typography> <br />
+            <Typography variant="h4" style={{ color: 'green', marginLeft: '40px', marginTop: '-50px', fontSize: '50px', fontWeight: 'bold' }}>PakMedRecord</Typography> <br />
             <Typography variant="h4" style={{ color: 'black', marginLeft: '50px' }}>
               Welcome, {patientData && `${patientData.firstName} ${patientData.lastName}`}!
-              {patientData && <Avatar alt="Profile Picture" src={patientData.profilePicture} />} {/* Added profile picture */}
+              {/* {patientData && <Avatar alt="Profile Picture" src={patientData.profilePicture} />} */}
             </Typography>
             <br />
-            <Link to="/doctor/doctors">
-              <Button variant="contained" color="success" style={{ marginLeft: '20px', borderRadius: '100px' }} startIcon={<FaUserMd />}>Find Doctors</Button>
-            </Link>
-            <Link to="/affiliation/getmydoctors/:patientCNIC">
-              <Button variant="outlined" color="success" style={{ marginLeft: '20px', borderRadius: '100px' }} startIcon={<FaFileAlt />}>My Doctors</Button>
-            </Link>
-            <Link to={`/patient/${patientCNIC}/getnote`}>
-              <Button variant="outlined" color="success" style={{ marginLeft: '20px', borderRadius: '100px' }} startIcon={<FaStickyNote />}>View Notes</Button>
-            </Link>
-            <Button variant="outlined" color="primary" style={{ marginLeft: '20px', borderRadius: '100px' }} startIcon={<FaFileMedical />} onClick={handleViewRecords}>View Medical Records</Button> {/* Added button for viewing medical records */}
+            {/* Dropdown button */}
+            <Button
+              variant="contained"
+              color="success"
+              aria-controls="dropdown-menu"
+              aria-haspopup="true"
+              onClick={handleDropdownButtonClick}
+              style={{ marginLeft: '20px', borderRadius: '100px' }}
+            >
+              Menu
+            </Button>
+            {/* Dropdown menu */}
+            <Menu
+              id="dropdown-menu"
+              anchorEl={anchorEl}
+              keepMounted
+              open={Boolean(anchorEl)}
+              onClose={handleDropdownClose}
+            >
+              <MenuItem onClick={() => navigate('/doctor/doctors')}><FaUserMd /> Find Doctors</MenuItem>
+              <MenuItem onClick={() => navigate('/affiliation/getmydoctors/:patientCNIC')}><FaFileAlt /> My Doctors</MenuItem>
+              <MenuItem onClick={() => navigate(`/patient/${patientCNIC}/getnote`)}><FaStickyNote /> View Notes</MenuItem>
+              <MenuItem onClick={handleViewRecords}><FaFileMedical /> View Medical Records</MenuItem>
+            </Menu>
           </div>
         </Grid>
       </Grid>
@@ -141,7 +165,7 @@ const HomePage = () => {
       </div>
 
       <Container mt-5>
-        {loading ? ( // Show loading indicator
+        {loading ? (
           <div style={{ textAlign: 'center' }}>
             <CircularProgress />
           </div>

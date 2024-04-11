@@ -40,7 +40,7 @@ const DoctorList = () => {
     try {
       console.log('Selected Doctors:', selectedDoctors); // Log selectedDoctors array
       const response = await axios.post('http://localhost:3009/affiliation/affiliate', {
-        patientCNIC: '100', // Replace with the actual patient CNIC
+        patientCNIC: '9', // Replace with the actual patient CNIC
         doctorCNIC: selectedDoctors,
       });
       console.log(response.data); // Log response from backend
