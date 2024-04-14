@@ -132,7 +132,7 @@ const HeroPage = () => {
       </animated.nav>
 
       <div className="text-center text-light">
-        <h1 style={{ color: 'darkgreen', fontSize: '3rem', marginTop: '50px' }}>Welcome to PakMedRecord</h1>
+        <h1 style={{ color: '#00ab66', fontSize: '3rem', marginTop: '50px' }}>Welcome to PakMedRecord</h1>
         <p style={{ color: 'white', fontSize: '1.5rem', marginBottom: '50px' }}>Empowering Healthcare</p>
       </div>
 

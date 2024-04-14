@@ -1,10 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { useParams, useNavigate, Link } from 'react-router-dom';
-import { FaUser, FaUserMd, FaFileAlt, FaStickyNote, FaSignOutAlt, FaPlus, FaMinus, FaFileMedical, FaHome } from 'react-icons/fa';
+import { FaUser, FaUserMd, FaFileAlt, FaStickyNote, FaSignOutAlt, FaPlus, FaMinus, FaFileMedical, FaBars, FaUserEdit } from 'react-icons/fa'; // Import FaUserEdit icon for update patient
 import bg3 from '../../assets/bg3.png';
-import HealthTip from './HealthTip'; // Import the HealthTip component
-
+import HealthTip from './HealthTip';
 
 import {
   Button,
@@ -54,10 +53,8 @@ const HomePage = () => {
     fetchPatientData();
   }, [patientCNIC]);
 
-
   const handleLogout = () => {
     const confirmLogout = window.confirm('Are you sure you want to log out?');
-
     if (confirmLogout) {
       navigate('/');
     }
@@ -75,23 +72,20 @@ const HomePage = () => {
       setNewNoteText('');
       setNotes([...notes, newNoteText]);
       setLoading(false);
-      setShowAddNoteForm(false); // Close the form after adding a note
+      setShowAddNoteForm(false);
     } catch (error) {
       console.error('Error adding note:', error);
       setLoading(false);
     }
   };
 
-
   const backgroundStyle = {
-    backgroundImage: `url(${bg3})`, // Replace 'path_to_your_image' with the URL of your image
+    backgroundImage: `url(${bg3})`,
     backgroundSize: 'cover',
     backgroundPosition: 'center',
     height: '100vh',
     minWidth: '100vw',
-    // Add this to make sure absolute positioning works correctly
   };
-
 
   const formContainerStyle = {
     position: 'absolute',
@@ -102,11 +96,10 @@ const HomePage = () => {
     padding: '20px',
     borderRadius: '8px',
     boxShadow: '0 2px 4px rgba(0, 0, 0, 0.1)',
-    // zIndex: 1000,
-    width: '80%', // Adjust width as needed
+    width: '80%',
     maxWidth: '500px',
-    minWidth: '150px',// Add max width to prevent the form from becoming too wide on large screens
-    marginLeft: '0px', // Add left margin
+    minWidth: '150px',
+    marginLeft: '0px',
   };
 
   return (
@@ -115,25 +108,26 @@ const HomePage = () => {
         className="navbar navbar-expand-lg navbar-dark bg-dark"
         style={{ minWidth: '100vw', position: 'fixed', top: 0, zIndex: 999, marginLeft: '-24px' }}
       >
-        <div className="container">
+        <div className="container d-flex justify-content-between align-items-center">
           <Button onClick={() => setShowSidebar(true)} style={{ marginRight: '10px', fontSize: '24px', color: 'green' }}>
-            <FaHome />
+            <FaBars style={{ color: '#3cb371' }} />
           </Button>
-          <Link className="navbar-brand">PakMedRecord</Link>
+          <Typography variant="h6" component="div" style={{ color: 'white', fontWeight: 'bolder' }}>PakMedRecord</Typography>
         </div>
       </animated.nav>
 
       <Drawer anchor="left" open={showSidebar} onClose={() => setShowSidebar(false)}>
         <List>
           <ListItem>
-
-
           </ListItem>
           <ListItem button onClick={() => setShowSidebar(false)} style={{ marginTop: '-10px', color: 'green', fontWeight: 'bold'}}>
-            <ListItemText>&#10005;</ListItemText>
+            <ListItemText style={{ marginTop: '-15px' }}>&#10005;</ListItemText>
           </ListItem>
-          <Typography variant="h5" style={{ textAlign: 'center', marginBottom: '10px', fontWeight: 'bold', color: 'green' }}>
-            <ListItemIcon><FaUser /></ListItemIcon> {/* Add the user icon */}
+          
+          <Typography variant="h4" component="div" sx={{ flexGrow: 1 }} style={{ color: '#3cb371', fontWeight: 'bolder', padding: '15px', marginLeft: '25px' }}>PakMedRecord</Typography>
+          {/* Added PakMedRecord name */} <br />
+          <Typography variant="h5" style={{ textAlign: 'center', marginRight: '20px', fontWeight: 'bold', color: '#3cb371' }}>
+            <ListItemIcon style={{ marginLeft: '15px' }}><FaUser /></ListItemIcon>
             Welcome, {patientData ? patientData.firstName : 'Patient'}
           </Typography>
           <hr />
@@ -167,15 +161,25 @@ const HomePage = () => {
             </ListItemIcon>
             <ListItemText>Add Note</ListItemText>
           </ListItem>
-          <ListItem button onClick={handleLogout}>
+          <ListItem button component={Link} to={`/patient/update/${patientCNIC}`}>
             <ListItemIcon>
-              <FaSignOutAlt />
+              <FaUserEdit />
             </ListItemIcon>
-            <ListItemText>Logout</ListItemText>
+            <ListItemText>Profile Settings</ListItemText>
           </ListItem>
+          <ListItem button onClick={handleLogout}>
+  <ListItemIcon>
+  </ListItemIcon> 
+  <ListItemText style={{ marginBottom: '-430px' }}>  
+  <Button variant="contained" style={{ backgroundColor: 'red', color: 'white', marginLeft: '120px' }}>
+  <FaSignOutAlt style={{ marginRight: '10px' }}/>
+    Logout
+  </Button>
+  </ListItemText>
+</ListItem>
+
         </List>
       </Drawer>
-
 
       <Container mt-5 style={{ marginTop: '70px' }}>
         {loading ? (
@@ -193,7 +197,7 @@ const HomePage = () => {
                   rows="3"
                   value={newNoteText}
                   onChange={(e) => setNewNoteText(e.target.value)}
-                  style={{ width: '100%', marginBottom: '10px' }} // Adjust width and margin as needed
+                  style={{ width: '100%', marginBottom: '10px' }}
                 ></TextareaAutosize>
                 <CardActions>
                   <Button variant="contained" color="secondary" onClick={handleAddNote} startIcon={<FaPlus />}>Add</Button>
@@ -209,4 +213,3 @@ const HomePage = () => {
 };
 
 export default HomePage;
-

@@ -8,6 +8,7 @@ const DoctorList = () => {
   const [selectedDoctors, setSelectedDoctors] = useState([]);
   const [showConfirmation, setShowConfirmation] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+  const [error, setError] = useState(null); // State variable for error message
 
   useEffect(() => {
     const fetchDoctors = async () => {
@@ -45,9 +46,21 @@ const DoctorList = () => {
       });
       console.log(response.data); 
       setShowConfirmation(true); 
+      setError(false); 
+      setSelectedDoctors([]); 
     } catch (error) {
       console.error('Error creating affiliation:', error);
-      // Handle error
+      if (error.response && error.response.data && error.response.data.error === 'Affiliation already created') {
+        setError('Affiliation already created');
+        setSelectedDoctors([]); 
+        setShowConfirmation(false); 
+
+      } else {
+        setError('Error affiliating doctors. Please try again.');
+        setSelectedDoctors([]); 
+        setShowConfirmation(false); 
+
+      }
     }
   };
 
@@ -63,6 +76,11 @@ const DoctorList = () => {
       <h2 className="mb-4" style={{ marginLeft: '150px' }}>
         List of Doctors
       </h2>
+      {error && ( // Render the alert message if error exists
+        <div className="alert alert-danger" role="alert">
+          {error}
+        </div>
+      )}
       {showConfirmation && (
         <div className="alert alert-success" role="alert">
           Affiliation confirmed successfully!

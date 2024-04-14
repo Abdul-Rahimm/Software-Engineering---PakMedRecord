@@ -144,4 +144,34 @@ const getPatient = expressAsyncHandler(async (req, res) => {
   });
 
 
-module.exports = { Signup, Signin, getPatient,getAllDoctors, deleteAllPatients, getSignedInPatientCNIC };
+  const updatePatient = expressAsyncHandler(async (req, res) => {
+    try {
+      const { patientCNIC } = req.params;
+      const { firstName, lastName, password, email, newCNIC } = req.body;
+  
+      // Find the patient by CNIC
+      const patient = await Patient.findOne({ patientCNIC });
+  
+      if (!patient) {
+        return res.status(404).json({ error: 'Patient not found' });
+      }
+  
+      // Update patient information
+      if (firstName) patient.firstName = firstName;
+      if (lastName) patient.lastName = lastName;
+      if (password) patient.password = await bcrypt.hash(password, 10);
+      if (email) patient.email = email;
+      if (newCNIC) patient.patientCNIC = newCNIC;
+  
+      // Save the updated patient
+      await patient.save();
+  
+      res.status(200).json({ message: 'Patient information updated successfully' });
+    } catch (error) {
+      console.error('Error updating patient information:', error);
+      res.status(500).json({ error: 'Internal server error' });
+    }
+  });
+  
+  module.exports = { Signup, Signin, getPatient, getAllDoctors, deleteAllPatients, getSignedInPatientCNIC, updatePatient };
+  
