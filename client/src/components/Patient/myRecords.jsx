@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
 import { useParams } from 'react-router-dom';
-import { Container, Typography, Card, CardContent, CircularProgress, Button } from '@mui/material';
+import { Container, Typography, CircularProgress, Button, Accordion, AccordionSummary, AccordionDetails, Card, CardContent, Grid, Box } from '@mui/material';
 import { MdDescription } from 'react-icons/md'; // Import icon for medical records
 import { PDFDownloadLink } from '@react-pdf/renderer';
 import { Document, Page, Text, View, StyleSheet } from '@react-pdf/renderer';
@@ -70,6 +70,36 @@ const MyRecordsPage = () => {
       width: '30%',
       fontWeight: 'bold',
     },
+    accordion: {
+      flex: '1 0 auto',
+      width: '300px', // Adjust the width as needed
+      marginRight: '20px', // Adjust the margin between accordion cards
+    },
+    accordionSummary: {
+      backgroundColor: '#f0f0f0',
+      borderBottom: '1px solid #ddd',
+      padding: '10px',
+      borderRadius: '5px',
+    },
+    accordionDetails: {
+      backgroundColor: '#f9f9f9',
+      padding: '10px',
+      borderRadius: '5px',
+    },
+    sliderContainer: {
+      position: 'fixed',
+      bottom: 0,
+      left: 0,
+      width: '100%',
+      backgroundColor: '#fff',
+      boxShadow: '0 -2px 5px rgba(0, 0, 0, 0.1)',
+      padding: '10px 20px',
+      zIndex: 999,
+    },
+    sliderInner: {
+      display: 'flex',
+      justifyContent: 'center',
+    },
   });
 
   const MedicalRecordDocument = () => (
@@ -92,10 +122,6 @@ const MyRecordsPage = () => {
             <Text style={styles.label}>Date:</Text>
             <Text>{new Date(selectedRecord.createdAt).toLocaleDateString()}</Text>
           </View>
-          <View style={styles.row}>
-            <Text style={styles.label}>Added By:</Text>
-            <Text>{`This medical record was added by ${selectedRecord.doctor}`}</Text>
-          </View>
         </View>
       </Page>
     </Document>
@@ -112,46 +138,52 @@ const MyRecordsPage = () => {
           </div>
         ) : (
           <>
-            <div style={{ display: 'flex', justifyContent: 'center', gap: '20px', marginTop: '20px', flexWrap: 'wrap' }}>
+            <Box sx={{ display: 'flex', overflowX: 'auto', gap: '20px', marginTop: '20px' }}>
               {medicalRecords.map((record, index) => (
-                <Card key={record._id} style={{ backgroundColor: index % 2 === 0 ? 'green' : 'grey', width: '30%', margin: '0 auto' }}>
-                  <CardContent>
-                    <Typography variant="h6" component="div" style={{ display: 'flex', alignItems: 'center', color: 'white' }}>
-                      <MdDescription style={{ marginRight: '10px' }} /> Record ID: {record._id}
-                    </Typography>
-                    <Typography variant="body1" component="div" style={{ color: 'white' }}>
-                      Data: {record.recordData}
-                    </Typography>
-                    <Typography variant="body2" component="div" style={{ marginTop: '10px', color: 'white' }}>
-                      Date: {new Date(record.createdAt).toLocaleDateString()}
-                    </Typography>
-                    <Typography variant="body2" component="div" style={{ marginTop: '10px', color: 'white' }}>
-                      {`This medical record was added by ${record.doctor}`}
-                    </Typography>
-                    <Button variant="contained" color="success" onClick={() => setSelectedRecord(record)}>
-                      View PDF
-                    </Button>
-                  </CardContent>
-                </Card>
+                <Accordion key={record._id} style={styles.accordion}>
+                  <AccordionSummary expandIcon={<MdDescription />} style={styles.accordionSummary}>
+                    <Typography>Record ID: {record._id}</Typography>
+                  </AccordionSummary>
+                  <AccordionDetails style={styles.accordionDetails}>
+                    <Card>
+                      <CardContent>
+                        <Typography variant="body1" component="div" style={{ color: 'black' }}>
+                          Data: {record.recordData}
+                        </Typography>
+                        <Typography variant="body2" component="div" style={{ marginTop: '10px', color: 'black' }}>
+                          Date: {new Date(record.createdAt).toLocaleDateString()}
+                        </Typography>
+                        <Button variant="contained" color="success" onClick={() => setSelectedRecord(record)}>
+                          View PDF
+                        </Button>
+                      </CardContent>
+                    </Card>
+                  </AccordionDetails>
+                </Accordion>
               ))}
-            </div>
-            <div style={{ marginTop: '20px' }}>
-              {selectedRecord && (
-                <PDFDownloadLink
-                  document={<MedicalRecordDocument />}
-                  fileName="medical_record.pdf"
-                  ref={pdfRef}
-                  style={{ color: 'green', textDecoration: 'none', cursor: 'pointer' }}
-                  className="download-link"
-                  onMouseOver={e => e.target.style.textDecoration = 'underline'}
-                  onMouseOut={e => e.target.style.textDecoration = 'none'}
-                >
-                  {({ blob, url, loading, error }) => (
-                    <span>{loading ? 'Loading document...' : 'Download PDF'}</span>
-                  )}
-                </PDFDownloadLink>
-              )}
-            </div>
+            </Box>
+            {selectedRecord && (
+              <div style={styles.sliderContainer}>
+                <div style={styles.sliderInner}>
+                  <PDFDownloadLink
+                    document={<MedicalRecordDocument />}
+                    fileName="medical_record.pdf"
+                    ref={pdfRef}
+                    style={{ color: 'green', textDecoration: 'none', cursor: 'pointer', marginRight: '20px' }}
+                    className="download-link"
+                    onMouseOver={e => e.target.style.textDecoration = 'underline'}
+                    onMouseOut={e => e.target.style.textDecoration = 'none'}
+                  >
+                    {({ blob, url, loading, error }) => (
+                      <span>{loading ? 'Loading document...' : 'Download PDF'}</span>
+                    )}
+                  </PDFDownloadLink>
+                  <Button variant="contained" color="error" onClick={() => setSelectedRecord(null)}>
+                    Close PDF
+                  </Button>
+                </div>
+              </div>
+            )}
           </>
         )}
       </Container>

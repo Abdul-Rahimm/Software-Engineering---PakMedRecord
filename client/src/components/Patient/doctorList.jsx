@@ -25,7 +25,7 @@ const DoctorList = () => {
   }, []);
 
   const handleSelectDoctor = (doctorCNIC) => {
-    setSelectedDoctors((prevSelected) => {
+    setSelectedDoctors((prevSelected) =>   {
       if (prevSelected.includes(doctorCNIC)) {
         // If doctor is already selected, unselect it
         return prevSelected.filter((cnic) => cnic !== doctorCNIC);
@@ -38,13 +38,13 @@ const DoctorList = () => {
 
   const handleConfirmSelection = async () => {
     try {
-      console.log('Selected Doctors:', selectedDoctors); // Log selectedDoctors array
+      console.log('Selected Doctors:', selectedDoctors); 
       const response = await axios.post('http://localhost:3009/affiliation/affiliate', {
-        patientCNIC: '9', // Replace with the actual patient CNIC
+        patientCNIC: '9', 
         doctorCNIC: selectedDoctors,
       });
-      console.log(response.data); // Log response from backend
-      setShowConfirmation(true); // Show confirmation message
+      console.log(response.data); 
+      setShowConfirmation(true); 
     } catch (error) {
       console.error('Error creating affiliation:', error);
       // Handle error
