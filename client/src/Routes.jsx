@@ -22,7 +22,7 @@ const Routes = () => {
       <Route path="/doctor/signup" element={<Signup />} />
       <Route path="/doctor/signin" element={<Signin />} />
       <Route path="/doctor/home/:doctorCNIC" element={<Home />} />
-      <Route path="/doctor/doctors" element={<DoctorList />} />
+      <Route path="/doctor/doctors" element={<DoctorList />} /> 
       <Route path="/patient/signup" element={<Sign_up />} />
       <Route path="/patient/signin" element={<Sign_in />} />
       <Route path="/patient/home/:patientCNIC" element={<HomePage />} />
@@ -32,10 +32,6 @@ const Routes = () => {
       <Route path="/record/getrecords/:patientCNIC" element={<MyRecordsPage />} />
       <Route path="/appointments/book" element={<AppointmentBooking />} />
       <Route path="/appointments/fetch/:doctorCNIC" element={<DoctorAppointments />} />
-
-
-
-
     </RouterRoutes>
   );
 };

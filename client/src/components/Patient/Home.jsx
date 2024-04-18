@@ -6,6 +6,8 @@ import bg3 from '../../assets/bg3.png';
 import HealthTip from './HealthTip';
 import HowToUse from './HowToUse';
 import logo from '../../assets/logo2.svg'; // Import the logo
+import UserProfileIcon from '../../assets/user.svg'; // Import the SVG icon
+
 
 import {
   Button,
@@ -134,7 +136,7 @@ const HomePage = () => {
           </div>
           {/* Added PakMedRecord name */} <br />
           <Typography variant="h5" style={{ textAlign: 'center', marginRight: '20px', fontWeight: 'bold', color: '#3cb371' }}>
-            <ListItemIcon style={{ marginLeft: '15px' }}><FaUser /></ListItemIcon>
+          <img src={UserProfileIcon} alt="User Profile" style={{ width: '36px', height: '36px', marginLeft: '-15px' }} />
             Welcome, {patientData ? patientData.firstName : 'Patient'}
           </Typography>
           <hr />

@@ -74,6 +74,15 @@ const DoctorList = () => {
       <div className="container">
         <h1 style={{ color: 'green', textAlign: 'center', marginBottom: '30px' }}>PakMedRecord</h1>
         <h2 className="mb-4">List of Doctors</h2>
+        <div className="alert alert-info" role="alert">
+          <h4 className="alert-heading">Steps to follow for affiliation:</h4>
+          <ul>
+            <li>Step 1: Search for doctors by name in the table below.</li>
+            <li>Step 2: Check the box next to the desired doctor(s) to select them.</li>
+            <li>Step 3: Enter your CNIC in the provided input field.</li>
+            <li>Step 4: Click the "Confirm Selection" button to affiliate with the selected doctors.</li>
+          </ul>
+        </div>
         {error && (
           <div className="alert alert-danger" role="alert">
             {error}
