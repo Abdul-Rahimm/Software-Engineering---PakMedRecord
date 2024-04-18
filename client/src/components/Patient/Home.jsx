@@ -1,9 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { useParams, useNavigate, Link } from 'react-router-dom';
-import { FaUser, FaUserMd, FaFileAlt, FaStickyNote, FaSignOutAlt, FaPlus, FaMinus, FaFileMedical, FaBars, FaUserEdit } from 'react-icons/fa'; // Import FaUserEdit icon for update patient
+import { FaUser, FaUserMd, FaFileAlt, FaStickyNote, FaSignOutAlt, FaPlus, FaMinus, FaFileMedical, FaBars, FaUserEdit, FaCalendarPlus } from 'react-icons/fa'; // Import FaUserEdit icon for update patient
 import bg3 from '../../assets/bg3.png';
 import HealthTip from './HealthTip';
+import HowToUse from './HowToUse';
+import logo from '../../assets/logo2.svg'; // Import the logo
 
 import {
   Button,
@@ -79,6 +81,10 @@ const HomePage = () => {
     }
   };
 
+  const closeAddNoteForm = () => {
+    setShowAddNoteForm(false);
+  };
+
   const backgroundStyle = {
     backgroundImage: `url(${bg3})`,
     backgroundSize: 'cover',
@@ -99,7 +105,8 @@ const HomePage = () => {
     width: '80%',
     maxWidth: '500px',
     minWidth: '150px',
-    marginLeft: '0px',
+    marginLeft: '350px',
+    marginTop: '-25px'
   };
 
   return (
@@ -118,13 +125,13 @@ const HomePage = () => {
 
       <Drawer anchor="left" open={showSidebar} onClose={() => setShowSidebar(false)}>
         <List>
-          <ListItem>
+          <ListItem button onClick={() => setShowSidebar(false)} style={{ marginTop: '-10px', color: 'green', fontWeight: 'bold' }}>
+            <ListItemText style={{ marginTop: '0px' }}>&#10005;</ListItemText>
           </ListItem>
-          <ListItem button onClick={() => setShowSidebar(false)} style={{ marginTop: '-10px', color: 'green', fontWeight: 'bold'}}>
-            <ListItemText style={{ marginTop: '-15px' }}>&#10005;</ListItemText>
-          </ListItem>
-          
-          <Typography variant="h4" component="div" sx={{ flexGrow: 1 }} style={{ color: '#3cb371', fontWeight: 'bolder', padding: '15px', marginLeft: '25px' }}>PakMedRecord</Typography>
+          <div style={{ display: 'flex', alignItems: 'center', marginLeft: '15px' }}>
+            <img src={logo} alt="PakMedRecord Logo" style={{ width: '50px', marginRight: '10px' }} /> {/* Logo */}
+            <Typography variant="h4" component="div" sx={{ color: '#3cb371', fontWeight: 'bolder' }}>PakMedRecord</Typography> {/* Header */}
+          </div>
           {/* Added PakMedRecord name */} <br />
           <Typography variant="h5" style={{ textAlign: 'center', marginRight: '20px', fontWeight: 'bold', color: '#3cb371' }}>
             <ListItemIcon style={{ marginLeft: '15px' }}><FaUser /></ListItemIcon>
@@ -161,22 +168,30 @@ const HomePage = () => {
             </ListItemIcon>
             <ListItemText>Add Note</ListItemText>
           </ListItem>
+           {/* Add this ListItem for appointment booking */}
+           <ListItem button component={Link} to={`/appointments/book`}>
+            <ListItemIcon>
+              <FaCalendarPlus />
+            </ListItemIcon>
+            <ListItemText>Book Appointment</ListItemText>
+          </ListItem>
           <ListItem button component={Link} to={`/patient/update/${patientCNIC}`}>
             <ListItemIcon>
               <FaUserEdit />
             </ListItemIcon>
             <ListItemText>Profile Settings</ListItemText>
           </ListItem>
+         
           <ListItem button onClick={handleLogout}>
-  <ListItemIcon>
-  </ListItemIcon> 
-  <ListItemText style={{ marginBottom: '-430px' }}>  
-  <Button variant="contained" style={{ backgroundColor: 'red', color: 'white', marginLeft: '120px' }}>
-  <FaSignOutAlt style={{ marginRight: '10px' }}/>
-    Logout
-  </Button>
-  </ListItemText>
-</ListItem>
+            <ListItemIcon>
+            </ListItemIcon>
+            <ListItemText style={{ marginBottom: '-430px' }}>
+              <Button variant="contained" style={{ backgroundColor: 'red', color: 'white', marginLeft: '120px' }}>
+                <FaSignOutAlt style={{ marginRight: '10px' }} />
+                Logout
+              </Button>
+            </ListItemText>
+          </ListItem>
 
         </List>
       </Drawer>
@@ -200,11 +215,14 @@ const HomePage = () => {
                   style={{ width: '100%', marginBottom: '10px' }}
                 ></TextareaAutosize>
                 <CardActions>
-                  <Button variant="contained" color="secondary" onClick={handleAddNote} startIcon={<FaPlus />}>Add</Button>
+                  <Button variant="contained" color="success" onClick={handleAddNote} startIcon={<FaPlus />}>Add</Button>
+                  <Button variant="contained" color="success" onClick={closeAddNoteForm} startIcon={<FaMinus />}>Close Form</Button>
+
                 </CardActions>
               </div>
             )}
             <HealthTip />
+            <HowToUse />
           </>
         )}
       </Container>

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, Link } from 'react-router-dom'; // Import Link and useNavigate
 import Header from '../Header';
 import bg3 from '../../assets/bg3.png';
 
@@ -104,6 +104,8 @@ const Home = () => {
             <button className="btn btn-success" onClick={handleOpenMedicalRecordForm} style={{ marginTop: '20px', marginLeft: '20px' }}>
               Open Medical Record Form
             </button>
+            {/* Add a button to navigate to DoctorAppointments */}
+            <Link to={`/appointments/fetch/${doctorCNIC}`} className="btn btn-primary" style={{ marginLeft: '20px' }}>View Appointments</Link>
           </div>
         </div>
       </div>

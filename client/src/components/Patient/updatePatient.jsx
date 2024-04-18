@@ -67,7 +67,7 @@ const UpdatePatient = () => {
             <label style={styles.label}>New CNIC:</label>
             <input type="text" name="newCNIC" value={formData.newCNIC} onChange={handleChange} style={styles.input} />
           </div>
-          <button type="submit" style={styles.button}>Update Patient</button>
+          <button type="submit" style={styles.button}>Update Info</button>
         </div>
       </form>
       {message && showSuccessMessage && (

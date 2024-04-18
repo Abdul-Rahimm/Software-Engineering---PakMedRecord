@@ -60,4 +60,18 @@ const getRecords = async (req, res) => {
     }
   };
 
-module.exports = { addRecord, getRecords };
+  const removeRecords = async (req, res) => {
+    try {
+      const { doctorCNIC } = req.params;
+  
+      // Delete medical records where the doctorCNIC matches
+      await MedicalRecord.deleteMany({ doctorCNIC });
+  
+      res.status(200).json({ message: 'Medical records removed successfully' });
+    } catch (error) {
+      console.error('Error removing medical records:', error);
+      res.status(500).json({ error: 'Internal server error' });
+    }
+  };
+
+module.exports = { addRecord, getRecords, removeRecords};

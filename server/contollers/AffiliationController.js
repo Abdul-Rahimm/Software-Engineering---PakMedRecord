@@ -9,7 +9,7 @@ const affiliate = async (req, res) => {
   try {
     const { patientCNIC, doctorCNIC } = req.body;
 
-    // Check if the patient exists
+    // Check if the patient exists 
     const existingPatient = await Patient.findOne({ patientCNIC });
     if (!existingPatient) {
       return res.status(404).json({ error: 'Patient not found' });

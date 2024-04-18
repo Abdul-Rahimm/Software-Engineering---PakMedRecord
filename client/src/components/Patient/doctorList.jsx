@@ -9,6 +9,7 @@ const DoctorList = () => {
   const [showConfirmation, setShowConfirmation] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [error, setError] = useState(null); // State variable for error message
+  const [patientCNIC, setPatientCNIC] = useState(''); // State variable for patient CNIC
 
   useEffect(() => {
     const fetchDoctors = async () => {
@@ -26,7 +27,7 @@ const DoctorList = () => {
   }, []);
 
   const handleSelectDoctor = (doctorCNIC) => {
-    setSelectedDoctors((prevSelected) =>   {
+    setSelectedDoctors((prevSelected) => {
       if (prevSelected.includes(doctorCNIC)) {
         // If doctor is already selected, unselect it
         return prevSelected.filter((cnic) => cnic !== doctorCNIC);
@@ -41,7 +42,7 @@ const DoctorList = () => {
     try {
       console.log('Selected Doctors:', selectedDoctors); 
       const response = await axios.post('http://localhost:3009/affiliation/affiliate', {
-        patientCNIC: '9', 
+        patientCNIC: patientCNIC, // Use patient CNIC entered by the user
         doctorCNIC: selectedDoctors,
       });
       console.log(response.data); 
@@ -54,12 +55,10 @@ const DoctorList = () => {
         setError('Affiliation already created');
         setSelectedDoctors([]); 
         setShowConfirmation(false); 
-
       } else {
         setError('Error affiliating doctors. Please try again.');
         setSelectedDoctors([]); 
         setShowConfirmation(false); 
-
       }
     }
   };
@@ -71,67 +70,76 @@ const DoctorList = () => {
   );
 
   return (
-    <div style={{ marginLeft: '500px' }}>
-      <h1 style={{ color: 'green', marginLeft: '100px' }}>PakMedRecord</h1>
-      <h2 className="mb-4" style={{ marginLeft: '150px' }}>
-        List of Doctors
-      </h2>
-      {error && ( // Render the alert message if error exists
-        <div className="alert alert-danger" role="alert">
-          {error}
+    <div style={{ backgroundImage: `url(${bg3})`, backgroundSize: 'cover', backgroundPosition: 'center', minHeight: '100vh', paddingTop: '50px', minWidth: '100vw' }}>
+      <div className="container">
+        <h1 style={{ color: 'green', textAlign: 'center', marginBottom: '30px' }}>PakMedRecord</h1>
+        <h2 className="mb-4">List of Doctors</h2>
+        {error && (
+          <div className="alert alert-danger" role="alert">
+            {error}
+          </div>
+        )}
+        {showConfirmation && (
+          <div className="alert alert-success" role="alert">
+            Affiliation confirmed successfully!
+          </div>
+        )}
+        <div className="mb-3">
+          <input
+            type="text"
+            className="form-control"
+            placeholder="Search doctor by name..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+          />
         </div>
-      )}
-      {showConfirmation && (
-        <div className="alert alert-success" role="alert">
-          Affiliation confirmed successfully!
+        <div className="mb-3">
+          <input
+            type="text"
+            className="form-control"
+            placeholder="Enter your CNIC"
+            value={patientCNIC}
+            onChange={(e) => setPatientCNIC(e.target.value)}
+          />
         </div>
-      )}
-      <div className="mb-3">
-        <input
-          type="text"
-          className="form-control"
-          placeholder="Search doctor by name..."
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-        />
-      </div>
-      <table className="table table-striped table-bordered">
-        <thead className="thead-dark">
-          <tr>
-            <th scope="col">CNIC</th>
-            <th scope="col">First Name</th>
-            <th scope="col">Last Name</th>
-            <th scope="col">Email</th>
-            <th scope="col">Hospital</th>
-            <th scope="col">Select</th>
-          </tr>
-        </thead>
-        <tbody>
-          {filteredDoctors.map((doctor) => (
-            <tr key={doctor.doctorCNIC}>
-              <td>{doctor.doctorCNIC}</td>
-              <td>{doctor.firstName}</td>
-              <td>{doctor.lastName}</td>
-              <td>{doctor.email}</td>
-              <td>{doctor.hospital}</td>
-              <td>
-                <input
-                  type="checkbox"
-                  onChange={() => handleSelectDoctor(doctor.doctorCNIC)}
-                  checked={selectedDoctors.includes(doctor.doctorCNIC)}
-                />
-              </td>
+        <table className="table table-striped table-bordered">
+          <thead className="thead-dark">
+            <tr>
+              <th scope="col">CNIC</th>
+              <th scope="col">First Name</th>
+              <th scope="col">Last Name</th>
+              <th scope="col">Email</th>
+              <th scope="col">Hospital</th>
+              <th scope="col">Select</th>
             </tr>
-          ))}
-        </tbody>
-      </table>
-      <button
-        className="btn btn-outline-success btn-md mr-2"
-        onClick={handleConfirmSelection}
-        disabled={selectedDoctors.length === 0} // Disable button if no doctors are selected
-      >
-        Confirm Selection
-      </button>
+          </thead>
+          <tbody>
+            {filteredDoctors.map((doctor) => (
+              <tr key={doctor.doctorCNIC}>
+                <td>{doctor.doctorCNIC}</td>
+                <td>{doctor.firstName}</td>
+                <td>{doctor.lastName}</td>
+                <td>{doctor.email}</td>
+                <td>{doctor.hospital}</td>
+                <td>
+                  <input
+                    type="checkbox"
+                    onChange={() => handleSelectDoctor(doctor.doctorCNIC)}
+                    checked={selectedDoctors.includes(doctor.doctorCNIC)}
+                  />
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+        <button
+          className="btn btn-outline-success btn-md mr-2"
+          onClick={handleConfirmSelection}
+          disabled={selectedDoctors.length === 0 || !patientCNIC} // Disable button if no doctors selected or patient CNIC not entered
+        >
+          Confirm Selection
+        </button>
+      </div>
     </div>
   );
 };

@@ -12,6 +12,8 @@ import ViewMyDoctors from './components/Patient/viewDoctors';
 import Notes from './components/Patient/Notes';
 import MyRecordsPage from './components/Patient/myRecords';
 import UpdatePatient from './components/Patient/updatePatient';
+import AppointmentBooking from './components/Patient/Appointment';
+import DoctorAppointments from './components/Doctor/getAppointments';
 
 const Routes = () => {
   return (
@@ -28,6 +30,9 @@ const Routes = () => {
       <Route path="/affiliation/getmydoctors/:patientCNIC" element={<ViewMyDoctors />} />
       <Route path="/patient/:patientCNIC/getnote" element={<Notes />} />
       <Route path="/record/getrecords/:patientCNIC" element={<MyRecordsPage />} />
+      <Route path="/appointments/book" element={<AppointmentBooking />} />
+      <Route path="/appointments/fetch/:doctorCNIC" element={<DoctorAppointments />} />
+
 
 
 

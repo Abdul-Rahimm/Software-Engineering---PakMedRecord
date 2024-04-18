@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent, Typography, Button } from '@mui/material';
 import { Link } from 'react-router-dom'; // Import Link from react-router-dom
 
@@ -17,6 +17,11 @@ const HealthTip = () => {
   ]);
 
   const [randomTip, setRandomTip] = useState('');
+
+  useEffect(() => {
+    // Generate a random tip when the component mounts
+    generateRandomTip();
+  }, []);
 
   const generateRandomTip = () => {
     const randomIndex = Math.floor(Math.random() * tips.length);
