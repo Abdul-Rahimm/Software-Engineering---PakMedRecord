@@ -105,6 +105,10 @@ const Home = () => {
             <ListItemIcon><FaCalendarPlus /></ListItemIcon>
             <ListItemText>View Appointments</ListItemText>
           </ListItem>
+          <ListItem button component={Link} to={`/tempRecords/pending/${doctorCNIC}`} onClick={() => setShowSidebar(false)}>
+            <ListItemIcon><FaCalendarPlus /></ListItemIcon>
+            <ListItemText>View Pending Records</ListItemText>
+          </ListItem>
           {/* Logout */}
           <ListItem button onClick={handleLogout}>
             <ListItemIcon><FaBars /></ListItemIcon>

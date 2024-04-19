@@ -14,4 +14,5 @@ router.route('/:patientCNIC/addnote').post(addNote);
 router.route('/:patientCNIC/getnote').get(getNote);
 router.route('/:patientCNIC/removenote/:id').delete(removeNote);
 
+
 module.exports = router;

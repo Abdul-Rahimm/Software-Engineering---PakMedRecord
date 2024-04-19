@@ -177,6 +177,12 @@ const HomePage = () => {
             </ListItemIcon>
             <ListItemText>Book Appointment</ListItemText>
           </ListItem>
+          <ListItem button component={Link} to={`/tempRecords/submit/${patientCNIC}`}>
+            <ListItemIcon>
+              <FaCalendarPlus />
+            </ListItemIcon>
+            <ListItemText>Upload Medical Record</ListItemText>
+          </ListItem>
           <ListItem button component={Link} to={`/patient/update/${patientCNIC}`}>
             <ListItemIcon>
               <FaUserEdit />
