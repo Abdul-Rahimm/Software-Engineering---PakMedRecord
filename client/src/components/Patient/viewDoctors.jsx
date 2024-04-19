@@ -64,6 +64,7 @@ const ViewMyDoctors = () => {
       <h2 className="mb-4" style={{ marginLeft: '670px' }}>
         My Doctors
       </h2>
+      <h4 style={{ marginLeft: '500px', border: '1px solid black', maxWidth: '500px' }}> These are the doctors you are affiliated with</h4> <br />
       {!loading ? (
         <table className="table table-striped table-bordered" style={{ padding: '150px' }}>
           <thead className="thead-dark">

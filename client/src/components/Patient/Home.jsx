@@ -171,7 +171,7 @@ const HomePage = () => {
             <ListItemText>Add Note</ListItemText>
           </ListItem>
            {/* Add this ListItem for appointment booking */}
-           <ListItem button component={Link} to={`/appointments/book`}>
+           <ListItem button component={Link} to={`/appointments/book/${patientCNIC}`}>
             <ListItemIcon>
               <FaCalendarPlus />
             </ListItemIcon>

@@ -30,7 +30,7 @@ const Routes = () => {
       <Route path="/affiliation/getmydoctors/:patientCNIC" element={<ViewMyDoctors />} />
       <Route path="/patient/:patientCNIC/getnote" element={<Notes />} />
       <Route path="/record/getrecords/:patientCNIC" element={<MyRecordsPage />} />
-      <Route path="/appointments/book" element={<AppointmentBooking />} />
+      <Route path="/appointments/book/:patientCNIC" element={<AppointmentBooking />} />
       <Route path="/appointments/fetch/:doctorCNIC" element={<DoctorAppointments />} />
     </RouterRoutes>
   );

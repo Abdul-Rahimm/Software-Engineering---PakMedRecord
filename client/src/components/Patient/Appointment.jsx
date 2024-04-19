@@ -1,10 +1,11 @@
 import React, { useState } from 'react';
 import axios from 'axios';
 import bgImage from '../../assets/bg3.png'; // Import the background image
+import { useParams } from 'react-router-dom'; // Import useParams
 
 const AppointmentBooking = () => {
+    const { patientCNIC } = useParams(); // Extract patientCNIC using useParams
     const [formData, setFormData] = useState({
-        patientCNIC: '',
         doctorCNIC: '',
         date: '',
         time: ''
@@ -21,7 +22,7 @@ const AppointmentBooking = () => {
 
         try {
             // Make a POST request to book the appointment
-            const response = await axios.post('http://localhost:3009/appointments/book', formData);
+            const response = await axios.post(`http://localhost:3009/appointments/book/${patientCNIC}`, formData);
             setMessage(response.data.message);
             setError('');
         } catch (error) {
@@ -35,10 +36,6 @@ const AppointmentBooking = () => {
             <h1 style={{ color: 'green', marginLeft: '550px' }}>PakMedRecord</h1>
             <h2 style={styles.heading}>Book an Appointment</h2>
             <form onSubmit={handleSubmit} style={styles.form}>
-                <div style={styles.formGroup}>
-                    <label style={styles.label}>Patient CNIC:</label>
-                    <input type="text" name="patientCNIC" value={formData.patientCNIC} onChange={handleChange} style={styles.input} />
-                </div>
                 <div style={styles.formGroup}>
                     <label style={styles.label}>Doctor CNIC:</label>
                     <input type="text" name="doctorCNIC" value={formData.doctorCNIC} onChange={handleChange} style={styles.input} />

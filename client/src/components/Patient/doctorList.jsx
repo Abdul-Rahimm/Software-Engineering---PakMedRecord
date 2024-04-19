@@ -73,7 +73,7 @@ const DoctorList = () => {
     <div style={{ backgroundImage: `url(${bg3})`, backgroundSize: 'cover', backgroundPosition: 'center', minHeight: '100vh', paddingTop: '50px', minWidth: '100vw' }}>
       <div className="container">
         <h1 style={{ color: 'green', textAlign: 'center', marginBottom: '30px' }}>PakMedRecord</h1>
-        <h2 className="mb-4">List of Doctors</h2>
+        <h2 className="mb-4" style={{ marginLeft: '535px' }}>Get Affiliated</h2>
         <div className="alert alert-info" role="alert">
           <h4 className="alert-heading">Steps to follow for affiliation:</h4>
           <ul>
@@ -93,7 +93,7 @@ const DoctorList = () => {
             Affiliation confirmed successfully!
           </div>
         )}
-        <div className="mb-3">
+        <div className="mb-3" style={{ maxWidth: '280px' }}>
           <input
             type="text"
             className="form-control"
@@ -102,7 +102,7 @@ const DoctorList = () => {
             onChange={(e) => setSearchQuery(e.target.value)}
           />
         </div>
-        <div className="mb-3">
+        <div className="mb-3" style={{ maxWidth: '180px' }}>
           <input
             type="text"
             className="form-control"

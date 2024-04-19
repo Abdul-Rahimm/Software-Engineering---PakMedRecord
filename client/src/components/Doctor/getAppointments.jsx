@@ -15,7 +15,7 @@ const DoctorAppointments = () => {
                 const response = await axios.get(`http://localhost:3009/appointments/fetch/${doctorCNIC}`);
                 setAppointments(response.data.appointments.map(appointment => ({
                     ...appointment,
-                    status: 'Pending' // Set default status as "Pending"
+                    status: localStorage.getItem(appointment._id) || 'Pending' // Retrieve status from local storage
                 })));
                 setError('');
             } catch (error) {
@@ -28,18 +28,28 @@ const DoctorAppointments = () => {
         fetchAppointments();
     }, [doctorCNIC]);
 
-    const markCompleted = (appointmentId) => {
-        setAppointments(prevAppointments =>
-            prevAppointments.map(appointment =>
-                appointment._id === appointmentId ? { ...appointment, status: 'Completed' } : appointment
-            )
-        );
+    const markCompleted = async (appointmentId) => {
+        try {
+            await axios.patch(`http://localhost:3009/appointments/update/${appointmentId}`, { status: 'Completed' });
+            setAppointments(prevAppointments =>
+                prevAppointments.map(appointment => {
+                    if (appointment._id === appointmentId) {
+                        // Save status to local storage
+                        localStorage.setItem(appointment._id, 'Completed');
+                        return { ...appointment, status: 'Completed' };
+                    }
+                    return appointment;
+                })
+            );
+        } catch (error) {
+            console.error('Error marking appointment as completed:', error);
+            setError('Failed to mark appointment as completed. Please try again later.');
+        }
     };
 
     return (
         <div style={styles.container}>
-                        <h1 style={{ color: 'green', marginLeft: '460px' }}>PakMedRecord</h1>
-
+            <h1 style={{ color: 'green', marginLeft: '460px' }}>PakMedRecord</h1>
             <h2 style={styles.heading}>Doctor Appointments</h2>
             {error && <p style={styles.errorMessage}>{error}</p>}
             <table style={styles.table}>
@@ -49,7 +59,7 @@ const DoctorAppointments = () => {
                         <th>Time</th>
                         <th>Patient CNIC</th>
                         <th>Status</th>
-                        <th>Actions</th> {/* New column for actions */}
+                        <th>Actions</th>
                     </tr>
                 </thead>
                 <tbody>

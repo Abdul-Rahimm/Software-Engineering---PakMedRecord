@@ -10,7 +10,8 @@ const Affiliation = require('../models/AffiliationModel');
 const book = async (req, res) => {
     try {
         // Extract appointment details from request body
-        const { patientCNIC, doctorCNIC, date, time } = req.body;
+        const { doctorCNIC, date, time, status } = req.body;
+        const {patientCNIC} = req.params;
 
         // Check if patient exists
         const existingPatient = await Patient.findOne({ patientCNIC });
@@ -41,7 +42,8 @@ const book = async (req, res) => {
             patientCNIC: patientCNIC,
             doctorCNIC: doctorCNIC,
             date,
-            time
+            time, 
+            status
         });
 
         // Save the appointment to the database
@@ -71,5 +73,30 @@ const getAppointments = async (req, res) => {
         res.status(500).json({ error: "Internal server error." });
     }
 };
+
+const completeAppointment = async (req, res) => {
+    try {
+        // Extract appointment ID from request parameters
+        const { appointmentId } = req.params;
+
+        // Find the appointment by ID
+        const appointment = await Appointment.findById(appointmentId);
+
+        // Check if appointment exists
+        if (!appointment) {
+            return res.status(404).json({ error: 'Appointment not found' });
+        }
+
+        // Update the status of the appointment to completed
+        appointment.status = 'completed';
+        await appointment.save();
+
+        // Return a success response
+        res.status(200).json({ message: 'Appointment status updated to completed', appointment });
+    } catch (error) {
+        console.error('Error updating appointment status:', error);
+        res.status(500).json({ error: 'Internal server error' });
+    }
+};
 // Export the router
-module.exports = { book, getAppointments };
+module.exports = { book, getAppointments, completeAppointment };
