@@ -16,6 +16,7 @@
     "@mui/material": "^5.15.14",
     "@mui/styled-engine": "^5.15.14",
     "@react-pdf/renderer": "^3.4.2",
+    "antd": "^5.16.2",
     "axios": "^1.6.7",
     "bootstrap": "^5.3.3",
     "framer-motion": "^11.0.24",

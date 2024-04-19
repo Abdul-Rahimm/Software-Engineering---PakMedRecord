@@ -3,6 +3,7 @@ import axios from 'axios';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { Drawer, List, ListItem, ListItemIcon, ListItemText, Typography, Button, TextField } from '@mui/material';
 import { FaBars, FaCalendarPlus, FaFileMedical } from 'react-icons/fa';
+import Reminders from './Reminders';
 import bg3 from '../../assets/bg3.png';
 
 const Home = () => {
@@ -158,17 +159,7 @@ const Home = () => {
           </div>
         )}
 
-        {/* Other content */}
-        <div className="row justify-content-center mt-4">
-          <div className="col-md-8">
-            <div className="card">
-              <div className="card-body">
-                <h5 className="card-title">Other Content</h5>
-                <p className="card-text">This is where you can add additional content for the doctor's home page.</p>
-              </div>
-            </div>
-          </div>
-        </div>
+        <Reminders/>
       </div>
     </div>
   );

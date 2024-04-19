@@ -1,6 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom'; // Import useParams
 import axios from 'axios';
+import bg3 from '../../assets/bg3.png';
+import { Table } from 'antd'; // Import Ant Design Table
+import { CheckOutlined } from '@ant-design/icons'; // Import Ant Design CheckOutlined icon
 
 const PendingMedicalRecords = () => {
     const { doctorCNIC } = useParams(); // Extract doctorCNIC from params
@@ -37,19 +40,40 @@ const PendingMedicalRecords = () => {
         }
     };
 
+    const columns = [
+        {
+            title: 'Record Data',
+            dataIndex: 'recordData',
+            key: 'recordData',
+        },
+        {
+            title: 'Patient CNIC',
+            dataIndex: 'patientCNIC',
+            key: 'patientCNIC',
+        },
+        {
+            title: 'Status',
+            dataIndex: 'status',
+            key: 'status',
+        },
+        {
+            title: 'Actions',
+            key: 'actions',
+            render: (text, record) => (
+                <button onClick={() => handleApprove(record._id)}>
+                    <CheckOutlined />
+                </button>
+            ),
+        },
+    ];
+
     return (
-        <div>
-            <h2>Pending Medical Records</h2>
+        <div style={{ marginLeft: '', backgroundImage: `url(${bg3})`, minHeight: '100vh', minWidth: '100vw',  backgroundSize: 'cover',
+        backgroundPosition: 'center' }}> 
+        <h1 style={{ marginLeft: '550px', color: 'green', fontWeight: 'bold' }}>PakMedRecord</h1>
+            <h2 style={{ marginLeft: '550px' }}>Pending Medical Records</h2>
             {error && <p style={{ color: 'red' }}>{error}</p>}
-            <ul>
-                {pendingRecords.map(record => (
-                    <li key={record._id}>
-                        <div>Record Data: {record.recordData}</div>
-                        <div>Status: {record.status}</div>
-                        <button onClick={() => handleApprove(record._id)}>Approve</button>
-                    </li>
-                ))}
-            </ul>
+            <Table dataSource={pendingRecords} columns={columns} style={{padding: '50px' }}/>
         </div>
     );
 };

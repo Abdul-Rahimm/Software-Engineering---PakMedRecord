@@ -1,13 +1,14 @@
 import React, { useState } from 'react';
 import axios from 'axios';
-import { useParams } from 'react-router-dom'; // Import useParams
+import { useParams } from 'react-router-dom';
+import { FaUserMd, FaFileMedical, FaCheckCircle, FaExclamationCircle } from 'react-icons/fa';
 
 const MedicalRecordForm = () => {
-    const { patientCNIC } = useParams(); // Extract patientCNIC from URL params
+    const { patientCNIC } = useParams();
     const [formData, setFormData] = useState({
         doctorCNIC: '',
         recordData: '',
-        status: 'pending' // Default status is 'pending'
+        status: 'pending'
     });
     const [message, setMessage] = useState('');
     const [error, setError] = useState('');
@@ -20,10 +21,14 @@ const MedicalRecordForm = () => {
         e.preventDefault();
 
         try {
-            // Make a POST request to submit the medical record
-            const response = await axios.post(`http://localhost:3009/tempRecords/submit/${patientCNIC}`, formData); // Use patientCNIC from URL params
+            const response = await axios.post(`http://localhost:3009/tempRecords/submit/${patientCNIC}`, formData);
             setMessage(response.data.message);
             setError('');
+            setFormData({
+                doctorCNIC: '',
+                recordData: '',
+                status: 'pending'
+            });
         } catch (error) {
             setMessage('');
             setError(error.response.data.error);
@@ -35,17 +40,17 @@ const MedicalRecordForm = () => {
             <h2 style={styles.heading}>Submit Medical Record</h2>
             <form onSubmit={handleSubmit} style={styles.form}>
                 <div style={styles.formGroup}>
-                    <label style={styles.label}>Doctor CNIC:</label>
+                    <label style={styles.label}><FaUserMd style={styles.icon} /> Doctor CNIC:</label>
                     <input type="text" name="doctorCNIC" value={formData.doctorCNIC} onChange={handleChange} style={styles.input} />
                 </div>
                 <div style={styles.formGroup}>
-                    <label style={styles.label}>Record Data:</label>
+                    <label style={styles.label}><FaFileMedical style={styles.icon} /> Record Data:</label>
                     <textarea name="recordData" value={formData.recordData} onChange={handleChange} style={styles.textarea} />
                 </div>
                 <button type="submit" style={styles.button}>Submit</button>
             </form>
-            {message && <p style={{ ...styles.message, color: 'green' }}>{message}</p>}
-            {error && <p style={{ ...styles.message, color: 'red' }}>{error}</p>}
+            {message && <p style={{ ...styles.message, color: 'green' }}><FaCheckCircle style={styles.icon} /> {message}</p>}
+            {error && <p style={{ ...styles.message, color: 'red' }}><FaExclamationCircle style={styles.icon} /> {error}</p>}
         </div>
     );
 };
@@ -104,6 +109,9 @@ const styles = {
     message: {
         textAlign: 'center',
         marginTop: '10px',
+    },
+    icon: {
+        marginRight: '5px',
     },
 };
 
