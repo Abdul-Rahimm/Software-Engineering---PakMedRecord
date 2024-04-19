@@ -123,9 +123,9 @@ const Home = () => {
         <div className="row justify-content-center">
           <div className="col-md-8">
             <div className="text-center mt-5">
-              <h2>Welcome, Dr. {doctorData && `${doctorData.firstName} ${doctorData.lastName}`}!</h2>
-              <h2>PakMedRecord.</h2>
-              <Button variant="outlined-success" onClick={toggleSidebar} style={{ marginLeft: '-1150px', marginTop: '-200px', color: 'green', fontSize: "40px" }}><FaBars /></Button>
+              {/* <h2>Welcome, Dr. {doctorData && `${doctorData.firstName} ${doctorData.lastName}`}!</h2> */}
+              <h1 style={{ color: 'green' }}>PakMedRecord</h1>
+              <Button variant="outlined-success" onClick={toggleSidebar} style={{ marginLeft: '-1150px', marginTop: '-150px', color: 'green', fontSize: "40px" }}><FaBars /></Button>
             </div>
           </div>
         </div>

@@ -3,7 +3,6 @@ import axios from 'axios';
 import { useParams } from 'react-router-dom';
 import bg3 from '../../assets/bg3.png';
 
-
 const DoctorAppointments = () => {
     const [appointments, setAppointments] = useState([]);
     const [error, setError] = useState('');
@@ -13,10 +12,12 @@ const DoctorAppointments = () => {
         const fetchAppointments = async () => {
             try {
                 const response = await axios.get(`http://localhost:3009/appointments/fetch/${doctorCNIC}`);
-                setAppointments(response.data.appointments.map(appointment => ({
+                const updatedAppointments = response.data.appointments.map(appointment => ({
                     ...appointment,
                     status: localStorage.getItem(appointment._id) || 'Pending' // Retrieve status from local storage
-                })));
+                }));
+                const sortedAppointments = sortAppointments(updatedAppointments);
+                setAppointments(sortedAppointments);
                 setError('');
             } catch (error) {
                 console.error('Error fetching appointments:', error);
@@ -27,6 +28,12 @@ const DoctorAppointments = () => {
 
         fetchAppointments();
     }, [doctorCNIC]);
+
+    const sortAppointments = (appointments) => {
+        const pendingAppointments = appointments.filter(appointment => appointment.status === 'Pending');
+        const completedAppointments = appointments.filter(appointment => appointment.status === 'Completed');
+        return [...pendingAppointments, ...completedAppointments];
+    };
 
     const markCompleted = async (appointmentId) => {
         try {
