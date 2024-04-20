@@ -60,6 +60,21 @@ const getMyDoctors = async (req, res) => {
   }
 };
 
+const getMyPatients = async (req, res) => {
+  try {
+    const { doctorCNIC } = req.params;
+
+    // Find affiliations based on the patient's CNIC
+    const affiliations = await Affiliation.find({ doctorCNIC });
+
+    // Return the affiliations
+    res.status(200).json(affiliations);
+  } catch (error) {
+    console.error('Error fetching affiliations:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+};
+
 const removeDoctor = async (req, res) => {
   try {
     // Extract the patient and doctor CNICs from the request parameters
@@ -84,4 +99,4 @@ const removeDoctor = async (req, res) => {
 
 
 
-module.exports = { affiliate, getMyDoctors, removeDoctor };
+module.exports = { affiliate, getMyDoctors, removeDoctor, getMyPatients };

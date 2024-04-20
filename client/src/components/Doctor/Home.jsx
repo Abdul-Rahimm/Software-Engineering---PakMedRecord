@@ -96,6 +96,10 @@ const Home = () => {
           <ListItem>
             <Typography variant="subtitle1">Welcome, Dr. {doctorData && `${doctorData.firstName} ${doctorData.lastName}`}!</Typography>
           </ListItem>
+          <ListItem button component={Link} to={`/affiliation/getmypatients/${doctorCNIC}`} onClick={() => setShowSidebar(false)}>
+            <ListItemIcon><FaCalendarPlus /></ListItemIcon>
+            <ListItemText>My Patients</ListItemText>
+          </ListItem>
           {/* Open Medical Record Form */}
           <ListItem button onClick={toggleMedicalRecordForm}>
             <ListItemIcon><FaFileMedical /></ListItemIcon>
@@ -159,7 +163,7 @@ const Home = () => {
           </div>
         )}
 
-        <Reminders/>
+{!showMedicalRecordForm && <Reminders />}
       </div>
     </div>
   );
