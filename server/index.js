@@ -20,9 +20,9 @@ app.use('/tempRecords', TempRecordsRoutes);
 
 mongoose.connect(connection_string)
     .then(() => {
-        console.log('App is connected to database!');
+        console.log('PakMedRecord is connected to database!');
         app.listen(port, () => {
-            console.log(`App is running on port: ${port}`)
+            console.log(`PakMedRecord is running on port: ${port}`)
         })
     })
     .catch((err) => {

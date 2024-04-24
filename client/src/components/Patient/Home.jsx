@@ -125,7 +125,7 @@ const HomePage = () => {
         </div>
       </animated.nav>
 
-      <Drawer anchor="left" open={showSidebar} onClose={() => setShowSidebar(false)}>
+      <Drawer anchor="left" open={showSidebar} onClose={() => setShowSidebar(false)} >
         <List>
           <ListItem button onClick={() => setShowSidebar(false)} style={{ marginTop: '-10px', color: 'green', fontWeight: 'bold' }}>
             <ListItemText style={{ marginTop: '0px' }}>&#10005;</ListItemText>
@@ -193,8 +193,8 @@ const HomePage = () => {
           <ListItem button onClick={handleLogout}>
             <ListItemIcon>
             </ListItemIcon>
-            <ListItemText style={{ marginBottom: '-430px' }}>
-              <Button variant="contained" style={{ backgroundColor: 'red', color: 'white', marginLeft: '120px' }}>
+            <ListItemText style={{ marginBottom: '-275px' }}>
+              <Button variant="contained" style={{ backgroundColor: 'green', color: 'white', marginLeft: '120px' }}>
                 <FaSignOutAlt style={{ marginRight: '10px' }} />
                 Logout
               </Button>

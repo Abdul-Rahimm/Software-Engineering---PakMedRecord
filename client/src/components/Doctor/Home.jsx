@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { Drawer, List, ListItem, ListItemIcon, ListItemText, Typography, Button, TextField } from '@mui/material';
-import { FaBars, FaCalendarPlus, FaFileMedical } from 'react-icons/fa';
+import { FaBars, FaCalculator, FaCalendarPlus, FaFileMedical } from 'react-icons/fa';
 import Reminders from './Reminders';
 import bg3 from '../../assets/bg3.png';
 
@@ -15,6 +15,7 @@ const Home = () => {
   const [patientCNIC, setPatientCNIC] = useState('');
   const [medicalRecord, setMedicalRecord] = useState(null); // State to store the medical record
   const [successMessage, setSuccessMessage] = useState('');
+  const [errorMessage, setErrorMessage] = useState('');
 
   const navigate = useNavigate();
 
@@ -64,27 +65,50 @@ const Home = () => {
       setPatientCNIC('');
       setRecordData('');
       setShowMedicalRecordForm(false);
+      setErrorMessage(''); // Clear any previous error messages
+      setTimeout(() => {
+        setSuccessMessage('');
+      }, 5000);
     } catch (error) {
       console.error('Error creating medical record:', error);
+      setErrorMessage('Error creating medical record. Please try again.'); // Set error message
+      setSuccessMessage(''); // Clear any previous success messages
     }
   };
 
-    const successMessageStyle = {
-      display: successMessage ? 'flex' : 'none',
-      justifyContent: 'center',
-      alignItems: 'center',
-      position: 'fixed',
-      top: '50%',
-      left: '50%',
-      transform: 'translate(-50%, -50%)',
-      zIndex: '9999',
-  
+  const successMessageStyle = {
+    display: successMessage ? 'flex' : 'none',
+    justifyContent: 'center',
+    alignItems: 'center',
+    position: 'fixed',
+    top: '50%',
+    left: '50%',
+    transform: 'translate(-50%, -50%)',
+    zIndex: '9999',
+  };
+
+  const errorMessageStyle = {
+    display: errorMessage ? 'flex' : 'none',
+    justifyContent: 'center',
+    alignItems: 'center',
+    position: 'fixed',
+    top: '60px', // Adjust position as needed
+    left: '50%',
+    transform: 'translateX(-50%)',
+    backgroundColor: 'red',
+    color: 'white',
+    padding: '10px',
+    borderRadius: '4px',
+    zIndex: '9999',
   };
 
   return (
     <div className="container" style={{ backgroundImage: `url(${bg3})`, backgroundSize: 'cover', backgroundPosition: 'center', height: '100vh', minWidth: '100vw' }}>
-        <div className="alert alert-success" role="alert" style={successMessageStyle}>
+      <div className="alert alert-success" role="alert" style={successMessageStyle}>
         {successMessage}
+      </div>
+      <div className="alert alert-danger" role="alert" style={errorMessageStyle}>
+        {errorMessage}
       </div>
       <Drawer anchor="left" open={showSidebar} onClose={() => setShowSidebar(false)}>
         <List>
@@ -114,6 +138,10 @@ const Home = () => {
             <ListItemIcon><FaCalendarPlus /></ListItemIcon>
             <ListItemText>View Pending Records</ListItemText>
           </ListItem>
+          <ListItem button component={Link} to={`/appointments/fetchByTime/${doctorCNIC}`} onClick={() => setShowSidebar(false)}>
+            <ListItemIcon><FaCalculator /></ListItemIcon>
+            <ListItemText>Statistics</ListItemText>
+          </ListItem>
           {/* Logout */}
           <ListItem button onClick={handleLogout}>
             <ListItemIcon><FaBars /></ListItemIcon>
@@ -127,7 +155,6 @@ const Home = () => {
         <div className="row justify-content-center">
           <div className="col-md-8">
             <div className="text-center mt-5">
-              {/* <h2>Welcome, Dr. {doctorData && `${doctorData.firstName} ${doctorData.lastName}`}!</h2> */}
               <h1 style={{ color: 'green' }}>PakMedRecord</h1>
               <Button variant="outlined-success" onClick={toggleSidebar} style={{ marginLeft: '-1150px', marginTop: '-150px', color: 'green', fontSize: "40px" }}><FaBars /></Button>
             </div>
@@ -163,7 +190,7 @@ const Home = () => {
           </div>
         )}
 
-{!showMedicalRecordForm && <Reminders />}
+        {!showMedicalRecordForm && <Reminders />}
       </div>
     </div>
   );

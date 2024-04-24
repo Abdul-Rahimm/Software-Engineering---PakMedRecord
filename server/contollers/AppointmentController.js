@@ -5,6 +5,8 @@ const Appointment = require('../models/AppointmentModel');
 const Doctor = require('../models/DoctorModel');
 const Patient = require('../models/PatientModel');
 const Affiliation = require('../models/AffiliationModel');
+// const tf = require('@tensorflow/tfjs-node');
+
 
 // Endpoint to book an appointment
 const book = async (req, res) => {
@@ -74,6 +76,36 @@ const getAppointments = async (req, res) => {
     }
 };
 
+const getAppointmentTimes = async (req, res) => {
+    try {
+        // Extract doctorCNIC from request parameters
+        const { doctorCNIC } = req.params;
+
+        // Find appointments with the given doctorCNIC
+        const appointments = await Appointment.find({ doctorCNIC });
+
+        // Extract appointment times, dates, and corresponding days
+        const appointmentData = appointments.map(appointment => {
+            const date = new Date(appointment.date);
+            const dayOfWeek = date.toLocaleDateString('en-US', { weekday: 'long' });
+            return {
+                time: appointment.time,
+                date: appointment.date,
+                day: dayOfWeek
+            };
+        });
+
+        // Return the appointment data
+        res.status(200).json({ appointmentData });
+    } catch (error) {
+        console.error("Error fetching appointments by time:", error);
+        res.status(500).json({ error: "Internal server error." });
+    }
+};
+
+
+
+
 const completeAppointment = async (req, res) => {
     try {
         // Extract appointment ID from request parameters
@@ -98,5 +130,47 @@ const completeAppointment = async (req, res) => {
         res.status(500).json({ error: 'Internal server error' });
     }
 };
+
+
+// Define controller function for recommendation
+// const recommendAppointment = async (req, res) => {
+//     try {
+//         // Extract doctorCNIC from request parameters
+//         const { doctorCNIC } = req.params;
+
+//         // Find appointments with the given doctorCNIC
+//         const appointments = await Appointment.find({ doctorCNIC });
+
+//         // Extract appointment times
+//         const appointmentTimes = appointments.map(appointment => [appointment.date, appointment.time]);
+
+//         // Load TensorFlow model
+//         const model = await tf.loadLayersModel('path/to/saved/model.json');
+
+//         // Convert appointmentTimes to tensor format
+//         const inputTensor = tf.tensor(appointmentTimes);
+
+//         // Normalize inputTensor (if necessary)
+//         // const normalizedInput = inputTensor;
+
+//         // Make predictions using TensorFlow model
+//         const predictions = model.predict(inputTensor);
+
+//         // Convert predictions tensor to JavaScript array
+//         const predictedTimes = predictions.arraySync();
+
+//         // Find the least busy time (e.g., minimum predicted value)
+//         const leastBusyIndex = predictedTimes.indexOf(Math.min(...predictedTimes));
+
+//         // Return the least busy time
+//         const leastBusyTime = appointmentTimes[leastBusyIndex];
+
+//         res.status(200).json({ leastBusyTime });
+//     } catch (error) {
+//         console.error("Error recommending appointment time:", error);
+//         res.status(500).json({ error: "Internal server error." });
+//     }
+// };
+
 // Export the router
-module.exports = { book, getAppointments, completeAppointment };
+module.exports = { book, getAppointments, completeAppointment, getAppointmentTimes };

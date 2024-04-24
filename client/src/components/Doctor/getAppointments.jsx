@@ -7,6 +7,8 @@ const DoctorAppointments = () => {
     const [appointments, setAppointments] = useState([]);
     const [error, setError] = useState('');
     const { doctorCNIC } = useParams();
+    const [filteredAppointments, setFilteredAppointments] = useState([]);
+    const [searchInput, setSearchInput] = useState('');
 
     useEffect(() => {
         const fetchAppointments = async () => {
@@ -54,10 +56,30 @@ const DoctorAppointments = () => {
         }
     };
 
+    useEffect(() => {
+        // Filter appointments based on search input
+        const filtered = appointments.filter(appointment => String(appointment.patientCNIC).includes(searchInput));
+        setFilteredAppointments(filtered);
+    }, [searchInput, appointments]);
+    
+
+    const handleSearchInputChange = (e) => {
+        setSearchInput(e.target.value);
+    };
+
     return (
-        <div style={styles.container}>
-            <h1 style={{ color: 'green', marginLeft: '460px' }}>PakMedRecord</h1>
-            <h2 style={styles.heading}>Doctor Appointments</h2>
+<div style={styles.container}>
+            <h1 style={styles.heading}>PakMedRecord</h1>
+            <h2 style={styles.subHeading}>Doctor Appointments</h2>
+            <div style={styles.searchContainer}>
+                <input
+                    type="text"
+                    value={searchInput}
+                    onChange={handleSearchInputChange}
+                    placeholder="Search by Patient CNIC"
+                    style={styles.searchInput}
+                />
+            </div>
             {error && <p style={styles.errorMessage}>{error}</p>}
             <table style={styles.table}>
                 <thead>
@@ -66,11 +88,10 @@ const DoctorAppointments = () => {
                         <th>Time</th>
                         <th>Patient CNIC</th>
                         <th>Status</th>
-                        <th>Actions</th>
                     </tr>
                 </thead>
                 <tbody>
-                    {appointments.map(appointment => (
+                {filteredAppointments.map(appointment => (
                         <tr key={appointment._id} style={appointment.status === 'Completed' ? styles.completedRow : null}>
                             <td>{appointment.date}</td>
                             <td>{appointment.time}</td>
@@ -102,10 +123,10 @@ const styles = {
         minHeight: '100vh'
     },
     heading: {
-        color: '#333',
+        color: 'green',
         marginBottom: '20px',
         textAlign: 'center',
-        fontSize: '24px',
+        fontSize: '48px',
         fontWeight: 'bold',
         marginLeft: '-35px'
     },
