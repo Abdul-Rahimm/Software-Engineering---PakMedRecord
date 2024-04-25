@@ -44,7 +44,7 @@ const Reminders = () => {
   return (
     <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh', marginTop: '-250px' }}>
       <div>
-        <Title level={2}>Reminders for Doctor {doctorCNIC}</Title>
+        <Title level={2}>Reminders for Doctor with CNIC: {doctorCNIC}</Title>
         <div>
           <Card style={{ marginBottom: '20px' }}>
             {appointments.length === 0 && pendingRecords.length === 0 ? (

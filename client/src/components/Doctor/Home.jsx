@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { useParams, useNavigate, Link } from 'react-router-dom';
-import { Drawer, List, ListItem, ListItemIcon, ListItemText, Typography, Button, TextField } from '@mui/material';
+import { Drawer, List, ListItem, ListItemIcon, ListItemText, Typography, Button, TextField, FormControl, InputLabel, Select, MenuItem } from '@mui/material';
 import { FaBars, FaCalculator, FaCalendarPlus, FaFileMedical } from 'react-icons/fa';
 import Reminders from './Reminders';
 import bg3 from '../../assets/bg3.png';
@@ -11,8 +11,9 @@ const Home = () => {
   const [showSidebar, setShowSidebar] = useState(false);
   const [showMedicalRecordForm, setShowMedicalRecordForm] = useState(false);
   const [recordData, setRecordData] = useState('');
+  const [selectedPatient, setSelectedPatient] = useState('');
   const { doctorCNIC } = useParams();
-  const [patientCNIC, setPatientCNIC] = useState('');
+  const [patients, setPatients] = useState([]); // State to store the list of affiliated patients
   const [medicalRecord, setMedicalRecord] = useState(null); // State to store the medical record
   const [successMessage, setSuccessMessage] = useState('');
   const [errorMessage, setErrorMessage] = useState('');
@@ -34,6 +35,19 @@ const Home = () => {
     fetchDoctorData();
   }, [doctorCNIC]);
 
+  useEffect(() => {
+    const fetchPatients = async () => {
+      try {
+        const response = await axios.get(`http://localhost:3009/affiliation/getmypatients/${doctorCNIC}`);
+        setPatients(response.data);
+      } catch (error) {
+        console.error('Error fetching affiliated patients:', error);
+      }
+    };
+
+    fetchPatients();
+  }, [doctorCNIC]);
+
   const handleLogout = () => {
     const confirmLogout = window.confirm('Are you sure you want to log out?');
     if (confirmLogout) {
@@ -53,16 +67,16 @@ const Home = () => {
     setShowMedicalRecordForm(false);
   };
 
-  const handleSubmitMedicalRecord = async (formData) => {
+  const handleSubmitMedicalRecord = async () => {
     try {
       const response = await axios.post('http://localhost:3009/record/create', {
-        patientCNIC: formData.patientCNIC,
+        patientCNIC: selectedPatient,
         doctorCNIC,
-        recordData: formData.recordData,
+        recordData,
       });
       setMedicalRecord(response.data);
-      setSuccessMessage(`Medical Record for patient with CNIC: ${formData.patientCNIC} created successfully!`);
-      setPatientCNIC('');
+      setSuccessMessage(`Medical Record for patient with CNIC: ${selectedPatient} created successfully!`);
+      setSelectedPatient('');
       setRecordData('');
       setShowMedicalRecordForm(false);
       setErrorMessage(''); // Clear any previous error messages
@@ -169,12 +183,25 @@ const Home = () => {
                 <h2>Medical Record Form</h2>
                 <form onSubmit={(e) => {
                   e.preventDefault();
-                  const formData = new FormData(e.target);
-                  handleSubmitMedicalRecord(Object.fromEntries(formData));
+                  handleSubmitMedicalRecord();
                 }}>
                   <div className="form-group">
-                    <label htmlFor="patientCNIC">Patient CNIC:</label>
-                    <input type="text" className="form-control" id="patientCNIC" name="patientCNIC" value={patientCNIC} onChange={(e) => setPatientCNIC(e.target.value)} placeholder="Enter patient's CNIC" />
+                    <FormControl fullWidth>
+                      <InputLabel id="patient-select-label">Select Patient</InputLabel>
+                      <Select
+                        labelId="patient-select-label"
+                        id="patient-select"
+                        value={selectedPatient}
+                        onChange={(e) => setSelectedPatient(e.target.value)}
+                      >
+                        <label htmlFor="">Select Patient CNIC</label>
+                        {patients.map((patient) => (
+                          <MenuItem key={patient.patientCNIC} value={patient.patientCNIC}>
+                            {patient.patientCNIC}
+                          </MenuItem>
+                        ))}
+                      </Select>
+                    </FormControl>
                   </div>
                   <div className="form-group">
                     <label htmlFor="recordData">Medical Record:</label>

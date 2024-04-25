@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import bgImage from '../../assets/bg3.png'; // Import the background image
 import { useParams } from 'react-router-dom'; // Import useParams
@@ -6,12 +6,27 @@ import { useParams } from 'react-router-dom'; // Import useParams
 const AppointmentBooking = () => {
     const { patientCNIC } = useParams(); // Extract patientCNIC using useParams
     const [formData, setFormData] = useState({
-        doctorCNIC: '',
+        doctorCNIC: '', // Remove doctorCNIC from formData
         date: '',
         time: ''
     });
+    const [doctors, setDoctors] = useState([]); // State to store the list of doctors
     const [message, setMessage] = useState('');
     const [error, setError] = useState('');
+
+    useEffect(() => {
+        const fetchDoctors = async () => {
+            try {
+                // Fetch the list of doctors from the backend
+                const response = await axios.get('http://localhost:3009/doctor/doctors');
+                setDoctors(response.data); // Set the list of doctors in state
+            } catch (error) {
+                console.error('Error fetching doctors:', error);
+            }
+        };
+
+        fetchDoctors();
+    }, []);
 
     const handleChange = (e) => {
         setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -37,8 +52,15 @@ const AppointmentBooking = () => {
             <h2 style={styles.heading}>Book an Appointment</h2>
             <form onSubmit={handleSubmit} style={styles.form}>
                 <div style={styles.formGroup}>
-                    <label style={styles.label}>Doctor CNIC:</label>
-                    <input type="text" name="doctorCNIC" value={formData.doctorCNIC} onChange={handleChange} style={styles.input} />
+                    <label style={styles.label}>Select Doctor:</label>
+                    <select name="doctorCNIC" value={formData.doctorCNIC} onChange={handleChange} style={styles.input}>
+                        <option value="">Select Doctor</option>
+                        {doctors.map((doctor) => (
+                            <option key={doctor.doctorCNIC} value={doctor.doctorCNIC}>
+                                {doctor.firstName} {doctor.lastName}
+                            </option>
+                        ))}
+                    </select>
                 </div>
                 <div style={styles.formGroup}>
                     <label style={styles.label}>Date:</label>
@@ -119,6 +141,5 @@ const styles = {
         marginLeft: '365px'
     },
 };
-
 
 export default AppointmentBooking;

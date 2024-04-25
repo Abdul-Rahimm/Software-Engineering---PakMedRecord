@@ -5,6 +5,7 @@ import { FaUser, FaUserMd, FaFileAlt, FaStickyNote, FaSignOutAlt, FaPlus, FaMinu
 import bg3 from '../../assets/bg3.png';
 import HealthTip from './HealthTip';
 import HowToUse from './HowToUse';
+// import Notify from './Notification';
 import logo from '../../assets/logo2.svg'; // Import the logo
 import UserProfileIcon from '../../assets/user.svg'; // Import the SVG icon
 

@@ -148,7 +148,6 @@ const MyRecordsPage = () => {
                     <Card>
                       <CardContent>
                         <Typography variant="body1" component="div" style={{ color: 'black' }}>
-                          Data: {record.recordData}
                         </Typography>
                         <Typography variant="body2" component="div" style={{ marginTop: '10px', color: 'black' }}>
                           Date: {new Date(record.createdAt).toLocaleDateString()}
