@@ -1,11 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import { FaTrash } from 'react-icons/fa'; // Import the trash icon
+import { Table, Typography } from 'antd'; // Import Table and Typography from Ant Design
 import bg3 from '../../assets/bg3.png';
-import { useParams } from 'react-router-dom'; // Import useParams
+import { useParams } from 'react-router-dom';
+
+const { Text } = Typography;
 
 const ViewMyPatients = () => {
-  const { doctorCNIC } = useParams(); // Extract doctorCNIC from URL params
+  const { doctorCNIC } = useParams();
   const [patients, setPatients] = useState([]);
   const [loading, setLoading] = useState(true);
 
@@ -15,10 +17,8 @@ const ViewMyPatients = () => {
         const response = await axios.get(`http://localhost:3009/affiliation/getmypatients/${doctorCNIC}`);
         const affiliations = response.data;
 
-        // Extract the CNICs of patients associated with the doctor
         const patientCNICs = affiliations.map((affiliation) => affiliation.patientCNIC);
 
-        // Fetch the details of each patient individually
         const patientsData = await Promise.all(
           patientCNICs.map(async (patientCNIC) => {
             const patientResponse = await axios.get(`http://localhost:3009/patient/home/${patientCNIC}`);
@@ -37,6 +37,34 @@ const ViewMyPatients = () => {
     fetchMyPatients();
   }, [doctorCNIC]);
 
+  const columns = [
+    {
+      title: 'CNIC',
+      dataIndex: 'patientCNIC',
+      key: 'patientCNIC',
+    },
+    {
+      title: 'First Name',
+      dataIndex: 'firstName',
+      key: 'firstName',
+    },
+    {
+      title: 'Last Name',
+      dataIndex: 'lastName',
+      key: 'lastName',
+    },
+    {
+      title: 'Email',
+      dataIndex: 'email',
+      key: 'email',
+    },
+    {
+      title: 'Hospital',
+      dataIndex: 'hospital',
+      key: 'hospital',
+    },
+  ];
+
   return (
     <div style={{ backgroundImage: `url(${bg3})`, backgroundSize: 'cover', backgroundPosition: 'center', minHeight: '100vh', paddingTop: '50px', minWidth: '100vw' }}>
       <h1 style={{ color: 'green', marginLeft: '600px' }}>PakMedRecord</h1>
@@ -45,34 +73,9 @@ const ViewMyPatients = () => {
       </h2>
       <h4 style={{ marginLeft: '500px', border: '1px solid black', maxWidth: '500px' }}> These are the patients you are affiliated with</h4> <br />
       {!loading ? (
-        <table className="table table-striped table-bordered" style={{ padding: '150px' }}>
-          <thead className="thead-dark">
-            <tr>
-              <th>CNIC</th>
-              <th>First Name</th>
-              <th>Last Name</th>
-              <th>Email</th>
-              <th>Hospital</th>
-              {/* <th>Remove</th> */}
-            </tr>
-          </thead>
-          <tbody>
-            {patients.map((patient) => (
-              <tr key={patient.patientCNIC}>
-                <td>{patient.patientCNIC}</td>
-                <td>{patient.firstName}</td>
-                <td>{patient.lastName}</td>
-                <td>{patient.email}</td>
-                <td>{patient.hospital}</td>
-                {/* <td>
-                  <FaTrash onClick={() => handleRemoveDoctor(patient.doctorCNIC)} style={{ cursor: 'pointer' }} />
-                </td> */}
-              </tr>
-            ))}
-          </tbody>
-        </table>
+        <Table columns={columns} dataSource={patients} />
       ) : (
-        <div>Loading...</div>
+        <Text>Loading...</Text>
       )}
     </div>
   );

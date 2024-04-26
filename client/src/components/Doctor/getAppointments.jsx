@@ -1,7 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
+import { Table, Input } from 'antd'; // Import Table and Input from Ant Design
 import { useParams } from 'react-router-dom';
 import bg3 from '../../assets/bg3.png';
+
+const { Search } = Input; // Destructure Search component from Input
 
 const DoctorAppointments = () => {
     const [appointments, setAppointments] = useState([]);
@@ -16,7 +19,7 @@ const DoctorAppointments = () => {
                 const response = await axios.get(`http://localhost:3009/appointments/fetch/${doctorCNIC}`);
                 const updatedAppointments = response.data.appointments.map(appointment => ({
                     ...appointment,
-                    status: localStorage.getItem(appointment._id) || 'Pending' // Retrieve status from local storage
+                    status: localStorage.getItem(appointment._id) || 'Pending'
                 }));
                 const sortedAppointments = sortAppointments(updatedAppointments);
                 setAppointments(sortedAppointments);
@@ -43,7 +46,6 @@ const DoctorAppointments = () => {
             setAppointments(prevAppointments =>
                 prevAppointments.map(appointment => {
                     if (appointment._id === appointmentId) {
-                        // Save status to local storage
                         localStorage.setItem(appointment._id, 'Completed');
                         return { ...appointment, status: 'Completed' };
                     }
@@ -57,55 +59,63 @@ const DoctorAppointments = () => {
     };
 
     useEffect(() => {
-        // Filter appointments based on search input
         const filtered = appointments.filter(appointment => String(appointment.patientCNIC).includes(searchInput));
         setFilteredAppointments(filtered);
     }, [searchInput, appointments]);
-    
 
-    const handleSearchInputChange = (e) => {
-        setSearchInput(e.target.value);
+    const handleSearchInputChange = (value) => {
+        setSearchInput(value);
     };
 
+    const columns = [
+        {
+            title: 'Date',
+            dataIndex: 'date',
+            key: 'date',
+        },
+        {
+            title: 'Time',
+            dataIndex: 'time',
+            key: 'time',
+        },
+        {
+            title: 'Patient CNIC',
+            dataIndex: 'patientCNIC',
+            key: 'patientCNIC',
+        },
+        {
+            title: 'Status',
+            dataIndex: 'status',
+            key: 'status',
+            render: (text, record) => (
+                <span style={{ color: text === 'Completed' ? 'green' : 'red' }}>{text}</span>
+            ),
+        },
+        {
+            title: 'Action',
+            key: 'action',
+            render: (text, record) => (
+                record.status === 'Pending' && (
+                    <button style={styles.completeButton} onClick={() => markCompleted(record._id)}>Mark as Completed</button>
+                )
+            ),
+        },
+    ];
+
     return (
-<div style={styles.container}>
+        <div style={styles.container}>
             <h1 style={styles.heading}>PakMedRecord</h1>
             <h2 style={styles.subHeading}>Doctor Appointments</h2>
             <div style={styles.searchContainer}>
-                <input
-                    type="text"
+                <Search
                     value={searchInput}
-                    onChange={handleSearchInputChange}
+                    onChange={(e) => handleSearchInputChange(e.target.value)}
                     placeholder="Search by Patient CNIC"
                     style={styles.searchInput}
                 />
             </div>
             {error && <p style={styles.errorMessage}>{error}</p>}
-            <table style={styles.table}>
-                <thead>
-                    <tr style={styles.tableHeader}>
-                        <th>Date</th>
-                        <th>Time</th>
-                        <th>Patient CNIC</th>
-                        <th>Status</th>
-                    </tr>
-                </thead>
-                <tbody>
-                {filteredAppointments.map(appointment => (
-                        <tr key={appointment._id} style={appointment.status === 'Completed' ? styles.completedRow : null}>
-                            <td>{appointment.date}</td>
-                            <td>{appointment.time}</td>
-                            <td>{appointment.patientCNIC}</td>
-                            <td style={{ ...styles.statusColumn, color: appointment.status === 'Completed' ? 'green' : 'red' }}>{appointment.status}</td>
-                            <td style={styles.actionColumn}>
-                                {appointment.status === 'Pending' && (
-                                    <button style={styles.completeButton} onClick={() => markCompleted(appointment._id)}>Mark as Completed</button>
-                                )}
-                            </td>
-                        </tr>
-                    ))}
-                </tbody>
-            </table>
+            <Table columns={columns} dataSource={filteredAppointments} />
         </div>
     );
 };
@@ -116,7 +126,7 @@ const styles = {
         borderRadius: '8px',
         backgroundColor: '#f2f2f2',
         boxShadow: '0 4px 8px rgba(0, 0, 0, 0.1)',
-        backgroundImage: `url(${bg3})`, // Add your image path here
+        backgroundImage: `url(${bg3})`,
         backgroundSize: 'cover',
         backgroundPosition: 'center',
         minWidth: '100vw',
@@ -135,27 +145,12 @@ const styles = {
         textAlign: 'center',
         marginTop: '20px',
     },
-    table: {
-        width: '100%',
-        borderCollapse: 'collapse',
-        border: '2px solid black', // Add border style
-        padding: '30px',
-
-    },
-    tableHeader: {
-        backgroundColor: '#007bff',
-        color: 'white',
-        fontWeight: 'bold',
-        padding: '12px 0',
-    },
-    completedRow: {
-        backgroundColor: '#e6ffe6',
-    },
-    statusColumn: {
-        textTransform: 'capitalize',
-    },
-    actionColumn: {
+    searchContainer: {
         textAlign: 'center',
+        marginBottom: '20px',
+    },
+    searchInput: {
+        width: '50%',
     },
     completeButton: {
         padding: '8px 16px',
@@ -168,7 +163,7 @@ const styles = {
         fontWeight: 'bold',
         transition: 'background-color 0.3s',
     },
-    'completeButton:hover': { // Enclose property name in quotes
+    'completeButton:hover': {
         backgroundColor: '#218838',
     },
 };

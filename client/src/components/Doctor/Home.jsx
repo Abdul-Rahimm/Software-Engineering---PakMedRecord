@@ -207,9 +207,9 @@ const Home = () => {
                     <label htmlFor="recordData">Medical Record:</label>
                     <textarea className="form-control" id="recordData" name="recordData" value={recordData} onChange={(e) => setRecordData(e.target.value)} rows="3" placeholder="Enter medical record"></textarea>
                   </div>
-                  <button type="submit" className="btn btn-primary">Submit</button>
-                </form>
-                <button className="btn btn-secondary" onClick={handleCloseMedicalRecordForm}>
+                  <button type="submit" className="btn btn-outline-success">Submit</button>
+                </form> <br />
+                <button className="btn btn-success" onClick={handleCloseMedicalRecordForm}>
                   Close Form
                 </button>
               </div>

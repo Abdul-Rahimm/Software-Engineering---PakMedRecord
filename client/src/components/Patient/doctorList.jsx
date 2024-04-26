@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import bg3 from '../../assets/bg3.png';
+import { Input, Table, Button, Alert } from 'antd';
 
 const DoctorList = () => {
   const [doctors, setDoctors] = useState([]);
@@ -69,6 +70,46 @@ const DoctorList = () => {
       doctor.lastName.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
+  const columns = [
+    {
+      title: 'CNIC',
+      dataIndex: 'doctorCNIC',
+      key: 'doctorCNIC',
+    },
+    {
+      title: 'First Name',
+      dataIndex: 'firstName',
+      key: 'firstName',
+    },
+    {
+      title: 'Last Name',
+      dataIndex: 'lastName',
+      key: 'lastName',
+    },
+    {
+      title: 'Email',
+      dataIndex: 'email',
+      key: 'email',
+    },
+    {
+      title: 'Hospital',
+      dataIndex: 'hospital',
+      key: 'hospital',
+    },
+    {
+      title: 'Select',
+      dataIndex: 'doctorCNIC',
+      key: 'select',
+      render: (doctorCNIC) => (
+        <input
+          type="checkbox"
+          onChange={() => handleSelectDoctor(doctorCNIC)}
+          checked={selectedDoctors.includes(doctorCNIC)}
+        />
+      ),
+    },
+  ];
+
   return (
     <div style={{ backgroundImage: `url(${bg3})`, backgroundSize: 'cover', backgroundPosition: 'center', minHeight: '100vh', paddingTop: '50px', minWidth: '100vw' }}>
       <div className="container">
@@ -84,70 +125,41 @@ const DoctorList = () => {
           </ul>
         </div>
         {error && (
-          <div className="alert alert-danger" role="alert">
-            {error}
-          </div>
+          <Alert message={error} type="error" showIcon />
         )}
         {showConfirmation && (
-          <div className="alert alert-success" role="alert">
-            Affiliation confirmed successfully!
-          </div>
+          <Alert message="Affiliation confirmed successfully!" type="success" showIcon />
         )}
         <div className="mb-3" style={{ maxWidth: '280px' }}>
-          <input
-            type="text"
-            className="form-control"
+          <Input
             placeholder="Search doctor by name..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
           />
         </div>
         <div className="mb-3" style={{ maxWidth: '180px' }}>
-          <input
-            type="text"
-            className="form-control"
+          <Input
             placeholder="Enter your CNIC"
             value={patientCNIC}
             onChange={(e) => setPatientCNIC(e.target.value)}
           />
         </div>
-        <table className="table table-striped table-bordered">
-          <thead className="thead-dark">
-            <tr>
-              <th scope="col">CNIC</th>
-              <th scope="col">First Name</th>
-              <th scope="col">Last Name</th>
-              <th scope="col">Email</th>
-              <th scope="col">Hospital</th>
-              <th scope="col">Select</th>
-            </tr>
-          </thead>
-          <tbody>
-            {filteredDoctors.map((doctor) => (
-              <tr key={doctor.doctorCNIC}>
-                <td>{doctor.doctorCNIC}</td>
-                <td>{doctor.firstName}</td>
-                <td>{doctor.lastName}</td>
-                <td>{doctor.email}</td>
-                <td>{doctor.hospital}</td>
-                <td>
-                  <input
-                    type="checkbox"
-                    onChange={() => handleSelectDoctor(doctor.doctorCNIC)}
-                    checked={selectedDoctors.includes(doctor.doctorCNIC)}
-                  />
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-        <button
-          className="btn btn-outline-success btn-md mr-2"
-          onClick={handleConfirmSelection}
-          disabled={selectedDoctors.length === 0 || !patientCNIC} // Disable button if no doctors selected or patient CNIC not entered
-        >
-          Confirm Selection
-        </button>
+        <Table
+          columns={columns}
+          dataSource={filteredDoctors}
+          pagination={false}
+          rowKey="doctorCNIC"
+        />
+      <Button
+  type="primary"
+  className="btn-md mr-2"
+  onClick={handleConfirmSelection}
+  disabled={selectedDoctors.length === 0 || !patientCNIC}
+  style={{ backgroundColor: 'green', borderColor: 'green' }}
+>
+  Confirm Selection
+</Button>
+
       </div>
     </div>
   );
