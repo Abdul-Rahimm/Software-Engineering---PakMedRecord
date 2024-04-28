@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { useParams, useNavigate, Link } from 'react-router-dom';
-import { FaUser, FaUserMd, FaFileAlt, FaStickyNote, FaSignOutAlt, FaPlus, FaMinus, FaFileMedical, FaBars, FaUserEdit, FaCalendarPlus } from 'react-icons/fa'; // Import FaUserEdit icon for update patient
+import { FaUser, FaUserMd, FaFileAlt, FaStickyNote, FaSignOutAlt, FaPlus, FaMinus, FaFileMedical, FaBars, FaUserEdit, FaCalendarPlus, FaQuestionCircle } from 'react-icons/fa'; // Import FaUserEdit icon for update patient
+import {Modal} from 'antd';
 import bg3 from '../../assets/bg3.png';
 import HealthTip from './HealthTip';
 import HowToUse from './HowToUse';
@@ -39,6 +40,8 @@ const HomePage = () => {
   const [showAddNoteForm, setShowAddNoteForm] = useState(false);
   const [loading, setLoading] = useState(false);
   const [showSidebar, setShowSidebar] = useState(false);
+  const [showHowToUse, setShowHowToUse] = useState(false); // State for the visibility of "How to Use" popup
+
 
   useEffect(() => {
     const fetchPatientData = async () => {
@@ -86,6 +89,9 @@ const HomePage = () => {
 
   const closeAddNoteForm = () => {
     setShowAddNoteForm(false);
+  };
+  const toggleHowToUse = () => {
+    setShowHowToUse(!showHowToUse);
   };
 
   const backgroundStyle = {
@@ -200,6 +206,12 @@ const HomePage = () => {
                 Logout
               </Button>
             </ListItemText>
+          </ListItem> <hr />
+          <ListItem button onClick={toggleHowToUse}>
+            <ListItemIcon>
+              <FaQuestionCircle />
+            </ListItemIcon>
+            <ListItemText>How to Use</ListItemText>
           </ListItem>
 
         </List>
@@ -231,8 +243,15 @@ const HomePage = () => {
               </div>
             )}
             <HealthTip />
-            <HowToUse />
-          </>
+            <Modal
+        visible={showHowToUse}
+        onCancel={toggleHowToUse}
+        footer={[
+          
+        ]}
+      >
+        <HowToUse />
+      </Modal>          </>
         )}
       </Container>
     </Container>

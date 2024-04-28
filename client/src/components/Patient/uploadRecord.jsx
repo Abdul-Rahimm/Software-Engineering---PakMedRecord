@@ -2,8 +2,10 @@ import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { useParams } from 'react-router-dom';
 import bg3 from '../../assets/bg3.png';
-
+import { Select, Input, Button, message } from 'antd'; // Import Ant Design components
 import { FaUserMd, FaFileMedical, FaCheckCircle, FaExclamationCircle } from 'react-icons/fa';
+
+const { Option } = Select;
 
 const MedicalRecordForm = () => {
     const { patientCNIC } = useParams();
@@ -30,8 +32,8 @@ const MedicalRecordForm = () => {
         fetchDoctors();
     }, []);
 
-    const handleChange = (e) => {
-        setFormData({ ...formData, [e.target.name]: e.target.value });
+    const handleChange = (name, value) => {
+        setFormData({ ...formData, [name]: value });
     };
 
     const handleSubmit = async (e) => {
@@ -58,20 +60,30 @@ const MedicalRecordForm = () => {
             <form onSubmit={handleSubmit} style={styles.form}>
                 <div style={styles.formGroup}>
                     <label style={styles.label}><FaUserMd style={styles.icon} /> Select Doctor:</label>
-                    <select name="doctorCNIC" value={formData.doctorCNIC} onChange={handleChange} style={styles.input}>
-                        <option value="">Select Doctor</option>
+                    <Select
+                        value={formData.doctorCNIC}
+                        onChange={(value) => handleChange('doctorCNIC', value)}
+                        style={styles.input}
+                        placeholder="Select Doctor"
+                    >
                         {doctors.map((doctor) => (
-                            <option key={doctor.doctorCNIC} value={doctor.doctorCNIC}>
+                            <Option key={doctor.doctorCNIC} value={doctor.doctorCNIC}>
                                 {doctor.firstName} {doctor.lastName}
-                            </option>
+                            </Option>
                         ))}
-                    </select>
+                    </Select>
                 </div>
                 <div style={styles.formGroup}>
                     <label style={styles.label}><FaFileMedical style={styles.icon} /> Record Data:</label>
-                    <textarea name="recordData" value={formData.recordData} onChange={handleChange} style={styles.textarea} />
+                    <Input.TextArea
+                        value={formData.recordData}
+                        onChange={(e) => handleChange('recordData', e.target.value)}
+                        style={styles.textarea}
+                        placeholder="Enter record data"
+                        rows={4}
+                    />
                 </div>
-                <button type="submit" style={styles.button}>Submit</button>
+                <Button type="primary" htmlType="submit" style={styles.button}>Submit</Button>
             </form>
             {message && <p style={{ ...styles.message, color: 'green' }}><FaCheckCircle style={styles.icon} /> {message}</p>}
             {error && <p style={{ ...styles.message, color: 'red' }}><FaExclamationCircle style={styles.icon} /> {error}</p>}
@@ -114,33 +126,23 @@ const styles = {
         color: '#444',
     },
     input: {
-        padding: '12px',
         borderRadius: '6px',
-        border: '1px solid #ccc',
         fontSize: '16px',
-        color: 'white',
         width: '100%',
     },
     textarea: {
-        padding: '12px',
         borderRadius: '6px',
-        border: '1px solid #ccc',
         fontSize: '16px',
-        color: 'white',
-        minHeight: '150px',
         width: '100%',
     },
     button: {
-        backgroundColor: 'green',
-        color: 'white',
-        padding: '12px 20px',
         borderRadius: '6px',
-        border: 'none',
         cursor: 'pointer',
         fontSize: '18px',
         alignSelf: 'flex-end',
         marginTop: '20px',
         width: '150px',
+        backgroundColor: 'green'
     },
     message: {
         textAlign: 'center',
