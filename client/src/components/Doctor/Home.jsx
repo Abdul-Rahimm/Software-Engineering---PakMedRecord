@@ -5,6 +5,7 @@ import { Drawer, List, ListItem, ListItemIcon, ListItemText, Typography, Button,
 import { FaBars, FaCalculator, FaCalendarPlus, FaFileMedical } from 'react-icons/fa';
 import Reminders from './Reminders';
 import bg3 from '../../assets/bg3.png';
+import Autocomplete from '@mui/material/Autocomplete';
 
 const Home = () => {
   const [doctorData, setDoctorData] = useState(null);
@@ -12,6 +13,7 @@ const Home = () => {
   const [showMedicalRecordForm, setShowMedicalRecordForm] = useState(false);
   const [recordData, setRecordData] = useState('');
   const [selectedPatient, setSelectedPatient] = useState('');
+  const [patientOptions, setPatientOptions] = useState([]); // State variable to store patient options
   const { doctorCNIC } = useParams();
   const [patients, setPatients] = useState([]); // State to store the list of affiliated patients
   const [medicalRecord, setMedicalRecord] = useState(null); // State to store the medical record
@@ -47,6 +49,11 @@ const Home = () => {
 
     fetchPatients();
   }, [doctorCNIC]);
+
+  useEffect(() => {
+    // Set patient options for Autocomplete
+    setPatientOptions(patients.map(patient => ({ label: patient.patientCNIC, value: patient.patientCNIC })));
+  }, [patients]);
 
   const handleLogout = () => {
     const confirmLogout = window.confirm('Are you sure you want to log out?');
@@ -186,22 +193,17 @@ const Home = () => {
                   handleSubmitMedicalRecord();
                 }}>
                   <div className="form-group">
-                    <FormControl fullWidth>
-                      <InputLabel id="patient-select-label">Select Patient</InputLabel>
-                      <Select
-                        labelId="patient-select-label"
-                        id="patient-select"
-                        value={selectedPatient}
-                        onChange={(e) => setSelectedPatient(e.target.value)}
-                      >
-                        <label htmlFor="">Select Patient CNIC</label>
-                        {patients.map((patient) => (
-                          <MenuItem key={patient.patientCNIC} value={patient.patientCNIC}>
-                            {patient.patientCNIC}
-                          </MenuItem>
-                        ))}
-                      </Select>
-                    </FormControl>
+                    <Autocomplete
+                      fullWidth
+                      disablePortal
+                      id="patient-select"
+                      options={patientOptions}
+                      value={selectedPatient}
+                      onChange={(event, newValue) => {
+                        setSelectedPatient(newValue);
+                      }}
+                      renderInput={(params) => <TextField {...params} label="Select Patient" />}
+                    />
                   </div>
                   <div className="form-group">
                     <label htmlFor="recordData">Medical Record:</label>

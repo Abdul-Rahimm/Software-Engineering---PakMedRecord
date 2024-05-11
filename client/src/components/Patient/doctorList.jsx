@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import bg3 from '../../assets/bg3.png';
 import { Input, Table, Button, Alert } from 'antd';
+import { CloseOutlined } from '@ant-design/icons'; // Import the CloseOutlined icon
 
 const DoctorList = () => {
   const [doctors, setDoctors] = useState([]);
@@ -125,10 +126,17 @@ const DoctorList = () => {
           </ul>
         </div>
         {error && (
-          <Alert message={error} type="error" showIcon />
+          <Alert
+            message={error}
+            type="error"
+            showIcon
+            closable // Make the Alert closable
+            onClose={() => setError(null)} // Clear the error message when closed
+            closeText={<CloseOutlined />} // Set the close button icon
+          />
         )}
         {showConfirmation && (
-          <Alert message="Affiliation confirmed successfully!" type="success" showIcon />
+          <Alert message="Affiliation confirmed successfully!" type="success" showIcon closable/>
         )}
         <div className="mb-3" style={{ maxWidth: '280px' }}>
           <Input
@@ -150,16 +158,15 @@ const DoctorList = () => {
           pagination={false}
           rowKey="doctorCNIC"
         />
-      <Button
-  type="primary"
-  className="btn-md mr-2"
-  onClick={handleConfirmSelection}
-  disabled={selectedDoctors.length === 0 || !patientCNIC}
-  style={{ backgroundColor: 'green', borderColor: 'green' }}
->
-  Confirm Selection
-</Button>
-
+        <Button
+          type="primary"
+          className="btn-md mr-2"
+          onClick={handleConfirmSelection}
+          disabled={selectedDoctors.length === 0 || !patientCNIC}
+          style={{ backgroundColor: 'green', borderColor: 'green' }}
+        >
+          Confirm Selection
+        </Button>
       </div>
     </div>
   );
