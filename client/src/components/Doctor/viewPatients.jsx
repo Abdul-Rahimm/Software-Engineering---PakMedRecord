@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import { Table, Typography } from 'antd'; // Import Table and Typography from Ant Design
+import { Table, Typography } from 'antd';
 import bg3 from '../../assets/bg3.png';
 import { useParams } from 'react-router-dom';
+import { Link } from 'react-router-dom'; // Import Link from react-router-dom
 
 const { Text } = Typography;
 
@@ -62,6 +63,15 @@ const ViewMyPatients = () => {
       title: 'Hospital',
       dataIndex: 'hospital',
       key: 'hospital',
+    },
+    {
+      title: 'Action',
+      key: 'action',
+      render: (text, record) => (
+        <Link to={`/records/getrecords/${record.patientCNIC}`}>
+          <Text type="primary">View Medical History</Text>
+        </Link>
+      ),
     },
   ];
 

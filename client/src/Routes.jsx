@@ -18,6 +18,7 @@ import MedicalRecordForm from './components/Patient/uploadRecord';
 import PendingMedicalRecords from './components/Doctor/tempRecords';
 import ViewMyPatients from './components/Doctor/viewPatients';
 import Statistics from './components/Doctor/Statistics';
+import MedicalHistory from './components/Doctor/medicalHistory';
 
 const Routes = () => {
   return (
@@ -40,6 +41,8 @@ const Routes = () => {
       <Route path="/appointments/fetchByTime/:doctorCNIC" element={< Statistics/>} />
       <Route path="/tempRecords/submit/:patientCNIC" element={<MedicalRecordForm />} />
       <Route path="/tempRecords/pending/:doctorCNIC" element={<PendingMedicalRecords />} />
+      <Route path="/records/getrecords/:patientCNIC" element={<MedicalHistory />} />
+
 
 
     </RouterRoutes>
