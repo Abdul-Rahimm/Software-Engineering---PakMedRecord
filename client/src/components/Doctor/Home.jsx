@@ -1,11 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { useParams, useNavigate, Link } from 'react-router-dom';
-import { Drawer, List, ListItem, ListItemIcon, ListItemText, Typography, Button, TextField, FormControl, InputLabel, Select, MenuItem } from '@mui/material';
+import { Drawer, List, ListItem, ListItemIcon, ListItemText, Typography, Button, TextField } from '@mui/material';
 import { FaBars, FaCalculator, FaCalendarPlus, FaFileMedical } from 'react-icons/fa';
-import Reminders from './Reminders';
+import Reminders from './Reminders'; // Assuming Reminders component exists
 import bg3 from '../../assets/bg3.png';
-import Autocomplete from '@mui/material/Autocomplete';
 
 const Home = () => {
   const [doctorData, setDoctorData] = useState(null);
@@ -19,7 +18,6 @@ const Home = () => {
   const [medicalRecord, setMedicalRecord] = useState(null); // State to store the medical record
   const [successMessage, setSuccessMessage] = useState('');
   const [errorMessage, setErrorMessage] = useState('');
-
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -51,7 +49,7 @@ const Home = () => {
   }, [doctorCNIC]);
 
   useEffect(() => {
-    // Set patient options for Autocomplete
+    // Set patient options for dropdown select
     setPatientOptions(patients.map(patient => ({ label: patient.patientCNIC, value: patient.patientCNIC })));
   }, [patients]);
 
@@ -193,24 +191,21 @@ const Home = () => {
                   handleSubmitMedicalRecord();
                 }}>
                   <div className="form-group">
-                    <Autocomplete
-                      fullWidth
-                      disablePortal
-                      id="patient-select"
-                      options={patientOptions}
-                      value={selectedPatient}
-                      onChange={(event, newValue) => {
-                        setSelectedPatient(newValue);
-                      }}
-                      renderInput={(params) => <TextField {...params} label="Select Patient" />}
-                    />
+                    <label htmlFor="selectPatient">Select Patient:</label>
+                    <select id="selectPatient" className="form-control" value={selectedPatient} onChange={(e) => setSelectedPatient(e.target.value)}>
+                      <option value="">Select a patient</option>
+                      {patientOptions.map(patient => (
+                        <option key={patient.value} value={patient.value}>{patient.label}</option>
+                      ))}
+                    </select>
                   </div>
                   <div className="form-group">
                     <label htmlFor="recordData">Medical Record:</label>
                     <textarea className="form-control" id="recordData" name="recordData" value={recordData} onChange={(e) => setRecordData(e.target.value)} rows="3" placeholder="Enter medical record"></textarea>
                   </div>
                   <button type="submit" className="btn btn-outline-success">Submit</button>
-                </form> <br />
+                </form>
+                <br />
                 <button className="btn btn-success" onClick={handleCloseMedicalRecordForm}>
                   Close Form
                 </button>
