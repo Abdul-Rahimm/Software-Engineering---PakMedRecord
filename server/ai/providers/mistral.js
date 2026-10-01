@@ -1,6 +1,6 @@
 // Mistral adapter (default). Free "Experiment" plan keys work; set MISTRAL_API_KEY.
 
-const MODEL = process.env.AI_MODEL || 'mistral-small-latest';
+const MODEL = process.env.AI_MODEL || 'ministral-14b-latest';
 
 // The SDK is ESM-only; load it lazily from this CommonJS server
 let sdk;
