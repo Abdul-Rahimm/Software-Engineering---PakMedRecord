@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import axios from 'axios';
+import api from '../../api';
+import { saveSession } from '../../session';
 import { Link, useNavigate } from 'react-router-dom';
 import { FaUser, FaLock } from 'react-icons/fa'; // React icons
 import { Button } from '@mui/material'; // Material-UI Button
@@ -25,18 +26,15 @@ const Sign_in = () => {
         e.preventDefault();
 
         try {
-            const response = await axios.post('http://localhost:3009/patient/signin', formData);
+            const response = await api.post('/patient/signin', formData);
 
-            console.log('API Response:', response.data);
-
-            const { patient } = response.data;
-            const { patientCNIC } = patient; // Assuming 'cnic' is the identifier
-
-            console.log('Extracted CNIC:', patientCNIC);
+            const { patient, token } = response.data;
+            const { patientCNIC } = patient;
+            saveSession({ token, role: 'patient', cnic: patientCNIC });
 
             handleSuccessfulSignin(patientCNIC);
         } catch (error) {
-            console.error('Signin error:', error.response.data.error);
+            console.error('Signin error:', error);
             // Display an alert for incorrect sign-in credentials
             alert('Sign in failed!');
         }

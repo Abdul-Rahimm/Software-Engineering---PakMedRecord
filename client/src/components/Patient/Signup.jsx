@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import axios from 'axios';
+import api from '../../api';
 import { Navigate, Link } from 'react-router-dom';
 import { FaUser, FaEnvelope, FaLock, FaHospitalAlt, FaVenusMars } from 'react-icons/fa'; // Import React icons
 import bg3 from '../../assets/bg3.png';
@@ -30,12 +30,12 @@ const Sign_up = () => {
         try {
             setLoading(true); // Set loading to true when the form is being submitted
 
-            await axios.post('http://localhost:3009/patient/signup', formData);
+            await api.post('/patient/signup', formData);
             console.log('Signup successful!');
             setSignupSuccess(true);
         } catch (error) {
-            console.error('Signup error:', error.response.data.error);
-            alert('SignUp Unsuccessful :(', error.response.data.error);
+            console.error('Signup error:', error);
+            alert(`SignUp Unsuccessful :( ${error.response?.data?.error || 'Could not reach the server'}`);
         } finally {
             setLoading(false); // Reset loading regardless of success or failure
         }

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import axios from 'axios';
+import api from '../../api';
 import { Table, Button, Space, Typography } from 'antd';
 import { FaTrash } from 'react-icons/fa';
 import bg3 from '../../assets/bg3.png';
@@ -16,14 +16,14 @@ const ViewMyDoctors = () => {
     if (patientCNIC) {
       const fetchMyDoctors = async () => {
         try {
-          const response = await axios.get(`http://localhost:3009/affiliation/getmydoctors/${patientCNIC}`);
+          const response = await api.get(`/affiliation/getmydoctors/${patientCNIC}`);
           const affiliations = response.data;
 
           const doctorCNICs = affiliations.map((affiliation) => affiliation.doctorCNIC);
 
           const doctorsData = await Promise.all(
             doctorCNICs.map(async (doctorCNIC) => {
-              const doctorResponse = await axios.get(`http://localhost:3009/doctor/home/${doctorCNIC}`);
+              const doctorResponse = await api.get(`/doctor/home/${doctorCNIC}`);
               return doctorResponse.data;
             })
           );
@@ -45,7 +45,7 @@ const ViewMyDoctors = () => {
       const confirmed = window.confirm('Are you sure you want to remove this doctor?');
 
       if (confirmed) {
-        await axios.delete(`http://localhost:3009/affiliation/remove/${patientCNIC}/${doctorCNIC}`);
+        await api.delete(`/affiliation/remove/${patientCNIC}/${doctorCNIC}`);
 
         const updatedDoctors = doctors.filter((doctor) => doctor.doctorCNIC !== doctorCNIC);
         setDoctors(updatedDoctors);

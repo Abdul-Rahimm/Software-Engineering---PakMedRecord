@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import axios from 'axios';
+import api from '../../api';
 import { useParams } from 'react-router-dom';
 import { VictoryLine, VictoryPie } from 'victory';
 
@@ -10,7 +10,7 @@ const Statistics = () => {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const response = await axios.get(`http://localhost:3009/appointments/fetchByTime/${doctorCNIC}`);
+        const response = await api.get(`/appointments/fetchByTime/${doctorCNIC}`);
         setAppointmentData(response.data);
       } catch (error) {
         console.error('Error fetching appointment data:', error);

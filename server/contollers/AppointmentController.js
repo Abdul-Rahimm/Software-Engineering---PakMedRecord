@@ -1,6 +1,4 @@
 // Import necessary modules
-const express = require('express');
-const router = express.Router();
 const Appointment = require('../models/AppointmentModel');
 const Doctor = require('../models/DoctorModel');
 const Patient = require('../models/PatientModel');
@@ -12,7 +10,11 @@ const Affiliation = require('../models/AffiliationModel');
 const book = async (req, res) => {
     try {
         // Extract appointment details from request body
-        const { doctorCNIC, date, time, status } = req.body;
+        const { doctorCNIC, date, time } = req.body;
+
+        if (!doctorCNIC || !date || !time) {
+            return res.status(400).json({ error: 'Doctor, date and time are required' });
+        }
         const {patientCNIC} = req.params;
 
         // Check if patient exists
@@ -44,8 +46,7 @@ const book = async (req, res) => {
             patientCNIC: patientCNIC,
             doctorCNIC: doctorCNIC,
             date,
-            time, 
-            status
+            time
         });
 
         // Save the appointment to the database
@@ -117,6 +118,11 @@ const completeAppointment = async (req, res) => {
         // Check if appointment exists
         if (!appointment) {
             return res.status(404).json({ error: 'Appointment not found' });
+        }
+
+        // Only the doctor the appointment is with can complete it
+        if (appointment.doctorCNIC !== req.user.cnic) {
+            return res.status(403).json({ error: 'Not allowed' });
         }
 
         // Update the status of the appointment to completed

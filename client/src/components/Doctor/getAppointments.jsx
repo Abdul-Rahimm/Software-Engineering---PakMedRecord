@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import axios from 'axios';
+import api from '../../api';
 import { Table, Input } from 'antd'; // Import Table and Input from Ant Design
 import { useParams } from 'react-router-dom';
 import bg3 from '../../assets/bg3.png';
@@ -16,10 +16,10 @@ const DoctorAppointments = () => {
     useEffect(() => {
         const fetchAppointments = async () => {
             try {
-                const response = await axios.get(`http://localhost:3009/appointments/fetch/${doctorCNIC}`);
+                const response = await api.get(`/appointments/fetch/${doctorCNIC}`);
                 const updatedAppointments = response.data.appointments.map(appointment => ({
                     ...appointment,
-                    status: localStorage.getItem(appointment._id) || 'Pending'
+                    status: appointment.status === 'completed' ? 'Completed' : 'Pending'
                 }));
                 const sortedAppointments = sortAppointments(updatedAppointments);
                 setAppointments(sortedAppointments);
@@ -42,15 +42,11 @@ const DoctorAppointments = () => {
 
     const markCompleted = async (appointmentId) => {
         try {
-            await axios.patch(`http://localhost:3009/appointments/update/${appointmentId}`, { status: 'Completed' });
+            await api.patch(`/appointments/update/${appointmentId}`);
             setAppointments(prevAppointments =>
-                prevAppointments.map(appointment => {
-                    if (appointment._id === appointmentId) {
-                        localStorage.setItem(appointment._id, 'Completed');
-                        return { ...appointment, status: 'Completed' };
-                    }
-                    return appointment;
-                })
+                sortAppointments(prevAppointments.map(appointment =>
+                    appointment._id === appointmentId ? { ...appointment, status: 'Completed' } : appointment
+                ))
             );
         } catch (error) {
             console.error('Error marking appointment as completed:', error);

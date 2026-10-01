@@ -35,5 +35,13 @@ const patientSchema = mongoose.Schema({
     timestamps: true,
 });
 
+// Never send password hashes back to the client
+patientSchema.set('toJSON', {
+    transform: (doc, ret) => {
+        delete ret.password;
+        return ret;
+    }
+});
+
 const Patient = mongoose.model('Patient', patientSchema);
 module.exports = Patient;

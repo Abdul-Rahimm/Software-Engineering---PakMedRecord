@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import axios from 'axios';
+import api from '../../api';
 import { Table, Typography } from 'antd';
 import bg3 from '../../assets/bg3.png';
 import { useParams } from 'react-router-dom';
@@ -15,14 +15,14 @@ const ViewMyPatients = () => {
   useEffect(() => {
     const fetchMyPatients = async () => {
       try {
-        const response = await axios.get(`http://localhost:3009/affiliation/getmypatients/${doctorCNIC}`);
+        const response = await api.get(`/affiliation/getmypatients/${doctorCNIC}`);
         const affiliations = response.data;
 
         const patientCNICs = affiliations.map((affiliation) => affiliation.patientCNIC);
 
         const patientsData = await Promise.all(
           patientCNICs.map(async (patientCNIC) => {
-            const patientResponse = await axios.get(`http://localhost:3009/patient/home/${patientCNIC}`);
+            const patientResponse = await api.get(`/patient/home/${patientCNIC}`);
             return patientResponse.data;
           })
         );

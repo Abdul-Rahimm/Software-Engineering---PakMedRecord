@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import axios from 'axios';
+import api from '../../api';
 import { useParams } from 'react-router-dom';
 import { FaStickyNote, FaRegCalendarAlt, FaTimesCircle } from 'react-icons/fa';
 import { BsCardText } from 'react-icons/bs';
@@ -15,7 +15,7 @@ const Notes = () => {
   useEffect(() => {
     const fetchNotes = async () => {
       try {
-        const response = await axios.get(`http://localhost:3009/patient/${patientCNIC}/getnote`);
+        const response = await api.get(`/patient/${patientCNIC}/getnote`);
         setNotes(response.data.notes);
       } catch (error) {
         console.error('Error fetching notes:', error);
@@ -32,7 +32,7 @@ const Notes = () => {
 
   const handleRemoveNote = async (noteId) => {
     try {
-      await axios.delete(`http://localhost:3009/patient/${patientCNIC}/removenote/${noteId}`);
+      await api.delete(`/patient/${patientCNIC}/removenote/${noteId}`);
       setNotes(notes.filter((note) => note._id !== noteId));
     } catch (error) {
       console.error('Error removing note:', error);

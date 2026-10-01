@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import axios from 'axios';
+import api from '../../api';
+import { clearSession } from '../../session';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { FaUser, FaUserMd, FaFileAlt, FaStickyNote, FaSignOutAlt, FaPlus, FaMinus, FaFileMedical, FaBars, FaUserEdit, FaCalendarPlus, FaQuestionCircle } from 'react-icons/fa'; // Import FaUserEdit icon for update patient
 import {Modal} from 'antd';
@@ -48,7 +49,7 @@ const HomePage = () => {
       try {
         setLoading(true);
         if (patientCNIC) {
-          const response = await axios.get(`http://localhost:3009/patient/home/${patientCNIC}`);
+          const response = await api.get(`/patient/home/${patientCNIC}`);
           setPatientData(response.data);
         }
         setLoading(false);
@@ -64,6 +65,7 @@ const HomePage = () => {
   const handleLogout = () => {
     const confirmLogout = window.confirm('Are you sure you want to log out?');
     if (confirmLogout) {
+      clearSession();
       navigate('/');
     }
   };
@@ -75,7 +77,7 @@ const HomePage = () => {
   const handleAddNote = async () => {
     try {
       setLoading(true);
-      const response = await axios.post(`http://localhost:3009/patient/${patientCNIC}/addnote`, { patientCNIC, note: newNoteText });
+      const response = await api.post(`/patient/${patientCNIC}/addnote`, { patientCNIC, note: newNoteText });
       console.log('Note added successfully:', response.data.message);
       setNewNoteText('');
       setNotes([...notes, newNoteText]);

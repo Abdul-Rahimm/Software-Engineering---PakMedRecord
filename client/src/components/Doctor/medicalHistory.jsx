@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import axios from 'axios';
+import api from '../../api';
 import { useParams } from 'react-router-dom';
 import { Typography, CircularProgress, Button, Accordion, AccordionSummary, AccordionDetails, Card, CardContent, Grid, Box, Container } from '@mui/material';
 import { MdDescription } from 'react-icons/md';
@@ -17,7 +17,7 @@ const MedicalHistory = () => {
     const fetchMedicalHistory = async () => {
       try {
         setLoading(true);
-        const response = await axios.get(`http://localhost:3009/record/getrecords/${patientCNIC}`);
+        const response = await api.get(`/record/getrecords/${patientCNIC}`);
         setMedicalHistory(response.data);
         setLoading(false);
       } catch (error) {

@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
-import axios from 'axios';
+import api from '../../api';
 import bg3 from '../../assets/bg3.png';
 import { Table, Button } from 'antd';
-import { CheckOutlined, DownloadOutlined } from '@ant-design/icons';
+import { CheckOutlined, CloseOutlined, DownloadOutlined } from '@ant-design/icons';
 import jsPDF from 'jspdf';
 
 const PendingMedicalRecords = () => {
@@ -14,7 +14,7 @@ const PendingMedicalRecords = () => {
     useEffect(() => {
         const fetchPendingRecords = async () => {
             try {
-                const response = await axios.get(`http://localhost:3009/tempRecords/pending/${doctorCNIC}`);
+                const response = await api.get(`/tempRecords/pending/${doctorCNIC}`);
                 setPendingRecords(response.data.pendingRecords);
                 setError('');
             } catch (error) {
@@ -26,14 +26,15 @@ const PendingMedicalRecords = () => {
         fetchPendingRecords();
     }, [doctorCNIC]);
 
-    const handleApprove = async (recordId) => {
+    // The server moves approved records into the patient's permanent history
+    const handleReview = async (recordId, status) => {
         try {
-            await axios.post(`http://localhost:3009/record/create`, pendingRecords.find(record => record._id === recordId));
+            await api.patch(`/tempRecords/approve/${recordId}`, { status });
             setPendingRecords(pendingRecords.filter(record => record._id !== recordId));
-            await axios.delete(`http://localhost:3009/tempRecords/remove/${recordId}`);
+            setError('');
         } catch (error) {
-            console.error('Error approving medical record:', error);
-            setError('Failed to approve medical record. Please try again later.');
+            console.error(`Error marking medical record ${status}:`, error);
+            setError(error.response?.data?.error || 'Failed to update medical record. Please try again later.');
         }
     };
 
@@ -66,7 +67,8 @@ const PendingMedicalRecords = () => {
             key: 'actions',
             render: (text, record) => (
                 <div>
-                    <Button onClick={() => handleApprove(record._id)} icon={<CheckOutlined />} style={{ marginRight: '5px' }}>Approve</Button>
+                    <Button onClick={() => handleReview(record._id, 'approved')} icon={<CheckOutlined />} style={{ marginRight: '5px' }}>Approve</Button>
+                    <Button danger onClick={() => handleReview(record._id, 'rejected')} icon={<CloseOutlined />} style={{ marginRight: '5px' }}>Reject</Button>
                     <Button onClick={() => handleDownloadPDF(record.recordData)} icon={<DownloadOutlined />}>Download PDF</Button>
                 </div>
             ),

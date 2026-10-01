@@ -12,7 +12,6 @@ const TempRecordsRoutes = require('./routes/TempRecordRoute');
 
 app.use(express.json());
 app.use(cors());
-app.use('/uploads', express.static("uploads"));
 app.use('/doctor', DoctorRoutes);
 app.use('/patient', PatientRoutes);
 app.use('/affiliation', AffiliationRoutes);

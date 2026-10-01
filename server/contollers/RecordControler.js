@@ -1,6 +1,4 @@
 // Import necessary modules and models
-const express = require('express');
-const router = express.Router();
 const MedicalRecord = require('../models/RecordModel');
 const Patient = require('../models/PatientModel');
 const Doctor = require('../models/DoctorModel');
@@ -9,7 +7,13 @@ const Affiliation = require('../models/AffiliationModel');
 // Endpoint to handle the creation of a medical record
 const addRecord = async (req, res) => {
   try {
-    const { patientCNIC, doctorCNIC, recordData } = req.body;
+    const { patientCNIC, recordData } = req.body;
+    // Records are always created by the signed-in doctor
+    const doctorCNIC = req.user.cnic;
+
+    if (!patientCNIC || !recordData) {
+      return res.status(400).json({ error: 'Patient and record data are required' });
+    }
 
     // Check if patient exists
     const existingPatient = await Patient.findOne({ patientCNIC });

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import axios from 'axios';
+import api from '../../api';
 import { useParams } from 'react-router-dom';
 import bg3 from '../../assets/bg3.png';
 import { Select, Input, Button, message } from 'antd'; // Import Ant Design components
@@ -22,7 +22,7 @@ const MedicalRecordForm = () => {
         const fetchDoctors = async () => {
             try {
                 // Fetch the list of doctors from the backend
-                const response = await axios.get('http://localhost:3009/doctor/doctors');
+                const response = await api.get('/doctor/doctors');
                 setDoctors(response.data); // Set the list of doctors in state
             } catch (error) {
                 console.error('Error fetching doctors:', error);
@@ -40,7 +40,7 @@ const MedicalRecordForm = () => {
         e.preventDefault();
 
         try {
-            const response = await axios.post(`http://localhost:3009/tempRecords/submit/${patientCNIC}`, formData);
+            const response = await api.post(`/tempRecords/submit/${patientCNIC}`, formData);
             setMessage(response.data.message);
             setError('');
             setFormData({
@@ -50,7 +50,7 @@ const MedicalRecordForm = () => {
             });
         } catch (error) {
             setMessage('');
-            setError(error.response.data.error);
+            setError(error.response?.data?.error || 'Could not reach the server');
         }
     };
 

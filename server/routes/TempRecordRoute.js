@@ -2,10 +2,12 @@ const express = require('express');
 const router = express.Router();
 
 const {submit, pending, approve, remove} = require('../contollers/TempRecordController');
+const { requireAuth, requireRole, requireSelf } = require('../middleware/auth');
 
-router.route('/submit/:patientCNIC').post(submit);
-router.route('/pending/:doctorCNIC').get(pending);
-router.route('/approve/:recordId').patch(approve);
+router.use(requireAuth);
+router.route('/submit/:patientCNIC').post(requireSelf('patient', 'patientCNIC'), submit);
+router.route('/pending/:doctorCNIC').get(requireSelf('doctor', 'doctorCNIC'), pending);
+router.route('/approve/:recordId').patch(requireRole('doctor'), approve);
 router.route('/remove/:recordId').delete(remove);
 
 module.exports = router;

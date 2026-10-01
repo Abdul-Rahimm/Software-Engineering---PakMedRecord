@@ -7,7 +7,13 @@ const Doctor = require('../models/DoctorModel');
 // POST request to create an affiliation record
 const affiliate = async (req, res) => {
   try {
-    const { patientCNIC, doctorCNIC } = req.body;
+    // The patient is always the signed-in user
+    const patientCNIC = req.user.cnic;
+    const doctorCNIC = [].concat(req.body.doctorCNIC || []).map(Number);
+
+    if (doctorCNIC.length === 0) {
+      return res.status(400).json({ error: 'Select at least one doctor' });
+    }
 
     // Check if the patient exists 
     const existingPatient = await Patient.findOne({ patientCNIC });
@@ -17,25 +23,25 @@ const affiliate = async (req, res) => {
 
     // Check if all doctors exist
     const existingDoctors = await Doctor.find({ doctorCNIC: { $in: doctorCNIC } });
-    if (existingDoctors.length !== doctorCNIC.length) {
+    if (existingDoctors.length !== new Set(doctorCNIC).size) {
       return res.status(404).json({ error: 'One or more doctors not found' });
     }
 
     // Check if any of the selected doctors are already affiliated with the patient
     const existingAffiliations = await Affiliation.find({ patientCNIC, doctorCNIC: { $in: doctorCNIC } });
     if (existingAffiliations.length > 0) {
-      const alreadyAffiliatedDoctors = existingAffiliations.map((affiliation) => affiliation.doctorCNIC);
+      const alreadyAffiliatedDoctors = existingAffiliations
+        .flatMap((affiliation) => affiliation.doctorCNIC)
+        .filter((cnic) => doctorCNIC.includes(cnic));
       return res.status(400).json({ error: `One or more doctors are already affiliated with the patient: ${alreadyAffiliatedDoctors}` });
     }
 
-    // Create a new affiliation record
-    const affiliation = new Affiliation({
-      patientCNIC,
-      doctorCNIC,
-    });
-
-    // Save the affiliation record to the database
-    await affiliation.save();
+    // Add the doctors to the patient's affiliation record (created if missing)
+    await Affiliation.updateOne(
+      { patientCNIC },
+      { $addToSet: { doctorCNIC: { $each: doctorCNIC } } },
+      { upsert: true }
+    );
 
     res.status(201).json({ message: 'Affiliation created successfully' });
   } catch (error) {
@@ -64,7 +70,7 @@ const getMyPatients = async (req, res) => {
   try {
     const { doctorCNIC } = req.params;
 
-    // Find affiliations based on the patient's CNIC
+    // Find affiliations that include this doctor
     const affiliations = await Affiliation.find({ doctorCNIC });
 
     // Return the affiliations
@@ -80,13 +86,15 @@ const removeDoctor = async (req, res) => {
     // Extract the patient and doctor CNICs from the request parameters
     const { patientCNIC, doctorCNIC } = req.params;
 
-    // Use Mongoose to find and delete the affiliation document
-    const deletedAffiliation = await Affiliation.findOneAndDelete({ patientCNIC, doctorCNIC });
+    // Remove only this doctor; the patient may be affiliated with others in the same document
+    const result = await Affiliation.updateMany({ patientCNIC, doctorCNIC }, { $pull: { doctorCNIC: Number(doctorCNIC) } });
 
-    // Check if the affiliation was found and deleted
-    if (!deletedAffiliation) {
+    // Check if the affiliation was found
+    if (result.modifiedCount === 0) {
       return res.status(404).json({ error: 'Affiliation not found' });
     }
+
+    await Affiliation.deleteMany({ patientCNIC, doctorCNIC: { $size: 0 } });
 
     // Send a success response
     res.status(200).json({ message: 'Affiliation deleted successfully' });

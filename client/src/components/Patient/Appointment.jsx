@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import axios from 'axios';
+import api from '../../api';
 import bgImage from '../../assets/bg3.png'; // Import the background image
 import { useParams } from 'react-router-dom'; // Import useParams
 
@@ -18,7 +18,7 @@ const AppointmentBooking = () => {
         const fetchDoctors = async () => {
             try {
                 // Fetch the list of doctors from the backend
-                const response = await axios.get('http://localhost:3009/doctor/doctors');
+                const response = await api.get('/doctor/doctors');
                 setDoctors(response.data); // Set the list of doctors in state
             } catch (error) {
                 console.error('Error fetching doctors:', error);
@@ -37,12 +37,12 @@ const AppointmentBooking = () => {
 
         try {
             // Make a POST request to book the appointment
-            const response = await axios.post(`http://localhost:3009/appointments/book/${patientCNIC}`, formData);
+            const response = await api.post(`/appointments/book/${patientCNIC}`, formData);
             setMessage(response.data.message);
             setError('');
         } catch (error) {
             setMessage('');
-            setError(error.response.data.error);
+            setError(error.response?.data?.error || 'Could not reach the server');
         }
     };
 

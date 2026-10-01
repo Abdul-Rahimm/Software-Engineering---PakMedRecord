@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import axios from 'axios';
+import api from '../../api';
+import { clearSession } from '../../session';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { Drawer, List, ListItem, ListItemIcon, ListItemText, Typography, Button, TextField } from '@mui/material';
 import { FaBars, FaCalculator, FaCalendarPlus, FaFileMedical } from 'react-icons/fa';
@@ -24,7 +25,7 @@ const Home = () => {
     const fetchDoctorData = async () => {
       try {
         if (doctorCNIC) {
-          const response = await axios.get(`http://localhost:3009/doctor/home/${doctorCNIC}`);
+          const response = await api.get(`/doctor/home/${doctorCNIC}`);
           setDoctorData(response.data);
         }
       } catch (error) {
@@ -38,7 +39,7 @@ const Home = () => {
   useEffect(() => {
     const fetchPatients = async () => {
       try {
-        const response = await axios.get(`http://localhost:3009/affiliation/getmypatients/${doctorCNIC}`);
+        const response = await api.get(`/affiliation/getmypatients/${doctorCNIC}`);
         setPatients(response.data);
       } catch (error) {
         console.error('Error fetching affiliated patients:', error);
@@ -56,6 +57,7 @@ const Home = () => {
   const handleLogout = () => {
     const confirmLogout = window.confirm('Are you sure you want to log out?');
     if (confirmLogout) {
+      clearSession();
       navigate('/');
     }
   };
@@ -74,7 +76,7 @@ const Home = () => {
 
   const handleSubmitMedicalRecord = async () => {
     try {
-      const response = await axios.post('http://localhost:3009/record/create', {
+      const response = await api.post('/record/create', {
         patientCNIC: selectedPatient,
         doctorCNIC,
         recordData,

@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import axios from 'axios';
+import api from '../../api';
 import { useParams } from 'react-router-dom';
 import { Container, Typography, CircularProgress, Button, Accordion, AccordionSummary, AccordionDetails, Card, CardContent, Grid, Box } from '@mui/material';
 import { MdDescription } from 'react-icons/md'; // Import icon for medical records
@@ -19,7 +19,7 @@ const MyRecordsPage = () => {
       try {
         setLoading(true); // Show loading indicator
         if (patientCNIC) {
-          const response = await axios.get(`http://localhost:3009/record/getrecords/${patientCNIC}`);
+          const response = await api.get(`/record/getrecords/${patientCNIC}`);
           setMedicalRecords(response.data);
         }
         setLoading(false); // Hide loading indicator

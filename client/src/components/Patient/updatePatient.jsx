@@ -1,15 +1,16 @@
 import React, { useState } from 'react';
-import axios from 'axios';
+import { useParams } from 'react-router-dom';
+import api from '../../api';
 import { Input, Button, message } from 'antd'; // Import Ant Design components
 import bg3 from '../../assets/bg3.png';
 
 const UpdatePatient = () => {
+  const { patientCNIC } = useParams();
   const [formData, setFormData] = useState({
     firstName: '',
     lastName: '',
     password: '',
-    email: '',
-    newCNIC: ''
+    email: ''
   });
 
   const [error, setError] = useState('');
@@ -22,19 +23,18 @@ const UpdatePatient = () => {
     e.preventDefault();
 
     try {
-      const response = await axios.put(`http://localhost:3009/patient/update/${formData.newCNIC}`, formData);
+      const response = await api.put(`/patient/update/${patientCNIC}`, formData);
       message.success(response.data.message); // Show success message
       // Reset form data after successful update
       setFormData({
         firstName: '',
         lastName: '',
         password: '',
-        email: '',
-        newCNIC: ''
+        email: ''
       });
       setError('');
     } catch (error) {
-      setError(error.response.data.error);
+      setError(error.response?.data?.error || 'Could not reach the server');
     }
   };
 
@@ -58,10 +58,6 @@ const UpdatePatient = () => {
           <div style={styles.formGroup}>
             <label style={styles.label}>Email:</label>
             <Input type="email" name="email" value={formData.email} onChange={handleChange} style={styles.input} />
-          </div>
-          <div style={styles.formGroup}>
-            <label style={styles.label}>New CNIC:</label>
-            <Input type="text" name="newCNIC" value={formData.newCNIC} onChange={handleChange} style={styles.input} />
           </div>
           <Button type="success" htmlType="submit" style={styles.button}>Update Info</Button>
         </div>

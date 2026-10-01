@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import axios from 'axios';
+import api from '../../api';
 import bg3 from '../../assets/bg3.png';
 import { Input, Table, Button, Alert } from 'antd';
 import { CloseOutlined } from '@ant-design/icons'; // Import the CloseOutlined icon
@@ -11,12 +11,11 @@ const DoctorList = () => {
   const [showConfirmation, setShowConfirmation] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [error, setError] = useState(null); // State variable for error message
-  const [patientCNIC, setPatientCNIC] = useState(''); // State variable for patient CNIC
 
   useEffect(() => {
     const fetchDoctors = async () => {
       try {
-        const response = await axios.get('http://localhost:3009/doctor/doctors');
+        const response = await api.get('/doctor/doctors');
         setDoctors(response.data);
         setLoading(false);
       } catch (error) {
@@ -43,8 +42,7 @@ const DoctorList = () => {
   const handleConfirmSelection = async () => {
     try {
       console.log('Selected Doctors:', selectedDoctors); 
-      const response = await axios.post('http://localhost:3009/affiliation/affiliate', {
-        patientCNIC: patientCNIC, // Use patient CNIC entered by the user
+      const response = await api.post('/affiliation/affiliate', {
         doctorCNIC: selectedDoctors,
       });
       console.log(response.data); 
@@ -53,15 +51,9 @@ const DoctorList = () => {
       setSelectedDoctors([]); 
     } catch (error) {
       console.error('Error creating affiliation:', error);
-      if (error.response && error.response.data && error.response.data.error === 'Affiliation already created') {
-        setError('Affiliation already created');
-        setSelectedDoctors([]); 
-        setShowConfirmation(false); 
-      } else {
-        setError('Error affiliating doctors. Please try again.');
-        setSelectedDoctors([]); 
-        setShowConfirmation(false); 
-      }
+      setError(error.response?.data?.error || 'Error affiliating doctors. Please try again.');
+      setSelectedDoctors([]); 
+      setShowConfirmation(false); 
     }
   };
 
@@ -121,8 +113,7 @@ const DoctorList = () => {
           <ul>
             <li>Step 1: Search for doctors by name in the table below.</li>
             <li>Step 2: Check the box next to the desired doctor(s) to select them.</li>
-            <li>Step 3: Enter your CNIC in the provided input field.</li>
-            <li>Step 4: Click the "Confirm Selection" button to affiliate with the selected doctors.</li>
+            <li>Step 3: Click the "Confirm Selection" button to affiliate with the selected doctors.</li>
           </ul>
         </div>
         {error && (
@@ -145,13 +136,6 @@ const DoctorList = () => {
             onChange={(e) => setSearchQuery(e.target.value)}
           />
         </div>
-        <div className="mb-3" style={{ maxWidth: '180px' }}>
-          <Input
-            placeholder="Enter your CNIC"
-            value={patientCNIC}
-            onChange={(e) => setPatientCNIC(e.target.value)}
-          />
-        </div>
         <Table
           columns={columns}
           dataSource={filteredDoctors}
@@ -162,7 +146,7 @@ const DoctorList = () => {
           type="primary"
           className="btn-md mr-2"
           onClick={handleConfirmSelection}
-          disabled={selectedDoctors.length === 0 || !patientCNIC}
+          disabled={selectedDoctors.length === 0}
           style={{ backgroundColor: 'green', borderColor: 'green' }}
         >
           Confirm Selection

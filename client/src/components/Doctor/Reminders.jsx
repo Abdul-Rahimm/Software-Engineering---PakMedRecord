@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import axios from 'axios';
+import api from '../../api';
 import { useParams } from 'react-router-dom';
 import { Card, Typography, Modal } from 'antd';
 import { CalendarOutlined, FileOutlined } from '@ant-design/icons';
@@ -16,7 +16,7 @@ const Reminders = () => {
   useEffect(() => {
     const fetchAppointments = async () => {
       try {
-        const response = await axios.get(`http://localhost:3009/appointments/fetch/${doctorCNIC}`);
+        const response = await api.get(`/appointments/fetch/${doctorCNIC}`);
         setAppointments(response.data.appointments.filter(appointment => appointment.status === 'pending'));
       } catch (error) {
         console.error('Error fetching appointments:', error);
@@ -25,7 +25,7 @@ const Reminders = () => {
 
     const fetchPendingRecords = async () => {
       try {
-        const response = await axios.get(`http://localhost:3009/tempRecords/pending/${doctorCNIC}`);
+        const response = await api.get(`/tempRecords/pending/${doctorCNIC}`);
         setPendingRecords(response.data.pendingRecords);
       } catch (error) {
         console.error('Error fetching pending records:', error);

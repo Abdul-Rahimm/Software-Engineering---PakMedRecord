@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import axios from 'axios';
+import api from '../../api';
+import { saveSession } from '../../session';
 import { Link, useNavigate } from 'react-router-dom';
 import bg3 from '../../assets/bg3.png';
 
@@ -15,24 +16,23 @@ const Signin = () => {
         setFormData((prevData) => ({ ...prevData, [name]: value }));
     };
 
-    const handleSuccessfulSignin = () => {
-        navigate(`/doctor/home/${formData.doctorCNIC}`);
+    const handleSuccessfulSignin = (doctorCNIC) => {
+        navigate(`/doctor/home/${doctorCNIC}`);
     };
 
     const handleSubmit = async (e) => {
         e.preventDefault();
 
         try {
-            const response = await axios.post('http://localhost:3009/doctor/signin', formData);
+            const response = await api.post('/doctor/signin', formData);
 
-            console.log('API Response:', response.data);
+            const { doctor, token } = response.data;
+            saveSession({ token, role: 'doctor', cnic: doctor.doctorCNIC });
 
-            const { doctor } = response.data;
-
-            handleSuccessfulSignin();
+            handleSuccessfulSignin(doctor.doctorCNIC);
         } catch (error) {
-            console.error('Signin error:', error.response.data.error);
-            alert('SignIn Unsuccessful :(', error.response.data.error);
+            console.error('Signin error:', error);
+            alert(`SignIn Unsuccessful :( ${error.response?.data?.error || 'Could not reach the server'}`);
         }
     };
 
