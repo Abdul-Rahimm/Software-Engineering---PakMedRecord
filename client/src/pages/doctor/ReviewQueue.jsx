@@ -88,7 +88,7 @@ const ReviewQueue = () => {
                       </div>
                     </div>
                     {r.title && <h3 style={{ fontSize: 17 }}>{r.title}</h3>}
-                    <p className="tl-body" style={{ padding: 16, borderRadius: 14, background: 'rgba(4,8,16,.45)', border: '1px solid var(--border)' }}>{r.recordData}</p>
+                    <p className="tl-body" style={{ padding: 16, borderRadius: 14, background: 'var(--field)', border: '1px solid var(--border)' }}>{r.recordData}</p>
                     <div className="row between wrap gap-12">
                       <button className="btn btn-ghost btn-sm" onClick={() => downloadRecordPDF({ record: { ...r, createdAt: new Date() }, patient: p, doctor: profile })}><FiDownload /> Preview PDF</button>
                       <div className="row gap-8">

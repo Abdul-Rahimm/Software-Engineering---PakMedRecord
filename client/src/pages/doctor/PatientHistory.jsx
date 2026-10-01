@@ -138,7 +138,7 @@ const PatientHistory = () => {
       {patient.allergies?.length > 0 && (
         <div className="glass row gap-12" style={{ padding: '14px 18px', marginBottom: 20, borderColor: 'rgba(255,93,143,.35)', background: 'rgba(255,93,143,.06)' }}>
           <FiAlertTriangle style={{ color: 'var(--rose)', flexShrink: 0 }} />
-          <span><strong style={{ color: '#ffb3c8' }}>Allergies:</strong> {patient.allergies.join(', ')}</span>
+          <span><strong style={{ color: 'var(--rose-text)' }}>Allergies:</strong> {patient.allergies.join(', ')}</span>
         </div>
       )}
 

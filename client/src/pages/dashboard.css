@@ -48,7 +48,7 @@
   border: 1px solid transparent;
   transition: background .2s, border-color .2s, transform .2s var(--ease);
 }
-.list-row:hover { background: rgba(148, 197, 255, .05); border-color: var(--border); color: var(--text); transform: translateX(3px); }
+.list-row:hover { background: var(--tint-1); border-color: var(--border); color: var(--text); transform: translateX(3px); }
 .list-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--emerald); box-shadow: 0 0 10px var(--emerald); flex-shrink: 0; }
 .list-dot.amber { background: var(--amber); box-shadow: 0 0 10px var(--amber); }
 .list-dot.cyan { background: var(--cyan); box-shadow: 0 0 10px var(--cyan); }
@@ -65,19 +65,19 @@
 }
 .mini-empty svg { color: var(--emerald); flex-shrink: 0; }
 
-.progress { height: 6px; border-radius: 6px; background: rgba(148, 197, 255, .1); overflow: hidden; }
+.progress { height: 6px; border-radius: 6px; background: var(--tint-3); overflow: hidden; }
 .progress span { display: block; height: 100%; border-radius: inherit; background: var(--grad); box-shadow: 0 0 12px rgba(61, 255, 176, .6); }
 
 .checklist { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 12px; }
 .checklist li { display: flex; align-items: center; gap: 12px; font-size: 14.5px; }
-.checklist li.done span:last-child { color: var(--text-3); text-decoration: line-through; text-decoration-color: rgba(148, 197, 255, .3); }
+.checklist li.done span:last-child { color: var(--text-3); text-decoration: line-through; text-decoration-color: var(--tint-4); }
 .check {
   width: 22px; height: 22px;
   flex-shrink: 0;
   display: grid; place-items: center;
   border-radius: 7px;
   border: 1.5px solid var(--border-strong);
-  color: #02140d;
+  color: var(--on-accent);
 }
 .checklist li.done .check { background: var(--grad); border-color: transparent; box-shadow: 0 0 10px rgba(61, 255, 176, .5); }
 
@@ -96,7 +96,7 @@
   display: grid; place-items: center;
   border-radius: 9px;
   border: 1.5px solid var(--border-strong);
-  color: #02140d;
+  color: var(--on-accent);
   transition: all .2s var(--ease);
   flex-shrink: 0;
 }
@@ -119,7 +119,7 @@
   padding: 12px 12px 12px 20px;
   margin-top: 24px;
   border-radius: 18px;
-  background: rgba(12, 20, 36, .85);
+  background: var(--surface-strong);
   border-color: rgba(61, 255, 176, .3);
   box-shadow: var(--shadow-lg), 0 0 40px -10px rgba(61, 255, 176, .35);
 }
@@ -178,7 +178,7 @@
   padding: 12px 4px;
   border-radius: 14px;
   border: 1px solid var(--border);
-  background: rgba(4, 8, 16, .5);
+  background: var(--field);
   color: var(--text-2);
   cursor: pointer;
   font-family: var(--font);
@@ -190,7 +190,7 @@
 .day[aria-pressed='true'] {
   background: var(--grad);
   border-color: transparent;
-  color: #02140d;
+  color: var(--on-accent);
   box-shadow: 0 12px 30px -10px rgba(61, 255, 176, .7);
   transform: translateY(-3px) scale(1.03);
 }
@@ -207,12 +207,12 @@
   gap: 14px;
   padding: 14px;
   border-radius: 16px;
-  background: rgba(4, 8, 16, .35);
+  background: var(--field);
   border: 1px solid var(--border);
   color: var(--text);
   transition: border-color .2s, transform .25s var(--ease), background .2s;
 }
-.feed-item:hover { border-color: var(--border-strong); transform: translateY(-2px); background: rgba(4, 8, 16, .55); color: var(--text); }
+.feed-item:hover { border-color: var(--border-strong); transform: translateY(-2px); background: var(--field); color: var(--text); }
 .feed-icon {
   width: 40px; height: 40px;
   flex-shrink: 0;
@@ -282,7 +282,7 @@
 .vital-tile.active { border-color: rgba(61, 255, 176, .55); box-shadow: var(--glow); }
 .vital-value { font: 700 30px/1 var(--font-display); letter-spacing: -0.03em; }
 .vital-unit { font: 500 13px/1 var(--font); color: var(--text-3); margin-left: 4px; letter-spacing: 0; }
-.flag-high, .flag-low { color: #ff8fb1; }
+.flag-high, .flag-low { color: var(--rose-text); }
 .flag-elevated { color: var(--amber); }
 
 .appt-card { display: flex; align-items: flex-start; gap: 18px; padding: 18px; border-radius: 20px; }

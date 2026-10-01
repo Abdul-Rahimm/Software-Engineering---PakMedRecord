@@ -108,7 +108,8 @@ const Rings = () => {
   );
 };
 
-const HelixScene = ({ className, style }) => {
+const HelixScene = ({ className, style, theme = 'light' }) => {
+  const dark = theme === 'dark';
   const reduced = usePrefersReducedMotion();
   return (
     <div className={className} style={style} aria-hidden>
@@ -118,7 +119,7 @@ const HelixScene = ({ className, style }) => {
         gl={{ antialias: true, alpha: true, powerPreference: 'high-performance' }}
         frameloop={reduced ? 'demand' : 'always'}
       >
-        <color attach="background" args={['#04060c']} />
+        {dark && <color attach="background" args={['#04060c']} />}
         <ambientLight intensity={0.35} />
         <pointLight position={[6, 6, 6]} intensity={60} color="#3dffb0" />
         <pointLight position={[-6, -4, 4]} intensity={50} color="#8b7bff" />
@@ -126,10 +127,13 @@ const HelixScene = ({ className, style }) => {
           <Helix />
         </Float>
         <Rings />
-        <Sparkles count={140} scale={[14, 10, 8]} size={2.2} speed={0.35} color="#9fffe0" opacity={0.7} />
+        <Sparkles count={140} scale={[14, 10, 8]} size={2.2} speed={0.35} color={dark ? '#9fffe0' : '#10b981'} opacity={dark ? 0.7 : 0.5} />
+        {/* bloom only in dark mode: on a light backdrop it washes the whole canvas out */}
+        {dark && (
         <EffectComposer disableNormalPass>
           <Bloom intensity={1.25} luminanceThreshold={0.12} luminanceSmoothing={0.3} mipmapBlur />
         </EffectComposer>
+        )}
       </Canvas>
     </div>
   );

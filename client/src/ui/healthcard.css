@@ -4,6 +4,12 @@
   position: relative;
 }
 .hc {
+  /* the card is always dark, like a physical card, in both themes */
+  --text: #e8eef9;
+  --text-2: #a3b1c6;
+  --text-3: #6b7a92;
+  --emerald: #3dffb0;
+  color: var(--text);
   --rx: 8deg;
   --ry: -14deg;
   --px: 30%;

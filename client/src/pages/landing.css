@@ -15,7 +15,7 @@
   gap: 16px;
   padding: 0 12px 0 20px;
   border-radius: 20px;
-  background: rgba(8, 13, 24, .6);
+  background: var(--panel-b);
 }
 .land-links { display: flex; gap: 28px; }
 .land-links a { color: var(--text-2); font-weight: 500; font-size: 14.5px; transition: color .2s; }
@@ -62,7 +62,7 @@
 .float-card {
   padding: 14px 16px;
   border-radius: 16px;
-  background: rgba(10, 16, 30, .62);
+  background: var(--surface-strong);
   box-shadow: var(--shadow-lg), 0 0 40px -12px rgba(61, 255, 176, .35);
   animation: drift 7s ease-in-out infinite;
 }
@@ -126,7 +126,7 @@
   border-radius: 22px;
   font: 700 20px/1 var(--font-mono);
   color: var(--emerald);
-  background: #08111c;
+  background: var(--surface-strong);
   border: 1px solid rgba(61, 255, 176, .35);
   box-shadow: 0 0 0 6px var(--bg), 0 0 30px -6px rgba(61, 255, 176, .6);
   transform: perspective(300px) rotateX(15deg);
@@ -178,4 +178,9 @@
   .land-section { padding: 48px 16px; }
   .land-footer { padding: 32px 16px 40px; }
   .fc-3 { display: none; }
+}
+
+.security-scene .scene-fill {
+  -webkit-mask-image: radial-gradient(ellipse 55% 55% at 50% 50%, #000 50%, transparent 98%);
+  mask-image: radial-gradient(ellipse 55% 55% at 50% 50%, #000 50%, transparent 98%);
 }

@@ -13,6 +13,7 @@ import Segmented from '../ui/Segmented';
 import { Button } from '../ui/Bits';
 import { useFeedback } from '../ui/Feedback';
 import Scene from '../three/Scene';
+import { ThemeToggle } from '../ui/Theme';
 import { apiError, isValidCNIC, maskCNIC, parseCNIC } from '../lib/format';
 import { SPECIALIZATIONS } from '../lib/constants';
 import './auth.css';
@@ -148,6 +149,7 @@ const Auth = ({ role, mode }) => {
 
       <section className="auth-panel">
         <Link to="/" className="btn btn-ghost btn-sm auth-back"><FiArrowLeft /> Home</Link>
+        <div className="auth-theme"><ThemeToggle /></div>
         <motion.div
           className="glass auth-card"
           initial={{ opacity: 0, rotateY: -12, x: 40 }}

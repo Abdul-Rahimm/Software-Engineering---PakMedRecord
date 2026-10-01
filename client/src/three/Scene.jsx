@@ -1,4 +1,5 @@
 import { Component, Suspense, lazy } from 'react';
+import { useTheme } from '../ui/Theme';
 
 const HelixScene = lazy(() => import('./HelixScene'));
 const OrbScene = lazy(() => import('./OrbScene'));
@@ -46,13 +47,14 @@ class SceneBoundary extends Component {
 const SCENES = { helix: HelixScene, orb: OrbScene };
 
 const Scene = ({ name, className, style, ...props }) => {
+  const { theme } = useTheme();
   const fallback = <Fallback className={className} style={style} />;
   if (!hasWebGL) return fallback;
   const Comp = SCENES[name];
   return (
     <SceneBoundary fallback={fallback}>
       <Suspense fallback={fallback}>
-        <Comp className={className} style={style} {...props} />
+        <Comp className={className} style={style} theme={theme} {...props} />
       </Suspense>
     </SceneBoundary>
   );

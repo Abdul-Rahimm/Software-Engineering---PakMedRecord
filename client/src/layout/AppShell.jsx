@@ -14,6 +14,7 @@ import { formatCNIC } from '../lib/format';
 import CommandPalette from './CommandPalette';
 import NotificationBell from './NotificationBell';
 import Assistant, { AssistantGlyph } from './Assistant';
+import { ThemeToggle } from '../ui/Theme';
 import { ShellContext } from './ShellContext';
 import './shell.css';
 
@@ -201,6 +202,7 @@ const AppShell = ({ role }) => {
             <button className="btn btn-ghost btn-icon" onClick={() => setPalette(true)} aria-label="Search">
               <FiSearch size={18} />
             </button>
+            <ThemeToggle />
             <NotificationBell />
           </div>
         </header>
@@ -210,6 +212,7 @@ const AppShell = ({ role }) => {
             {new Date().toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}
           </span>
           <div className="row gap-8">
+            <ThemeToggle className="btn btn-icon bell-btn" />
             <button className="btn btn-ai btn-sm" onClick={() => setAssistant(true)}>
               <AssistantGlyph size={15} /> Ask AI <kbd style={{ marginLeft: 2 }}>⌘J</kbd>
             </button>

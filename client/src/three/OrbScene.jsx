@@ -6,7 +6,7 @@ import * as THREE from 'three';
 import { usePrefersReducedMotion } from './motion';
 
 // Liquid core inside a wireframe shell, circled by orbiting satellites
-const Core = ({ accent }) => {
+const Core = ({ accent, dark }) => {
   const shell = useRef();
   const orbit = useRef();
   useFrame((state, d) => {
@@ -29,7 +29,7 @@ const Core = ({ accent }) => {
         </mesh>
         <mesh ref={shell} scale={1.9}>
           <icosahedronGeometry args={[1, 1]} />
-          <meshBasicMaterial color="#9fffe0" wireframe transparent opacity={0.22} toneMapped={false} />
+          <meshBasicMaterial color={dark ? '#9fffe0' : '#0f766e'} wireframe transparent opacity={dark ? 0.22 : 0.35} toneMapped={false} />
         </mesh>
       </Float>
       <group ref={orbit} rotation={[0.5, 0, 0.25]}>
@@ -48,7 +48,8 @@ const Core = ({ accent }) => {
   );
 };
 
-const OrbScene = ({ className, style, accent = '#10d68a', lift = 0 }) => {
+const OrbScene = ({ className, style, accent = '#10d68a', lift = 0, theme = 'light' }) => {
+  const dark = theme === 'dark';
   const reduced = usePrefersReducedMotion();
   return (
     <div className={className} style={style} aria-hidden>
@@ -57,12 +58,16 @@ const OrbScene = ({ className, style, accent = '#10d68a', lift = 0 }) => {
         <pointLight position={[4, 4, 5]} intensity={70} color="#3dffb0" />
         <pointLight position={[-5, -3, 2]} intensity={60} color="#8b7bff" />
         <group position={[0, lift, 0]} scale={lift ? 0.82 : 1}>
-          <Core accent={accent} />
+          <Core accent={accent} dark={dark} />
         </group>
-        <Sparkles count={70} scale={[9, 7, 5]} size={2} speed={0.4} color="#bdfcff" />
+        {dark && <color attach="background" args={['#070b14']} />}
+        <Sparkles count={70} scale={[9, 7, 5]} size={2} speed={0.4} color={dark ? '#bdfcff' : '#0ea5e9'} />
+        {/* bloom only in dark mode: on a light backdrop it washes the whole canvas out */}
+        {dark && (
         <EffectComposer disableNormalPass>
           <Bloom intensity={1.1} luminanceThreshold={0.15} mipmapBlur />
         </EffectComposer>
+        )}
       </Canvas>
     </div>
   );

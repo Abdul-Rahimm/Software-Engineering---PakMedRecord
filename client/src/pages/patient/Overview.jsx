@@ -207,7 +207,7 @@ const PatientOverview = () => {
           {profile && (
             <div className="stack gap-8" style={{ fontSize: 14 }}>
               <div className="row between"><span className="subtle">Blood group</span><strong>{profile.bloodGroup || '—'}</strong></div>
-              <div className="row between gap-12"><span className="subtle">Allergies</span><span className="truncate" style={{ color: profile.allergies?.length ? '#ff8fb1' : undefined }}>{profile.allergies?.join(', ') || 'None recorded'}</span></div>
+              <div className="row between gap-12"><span className="subtle">Allergies</span><span className="truncate" style={{ color: profile.allergies?.length ? 'var(--rose-text)' : undefined }}>{profile.allergies?.join(', ') || 'None recorded'}</span></div>
               <div className="row between gap-12"><span className="subtle">Medications</span><span className="truncate">{profile.medications?.length ? `${profile.medications.length} active` : 'None recorded'}</span></div>
             </div>
           )}

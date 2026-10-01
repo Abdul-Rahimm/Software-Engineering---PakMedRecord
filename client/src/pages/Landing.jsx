@@ -7,6 +7,7 @@ import {
 import Logo from '../ui/Logo';
 import TiltCard from '../ui/TiltCard';
 import Scene from '../three/Scene';
+import { ThemeToggle } from '../ui/Theme';
 import './landing.css';
 
 const features = [
@@ -55,6 +56,7 @@ const Landing = () => {
           <a href="#security">Security</a>
         </div>
         <div className="row gap-8">
+          <ThemeToggle />
           <Link to="/doctor/signin" className="btn btn-ghost hide-sm">Doctor sign in</Link>
           <Link to="/patient/signin" className="btn btn-primary">Patient sign in</Link>
         </div>

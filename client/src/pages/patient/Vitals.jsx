@@ -7,6 +7,8 @@ import {
 import { FiActivity, FiArrowDownRight, FiArrowUpRight, FiMinus, FiPlus, FiTrash2 } from 'react-icons/fi';
 import api from '../../api';
 import { useShell } from '../../layout/ShellContext';
+import { useTheme } from '../../ui/Theme';
+import { SERIES as SERIES_COLORS, baseChartOptions, chartColors } from '../../lib/chartTheme';
 import { useFetch } from '../../lib/data';
 import { apiError, formatDateTime } from '../../lib/format';
 import { VITAL_TYPES, formatVitalValue, vitalFlag } from '../../lib/constants';
@@ -18,8 +20,7 @@ import '../dashboard.css';
 ChartJS.register(CategoryScale, LinearScale, LineElement, PointElement, Filler, Tooltip);
 
 // Same validated pair as the insights charts
-const SERIES = ['#12a877', '#8a78ff'];
-const SURFACE = '#0d1526';
+const SERIES = [SERIES_COLORS.a, SERIES_COLORS.b];
 const FLAG_LABEL = { high: 'High', low: 'Low', elevated: 'Elevated' };
 
 const nowLocal = () => {
@@ -28,25 +29,22 @@ const nowLocal = () => {
   return d.toISOString().slice(0, 16);
 };
 
-const chartOptions = {
-  responsive: true,
-  maintainAspectRatio: false,
-  interaction: { mode: 'index', intersect: false },
-  plugins: {
-    legend: { display: false },
-    tooltip: {
-      backgroundColor: 'rgba(12,20,36,0.95)', borderColor: 'rgba(148,197,255,0.2)', borderWidth: 1,
-      titleColor: '#e8eef9', bodyColor: '#a3b1c6', padding: 12, cornerRadius: 10, usePointStyle: true, boxPadding: 6,
-    },
-  },
-  scales: {
-    x: { grid: { display: false }, border: { display: false }, ticks: { color: '#6b7a92', maxTicksLimit: 7, font: { family: 'JetBrains Mono', size: 11 } } },
-    y: { grid: { color: 'rgba(148,197,255,0.07)' }, border: { display: false }, ticks: { color: '#6b7a92', font: { family: 'JetBrains Mono', size: 11 } } },
-  },
-};
-
 // Shared by the patient's page (editable) and the doctor's patient file (read-only)
 export const VitalsView = ({ patientCNIC, readOnly = false }) => {
+  const { theme } = useTheme();
+  const ink = useMemo(() => chartColors(theme), [theme]);
+  const SURFACE = ink.surface;
+  const chartOptions = useMemo(() => {
+    const o = baseChartOptions(ink);
+    return {
+      ...o,
+      interaction: { mode: 'index', intersect: false },
+      scales: {
+        x: { ...o.scales.x, ticks: { ...o.scales.x.ticks, maxTicksLimit: 7 } },
+        y: { ...o.scales.y, beginAtZero: false },
+      },
+    };
+  }, [ink]);
   const { toast, confirm } = useFeedback();
   const [type, setType] = useState('bloodPressure');
   const [form, setForm] = useState({ value: '', value2: '', recordedAt: nowLocal(), note: '' });
@@ -167,7 +165,7 @@ export const VitalsView = ({ patientCNIC, readOnly = false }) => {
           <div className="row between wrap gap-12">
             <h2 className="section-title">{meta.label} <span className="subtle" style={{ fontSize: 13, fontWeight: 500 }}>({meta.unit})</span></h2>
             {meta.paired && (
-              <div className="row gap-16" style={{ fontSize: 13, color: '#a3b1c6' }}>
+              <div className="row gap-16" style={{ fontSize: 13, color: 'var(--text-2)' }}>
                 <span className="row gap-8"><span style={{ width: 10, height: 10, borderRadius: 3, background: SERIES[0] }} /> Systolic</span>
                 <span className="row gap-8"><span style={{ width: 10, height: 10, borderRadius: 3, background: SERIES[1] }} /> Diastolic</span>
               </div>

@@ -130,7 +130,7 @@ const SubmitRecord = () => {
                       <div style={{ fontWeight: 600 }} className="truncate">{s.title || s.recordData}</div>
                       <div className="subtle" style={{ fontSize: 12.5 }}>{s.category}</div>
                       {s.status === 'rejected' && s.reviewNote && (
-                        <div className="row gap-8" style={{ fontSize: 12.5, color: '#ffb3c8', marginTop: 4 }}><FiXCircle /> {s.reviewNote}</div>
+                        <div className="row gap-8" style={{ fontSize: 12.5, color: 'var(--rose-text)', marginTop: 4 }}><FiXCircle /> {s.reviewNote}</div>
                       )}
                     </td>
                     <td className="subtle">{doctorName(doctorsById[s.doctorCNIC])}</td>

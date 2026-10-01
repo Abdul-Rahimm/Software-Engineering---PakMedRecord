@@ -7,6 +7,8 @@ import {
 import { FiActivity, FiBarChart2, FiCalendar, FiCheckCircle, FiClock, FiTable } from 'react-icons/fi';
 import api from '../../api';
 import { useShell } from '../../layout/ShellContext';
+import { useTheme } from '../../ui/Theme';
+import { SERIES as SERIES_COLORS, baseChartOptions, chartColors } from '../../lib/chartTheme';
 import { useFetch } from '../../lib/data';
 import { apptDay, formatTime } from '../../lib/format';
 import { CountUp, EmptyState, PageHeader, Skeleton, rise, stagger } from '../../ui/Bits';
@@ -15,40 +17,12 @@ import '../dashboard.css';
 
 ChartJS.register(BarElement, CategoryScale, LinearScale, LineElement, PointElement, Filler, Tooltip, Legend);
 
-// Series colours validated for CVD separation, lightness band and contrast on the dark chart surface
-const SERIES = { completed: '#12a877', upcoming: '#8a78ff' };
-const SURFACE = '#0d1526';
-const INK = { primary: '#e8eef9', secondary: '#a3b1c6', muted: '#6b7a92', grid: 'rgba(148,197,255,0.07)' };
+// Series colours validated for CVD separation, lightness band and contrast on both chart surfaces
+const SERIES = { completed: SERIES_COLORS.a, upcoming: SERIES_COLORS.b };
 const DAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 
-const baseOptions = {
-  responsive: true,
-  maintainAspectRatio: false,
-  animation: { duration: 900, easing: 'easeOutQuart' },
-  plugins: {
-    legend: { display: false },
-    tooltip: {
-      backgroundColor: 'rgba(12,20,36,0.95)',
-      borderColor: 'rgba(148,197,255,0.2)',
-      borderWidth: 1,
-      titleColor: INK.primary,
-      bodyColor: INK.secondary,
-      titleFont: { family: 'Inter', weight: '600', size: 13 },
-      bodyFont: { family: 'Inter', size: 12.5 },
-      padding: 12,
-      cornerRadius: 10,
-      boxPadding: 6,
-      usePointStyle: true,
-    },
-  },
-  scales: {
-    x: { grid: { display: false }, border: { display: false }, ticks: { color: INK.muted, font: { family: 'JetBrains Mono', size: 11 } } },
-    y: { beginAtZero: true, grid: { color: INK.grid }, border: { display: false }, ticks: { color: INK.muted, precision: 0, font: { family: 'JetBrains Mono', size: 11 } } },
-  },
-};
-
 const Legend2 = () => (
-  <div className="row gap-16" style={{ fontSize: 13, color: INK.secondary }}>
+  <div className="row gap-16" style={{ fontSize: 13, color: 'var(--text-2)' }}>
     <span className="row gap-8"><span style={{ width: 10, height: 10, borderRadius: 3, background: SERIES.completed }} /> Completed</span>
     <span className="row gap-8"><span style={{ width: 10, height: 10, borderRadius: 3, background: SERIES.upcoming }} /> Upcoming</span>
   </div>
@@ -56,6 +30,10 @@ const Legend2 = () => (
 
 const Insights = () => {
   const { cnic } = useShell();
+  const { theme } = useTheme();
+  const ink = useMemo(() => chartColors(theme), [theme]);
+  const baseOptions = useMemo(() => baseChartOptions(ink), [ink]);
+  const SURFACE = ink.surface;
   const [tableView, setTableView] = useState(false);
   const { data: appts, loading } = useFetch(
     // cancelled visits don't count towards clinic load

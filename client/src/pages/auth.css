@@ -12,12 +12,16 @@
   border: 1px solid var(--border);
   background:
     radial-gradient(circle at 50% 45%, rgba(61, 255, 176, .12), transparent 55%),
-    linear-gradient(180deg, rgba(10, 16, 30, .7), rgba(4, 8, 16, .9));
+    linear-gradient(180deg, var(--surface-strong), var(--field-strong));
   display: flex;
   flex-direction: column;
   justify-content: space-between;
 }
 .auth-visual .scene-fill { position: absolute; inset: 0; }
+.auth-visual .scene-fill, .security-scene .scene-fill {
+  -webkit-mask-image: radial-gradient(ellipse 55% 55% at 50% 50%, #000 50%, transparent 98%);
+  mask-image: radial-gradient(ellipse 55% 55% at 50% 50%, #000 50%, transparent 98%);
+}
 .auth-visual-top { position: relative; z-index: 2; padding: 28px 32px; }
 .auth-visual-copy {
   position: relative;
@@ -38,6 +42,7 @@
   perspective: 1400px;
 }
 .auth-back { position: absolute; top: 24px; left: 24px; }
+.auth-theme { position: absolute; top: 20px; right: 24px; }
 .auth-card {
   width: 100%;
   max-width: 460px;
@@ -63,10 +68,10 @@
   color: var(--text-3);
   cursor: pointer;
 }
-.pw-toggle:hover { color: var(--text); background: rgba(148, 197, 255, .08); }
+.pw-toggle:hover { color: var(--text); background: var(--tint-2); }
 
 .strength { display: flex; gap: 4px; flex: 1; }
-.strength span { flex: 1; height: 4px; border-radius: 4px; background: rgba(148, 197, 255, .12); transition: background .3s; }
+.strength span { flex: 1; height: 4px; border-radius: 4px; background: var(--tint-3); transition: background .3s; }
 .strength .on.s1 { background: var(--rose); }
 .strength .on.s2 { background: var(--amber); }
 .strength .on.s3 { background: var(--cyan); }
