@@ -264,3 +264,26 @@
 @media (max-width: 860px) {
   .history-hero { grid-template-columns: 1fr; }
 }
+
+/* Medication / vaccination rows */
+.med-row { display: grid; grid-template-columns: 1.4fr 1fr 1fr auto; gap: 10px; align-items: center; }
+.med-row.vac { grid-template-columns: 1.4fr .7fr 1fr auto; }
+@media (max-width: 720px) {
+  .med-row, .med-row.vac { grid-template-columns: 1fr 1fr; }
+  .med-row > :first-child { grid-column: 1 / -1; }
+}
+
+/* Category filter + record chips */
+.cat-badge { color: var(--violet); background: rgba(139, 123, 255, .1); border-color: rgba(139, 123, 255, .25); }
+.cat-badge::before { display: none; }
+
+/* Vitals */
+.vital-tile { display: flex; flex-direction: column; gap: 6px; text-align: left; width: 100%; cursor: pointer; color: var(--text); font: inherit; }
+.vital-tile.active { border-color: rgba(61, 255, 176, .55); box-shadow: var(--glow); }
+.vital-value { font: 700 30px/1 var(--font-display); letter-spacing: -0.03em; }
+.vital-unit { font: 500 13px/1 var(--font); color: var(--text-3); margin-left: 4px; letter-spacing: 0; }
+.flag-high, .flag-low { color: #ff8fb1; }
+.flag-elevated { color: var(--amber); }
+
+.appt-card { display: flex; align-items: flex-start; gap: 18px; padding: 18px; border-radius: 20px; }
+@media (max-width: 560px) { .appt-card { flex-wrap: wrap; } }

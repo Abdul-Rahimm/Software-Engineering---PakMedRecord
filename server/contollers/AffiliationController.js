@@ -3,6 +3,7 @@ const router = express.Router();
 const Affiliation = require('../models/AffiliationModel');
 const Patient = require('../models/PatientModel');
 const Doctor = require('../models/DoctorModel');
+const { notify } = require('../lib/notify');
 
 // POST request to create an affiliation record
 const affiliate = async (req, res) => {
@@ -42,6 +43,14 @@ const affiliate = async (req, res) => {
       { $addToSet: { doctorCNIC: { $each: doctorCNIC } } },
       { upsert: true }
     );
+
+    const patientName = `${existingPatient.firstName} ${existingPatient.lastName}`;
+    doctorCNIC.forEach((d) => notify('doctor', d, {
+      type: 'affiliation',
+      title: 'New patient',
+      body: `${patientName} added you to their care team.`,
+      link: `/records/getrecords/${patientCNIC}`,
+    }));
 
     res.status(201).json({ message: 'Affiliation created successfully' });
   } catch (error) {

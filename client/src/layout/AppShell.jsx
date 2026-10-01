@@ -2,8 +2,8 @@ import { Suspense, useCallback, useEffect, useMemo, useState } from 'react';
 import { NavLink, useLocation, useNavigate, useOutlet } from 'react-router-dom';
 import { AnimatePresence, motion } from 'framer-motion';
 import {
-  FiActivity, FiBarChart2, FiCalendar, FiClipboard, FiCommand, FiEdit3, FiFileText,
-  FiGrid, FiLogOut, FiMenu, FiSearch, FiSettings, FiUploadCloud, FiUserPlus, FiUsers, FiX,
+  FiActivity, FiBarChart2, FiCalendar, FiClipboard, FiCommand, FiEdit3, FiFileText, FiGrid, FiHeart,
+  FiLogOut, FiMenu, FiSearch, FiSettings, FiTrendingUp, FiUploadCloud, FiUserPlus, FiUsers, FiX,
 } from 'react-icons/fi';
 import api from '../api';
 import { getSession, clearSession } from '../session';
@@ -12,6 +12,8 @@ import { Avatar } from '../ui/Bits';
 import { useFeedback } from '../ui/Feedback';
 import { formatCNIC } from '../lib/format';
 import CommandPalette from './CommandPalette';
+import NotificationBell from './NotificationBell';
+import Assistant, { AssistantGlyph } from './Assistant';
 import { ShellContext } from './ShellContext';
 import './shell.css';
 
@@ -23,11 +25,14 @@ export const navFor = (role, cnic) =>
         { to: `/appointments/fetch/${cnic}`, label: 'Appointments', icon: FiCalendar },
         { to: `/tempRecords/pending/${cnic}`, label: 'Review queue', icon: FiClipboard, badge: 'pending' },
         { to: `/appointments/fetchByTime/${cnic}`, label: 'Insights', icon: FiBarChart2 },
+        { to: `/doctor/profile/${cnic}`, label: 'Profile', icon: FiSettings },
       ]
     : [
         { to: `/patient/home/${cnic}`, label: 'Overview', icon: FiGrid },
         { to: `/record/getrecords/${cnic}`, label: 'Health records', icon: FiFileText },
-        { to: `/appointments/book/${cnic}`, label: 'Book appointment', icon: FiCalendar },
+        { to: `/patient/${cnic}/health`, label: 'Health profile', icon: FiHeart },
+        { to: `/vitals/${cnic}`, label: 'Vitals', icon: FiTrendingUp },
+        { to: `/appointments/mine/${cnic}`, label: 'Appointments', icon: FiCalendar },
         { to: `/tempRecords/submit/${cnic}`, label: 'Submit a record', icon: FiUploadCloud },
         { to: `/affiliation/getmydoctors/${cnic}`, label: 'My care team', icon: FiActivity },
         { to: '/doctor/doctors', label: 'Find doctors', icon: FiUserPlus },
@@ -60,6 +65,7 @@ const AppShell = ({ role }) => {
   const [pending, setPending] = useState(0);
   const [drawer, setDrawer] = useState(false);
   const [palette, setPalette] = useState(false);
+  const [assistant, setAssistant] = useState(false);
 
   const loadProfile = useCallback(async () => {
     try {
@@ -89,6 +95,11 @@ const AppShell = ({ role }) => {
       if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') {
         e.preventDefault();
         setPalette((p) => !p);
+      }
+      // ⌘J / Ctrl+J toggles the AI assistant
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'j') {
+        e.preventDefault();
+        setAssistant((a) => !a);
       }
     };
     window.addEventListener('keydown', onKey);
@@ -186,10 +197,25 @@ const AppShell = ({ role }) => {
             <FiMenu size={20} />
           </button>
           <Logo to={nav[0].to} size={28} />
-          <button className="btn btn-ghost btn-icon" onClick={() => setPalette(true)} aria-label="Search">
-            <FiSearch size={18} />
-          </button>
+          <div className="row gap-4">
+            <button className="btn btn-ghost btn-icon" onClick={() => setPalette(true)} aria-label="Search">
+              <FiSearch size={18} />
+            </button>
+            <NotificationBell />
+          </div>
         </header>
+
+        <div className="deskbar">
+          <span className="mono subtle" style={{ fontSize: 12.5 }}>
+            {new Date().toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}
+          </span>
+          <div className="row gap-8">
+            <button className="btn btn-ai btn-sm" onClick={() => setAssistant(true)}>
+              <AssistantGlyph size={15} /> Ask AI <kbd style={{ marginLeft: 2 }}>⌘J</kbd>
+            </button>
+            <NotificationBell />
+          </div>
+        </div>
 
         <AnimatePresence mode="wait">
           <motion.main
@@ -207,7 +233,8 @@ const AppShell = ({ role }) => {
         </AnimatePresence>
       </div>
 
-      <CommandPalette open={palette} onClose={() => setPalette(false)} items={nav} onLogout={logout} />
+      <CommandPalette open={palette} onClose={() => setPalette(false)} items={nav} onLogout={logout} onAssistant={() => setAssistant(true)} />
+      <Assistant role={role} open={assistant} onOpen={() => setAssistant(true)} onClose={() => setAssistant(false)} />
     </div>
     </ShellContext.Provider>
   );

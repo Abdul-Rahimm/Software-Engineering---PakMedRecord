@@ -18,6 +18,10 @@ const PatientHistory = lazy(() => import('./pages/doctor/PatientHistory'));
 const Appointments = lazy(() => import('./pages/doctor/Appointments'));
 const ReviewQueue = lazy(() => import('./pages/doctor/ReviewQueue'));
 const Insights = lazy(() => import('./pages/doctor/Insights'));
+const DoctorProfile = lazy(() => import('./pages/doctor/DoctorProfile'));
+const HealthProfile = lazy(() => import('./pages/patient/HealthProfile'));
+const Vitals = lazy(() => import('./pages/patient/Vitals'));
+const MyAppointments = lazy(() => import('./pages/patient/MyAppointments'));
 
 const patient = (el) => <RequireAuth role="patient" param="patientCNIC">{el}</RequireAuth>;
 const doctor = (el) => <RequireAuth role="doctor" param="doctorCNIC">{el}</RequireAuth>;
@@ -46,6 +50,9 @@ const Routes = () => (
       <Route path="/record/getrecords/:patientCNIC" element={patient(<Records />)} />
       <Route path="/appointments/book/:patientCNIC" element={patient(<BookAppointment />)} />
       <Route path="/tempRecords/submit/:patientCNIC" element={patient(<SubmitRecord />)} />
+      <Route path="/patient/:patientCNIC/health" element={patient(<HealthProfile />)} />
+      <Route path="/vitals/:patientCNIC" element={patient(<Vitals />)} />
+      <Route path="/appointments/mine/:patientCNIC" element={patient(<MyAppointments />)} />
       <Route path="/doctor/doctors" element={<FindDoctors />} />
     </Route>
 
@@ -56,6 +63,7 @@ const Routes = () => (
       <Route path="/appointments/fetchByTime/:doctorCNIC" element={doctor(<Insights />)} />
       <Route path="/tempRecords/pending/:doctorCNIC" element={doctor(<ReviewQueue />)} />
       <Route path="/records/getrecords/:patientCNIC" element={<PatientHistory />} />
+      <Route path="/doctor/profile/:doctorCNIC" element={doctor(<DoctorProfile />)} />
     </Route>
 
     <Route path="*" element={<Navigate to="/" replace />} />

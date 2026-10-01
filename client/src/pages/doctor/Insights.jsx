@@ -58,7 +58,8 @@ const Insights = () => {
   const { cnic } = useShell();
   const [tableView, setTableView] = useState(false);
   const { data: appts, loading } = useFetch(
-    async () => (await api.get(`/appointments/fetch/${cnic}`)).data.appointments,
+    // cancelled visits don't count towards clinic load
+    async () => (await api.get(`/appointments/fetch/${cnic}`)).data.appointments.filter((a) => a.status !== 'cancelled'),
     [cnic]
   );
 

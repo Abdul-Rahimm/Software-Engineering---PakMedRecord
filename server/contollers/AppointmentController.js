@@ -1,135 +1,86 @@
-// Import necessary modules
 const Appointment = require('../models/AppointmentModel');
-const Doctor = require('../models/DoctorModel');
-const Patient = require('../models/PatientModel');
-const Affiliation = require('../models/AffiliationModel');
-// const tf = require('@tensorflow/tfjs-node');
+const { notify } = require('../lib/notify');
+const { ACTIVE, createAppointment, describe } = require('../lib/appointments');
 
-
-// Endpoint to book an appointment
+// Book an appointment with a doctor in the patient's care team
 const book = async (req, res) => {
     try {
-        // Extract appointment details from request body
-        const { doctorCNIC, date, time } = req.body;
-
-        if (!doctorCNIC || !date || !time) {
-            return res.status(400).json({ error: 'Doctor, date and time are required' });
-        }
-        const {patientCNIC} = req.params;
-
-        // Check if patient exists
-        const existingPatient = await Patient.findOne({ patientCNIC });
-        if (!existingPatient) {
-            return res.status(404).json({ error: 'Patient not found' });
-        }
-
-        // Check if doctor exists
-        const existingDoctor = await Doctor.findOne({ doctorCNIC });
-        if (!existingDoctor) {
-            return res.status(404).json({ error: 'Doctor not found' });
-        }
-
-        // Check if doctor is affiliated with the patient
-        const affiliation = await Affiliation.findOne({ patientCNIC, doctorCNIC });
-        if (!affiliation) {
-            return res.status(403).json({ error: 'Patient and doctor are not affiliated' });
-        }
-
-        // Check if appointment already exists for the specified doctor at the given date and time
-        const existingAppointment = await Appointment.findOne({ doctorCNIC, date, time });
-        if (existingAppointment) {
-            return res.status(409).json({ error: 'Appointment already booked at this time' });
-        }
-
-        // Create a new appointment
-        const appointment = new Appointment({
-            patientCNIC: patientCNIC,
-            doctorCNIC: doctorCNIC,
-            date,
-            time
-        });
-
-        // Save the appointment to the database
-        await appointment.save();
-
-        res.status(201).json({ message: "Appointment booked successfully.", appointment });
+        const { status, body } = await createAppointment({ ...req.body, patientCNIC: Number(req.params.patientCNIC) });
+        res.status(status).json(body);
     } catch (error) {
-        console.error("Error booking appointment:", error);
-        res.status(500).json({ error: "Internal server error." });
+        console.error('Error booking appointment:', error);
+        res.status(500).json({ error: 'Internal server error.' });
     }
 };
 
-
+// Times already taken for a doctor on a day (so the booking UI can disable them)
+const bookedSlots = async (req, res) => {
+    try {
+        const { doctorCNIC } = req.params;
+        const { date } = req.query;
+        if (!/^\d{4}-\d{2}-\d{2}$/.test(String(date || ''))) return res.status(400).json({ error: 'date=YYYY-MM-DD is required' });
+        const taken = await Appointment.find({ doctorCNIC, date, status: ACTIVE }).select('time -_id');
+        res.status(200).json({ times: taken.map((a) => a.time) });
+    } catch (error) {
+        console.error('Error fetching booked slots:', error);
+        res.status(500).json({ error: 'Internal server error.' });
+    }
+};
 
 const getAppointments = async (req, res) => {
     try {
-        // Extract doctorCNIC from request parameters
-        const { doctorCNIC } = req.params;
-
-        // Find appointments with the given doctorCNIC
-        const appointments = await Appointment.find({ doctorCNIC });
-
-        // Return the appointments
+        const appointments = await Appointment.find({ doctorCNIC: req.params.doctorCNIC }).sort({ date: 1, time: 1 });
         res.status(200).json({ appointments });
     } catch (error) {
-        console.error("Error fetching appointments:", error);
-        res.status(500).json({ error: "Internal server error." });
+        console.error('Error fetching appointments:', error);
+        res.status(500).json({ error: 'Internal server error.' });
+    }
+};
+
+// A patient's own appointments
+const getPatientAppointments = async (req, res) => {
+    try {
+        const appointments = await Appointment.find({ patientCNIC: req.params.patientCNIC }).sort({ date: 1, time: 1 });
+        res.status(200).json({ appointments });
+    } catch (error) {
+        console.error('Error fetching patient appointments:', error);
+        res.status(500).json({ error: 'Internal server error.' });
     }
 };
 
 const getAppointmentTimes = async (req, res) => {
     try {
-        // Extract doctorCNIC from request parameters
-        const { doctorCNIC } = req.params;
-
-        // Find appointments with the given doctorCNIC
-        const appointments = await Appointment.find({ doctorCNIC });
-
-        // Extract appointment times, dates, and corresponding days
-        const appointmentData = appointments.map(appointment => {
-            const date = new Date(appointment.date);
-            const dayOfWeek = date.toLocaleDateString('en-US', { weekday: 'long' });
-            return {
-                time: appointment.time,
-                date: appointment.date,
-                day: dayOfWeek
-            };
-        });
-
-        // Return the appointment data
+        const appointments = await Appointment.find({ doctorCNIC: req.params.doctorCNIC, status: ACTIVE });
+        const appointmentData = appointments.map((appointment) => ({
+            time: appointment.time,
+            date: appointment.date,
+            day: new Date(appointment.date).toLocaleDateString('en-US', { weekday: 'long', timeZone: 'UTC' }),
+        }));
         res.status(200).json({ appointmentData });
     } catch (error) {
-        console.error("Error fetching appointments by time:", error);
-        res.status(500).json({ error: "Internal server error." });
+        console.error('Error fetching appointments by time:', error);
+        res.status(500).json({ error: 'Internal server error.' });
     }
 };
 
-
-
-
+// Only the doctor the appointment is with can complete it
 const completeAppointment = async (req, res) => {
     try {
-        // Extract appointment ID from request parameters
-        const { appointmentId } = req.params;
+        const appointment = await Appointment.findById(req.params.appointmentId);
+        if (!appointment) return res.status(404).json({ error: 'Appointment not found' });
+        if (appointment.doctorCNIC !== req.user.cnic) return res.status(403).json({ error: 'Not allowed' });
+        if (appointment.status === 'cancelled') return res.status(409).json({ error: 'This appointment was cancelled' });
 
-        // Find the appointment by ID
-        const appointment = await Appointment.findById(appointmentId);
-
-        // Check if appointment exists
-        if (!appointment) {
-            return res.status(404).json({ error: 'Appointment not found' });
-        }
-
-        // Only the doctor the appointment is with can complete it
-        if (appointment.doctorCNIC !== req.user.cnic) {
-            return res.status(403).json({ error: 'Not allowed' });
-        }
-
-        // Update the status of the appointment to completed
         appointment.status = 'completed';
         await appointment.save();
 
-        // Return a success response
+        notify('patient', appointment.patientCNIC, {
+            type: 'appointment',
+            title: 'Visit completed',
+            body: `Your appointment on ${describe(appointment)} was marked as completed.`,
+            link: `/appointments/mine/${appointment.patientCNIC}`,
+        });
+
         res.status(200).json({ message: 'Appointment status updated to completed', appointment });
     } catch (error) {
         console.error('Error updating appointment status:', error);
@@ -137,46 +88,39 @@ const completeAppointment = async (req, res) => {
     }
 };
 
+// Either side can cancel an upcoming appointment; the other side is notified
+const cancelAppointment = async (req, res) => {
+    try {
+        const appointment = await Appointment.findById(req.params.appointmentId);
+        if (!appointment) return res.status(404).json({ error: 'Appointment not found' });
 
-// Define controller function for recommendation
-// const recommendAppointment = async (req, res) => {
-//     try {
-//         // Extract doctorCNIC from request parameters
-//         const { doctorCNIC } = req.params;
+        const { role, cnic } = req.user;
+        const owns = role === 'doctor' ? appointment.doctorCNIC === cnic : appointment.patientCNIC === cnic;
+        if (!owns) return res.status(403).json({ error: 'Not allowed' });
+        if (appointment.status !== 'pending') return res.status(409).json({ error: `This appointment is already ${appointment.status}` });
 
-//         // Find appointments with the given doctorCNIC
-//         const appointments = await Appointment.find({ doctorCNIC });
+        appointment.status = 'cancelled';
+        appointment.cancelledBy = role;
+        appointment.cancelReason = req.body?.reason ? String(req.body.reason).trim().slice(0, 300) : undefined;
+        await appointment.save();
 
-//         // Extract appointment times
-//         const appointmentTimes = appointments.map(appointment => [appointment.date, appointment.time]);
+        const other = role === 'doctor'
+            ? ['patient', appointment.patientCNIC, `/appointments/mine/${appointment.patientCNIC}`]
+            : ['doctor', appointment.doctorCNIC, `/appointments/fetch/${appointment.doctorCNIC}`];
+        notify(other[0], other[1], {
+            type: 'cancelled',
+            title: 'Appointment cancelled',
+            body: `The appointment on ${describe(appointment)} was cancelled by the ${role}${appointment.cancelReason ? `: ${appointment.cancelReason}` : '.'}`,
+            link: other[2],
+        });
 
-//         // Load TensorFlow model
-//         const model = await tf.loadLayersModel('path/to/saved/model.json');
+        res.status(200).json({ message: 'Appointment cancelled', appointment });
+    } catch (error) {
+        console.error('Error cancelling appointment:', error);
+        res.status(500).json({ error: 'Internal server error' });
+    }
+};
 
-//         // Convert appointmentTimes to tensor format
-//         const inputTensor = tf.tensor(appointmentTimes);
-
-//         // Normalize inputTensor (if necessary)
-//         // const normalizedInput = inputTensor;
-
-//         // Make predictions using TensorFlow model
-//         const predictions = model.predict(inputTensor);
-
-//         // Convert predictions tensor to JavaScript array
-//         const predictedTimes = predictions.arraySync();
-
-//         // Find the least busy time (e.g., minimum predicted value)
-//         const leastBusyIndex = predictedTimes.indexOf(Math.min(...predictedTimes));
-
-//         // Return the least busy time
-//         const leastBusyTime = appointmentTimes[leastBusyIndex];
-
-//         res.status(200).json({ leastBusyTime });
-//     } catch (error) {
-//         console.error("Error recommending appointment time:", error);
-//         res.status(500).json({ error: "Internal server error." });
-//     }
-// };
-
-// Export the router
-module.exports = { book, getAppointments, completeAppointment, getAppointmentTimes };
+module.exports = {
+    book, bookedSlots, getAppointments, getPatientAppointments, completeAppointment, cancelAppointment, getAppointmentTimes,
+};

@@ -1,4 +1,5 @@
 const mongoose = require('mongoose');
+const { SPECIALIZATIONS } = require('./constants');
 
 const doctorSchema = mongoose.Schema (
     {
@@ -28,8 +29,13 @@ const doctorSchema = mongoose.Schema (
         hospital: {
             type: String,
             required: [true, 'Please enter affiliated hospital!']
-        }
-    }
+        },
+        specialization: { type: String, enum: SPECIALIZATIONS, default: 'General Physician' },
+        phone: { type: String, trim: true },
+        bio: { type: String, trim: true, maxlength: 600 },
+        yearsExperience: { type: Number, min: 0, max: 70 },
+    },
+    { timestamps: true }
 );
 
 // Never send password hashes back to the client

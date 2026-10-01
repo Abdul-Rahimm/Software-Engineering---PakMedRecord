@@ -3,13 +3,19 @@ const Doctor = require('../models/DoctorModel');
 const expressAsyncHandler = require('express-async-handler');
 const Patient = require('../models/PatientModel');
 const { signToken } = require('../middleware/auth');
+const { isCNIC, isEmail } = require('../lib/validate');
+const { SPECIALIZATIONS } = require('../models/constants');
 
 const Signup = expressAsyncHandler(async (req, res) => {
-  const { doctorCNIC, firstName, lastName, email, password, hospital } = req.body;
+  const { doctorCNIC, firstName, lastName, email, password, hospital, specialization } = req.body;
 
   if (!doctorCNIC || !firstName || !lastName || !email || !password || !hospital) {
     return res.status(400).json({ error: 'All fields are required' });
   }
+  if (!isCNIC(doctorCNIC)) return res.status(400).json({ error: 'CNIC must be 13 digits' });
+  if (!isEmail(email)) return res.status(400).json({ error: 'Enter a valid email' });
+  if (String(password).length < 6) return res.status(400).json({ error: 'Password must be at least 6 characters' });
+  if (specialization && !SPECIALIZATIONS.includes(specialization)) return res.status(400).json({ error: 'Unknown specialization' });
 
   try {
     const patientWithSameCNIC = await Patient.findOne({ patientCNIC: doctorCNIC });
@@ -30,7 +36,8 @@ const Signup = expressAsyncHandler(async (req, res) => {
       lastName,
       email,
       password: hashedPassword,
-      hospital
+      hospital,
+      ...(specialization && { specialization }),
     });
 
     await newDoctor.save();
@@ -92,8 +99,15 @@ const getDoctor = expressAsyncHandler(async (req, res) => {
 
 const getAllDoctors = expressAsyncHandler(async (req, res) => {
   try {
-    // Fetch all doctors from the database
-    const doctors = await Doctor.find();
+    // Optional filters: ?q= name/hospital search, ?specialization=
+    const { q, specialization } = req.query;
+    const filter = {};
+    if (specialization) filter.specialization = specialization;
+    if (q) {
+      const rx = new RegExp(String(q).replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'i');
+      filter.$or = [{ firstName: rx }, { lastName: rx }, { hospital: rx }];
+    }
+    const doctors = await Doctor.find(filter).sort({ firstName: 1 });
 
     // Check if any doctors were found
     res.status(200).json(doctors);
@@ -104,4 +118,37 @@ const getAllDoctors = expressAsyncHandler(async (req, res) => {
 });
 
 
-module.exports = { Signup, Signin, getDoctor, getAllDoctors };
+// Doctor edits their own professional profile
+const updateDoctor = expressAsyncHandler(async (req, res) => {
+  try {
+    const doctor = await Doctor.findOne({ doctorCNIC: req.params.doctorCNIC });
+    if (!doctor) return res.status(404).json({ error: 'Doctor not found' });
+
+    const { firstName, lastName, email, hospital, specialization, phone, bio, yearsExperience, password } = req.body;
+    if (email !== undefined && !isEmail(email)) return res.status(400).json({ error: 'Enter a valid email' });
+    if (specialization !== undefined && !SPECIALIZATIONS.includes(specialization)) return res.status(400).json({ error: 'Unknown specialization' });
+    if (password !== undefined && password !== '' && String(password).length < 6) return res.status(400).json({ error: 'Password must be at least 6 characters' });
+
+    if (firstName) doctor.firstName = String(firstName).trim();
+    if (lastName) doctor.lastName = String(lastName).trim();
+    if (email) doctor.email = String(email).trim();
+    if (hospital) doctor.hospital = String(hospital).trim();
+    if (specialization) doctor.specialization = specialization;
+    if (phone !== undefined) doctor.phone = String(phone).trim();
+    if (bio !== undefined) doctor.bio = String(bio).trim();
+    if (yearsExperience !== undefined && yearsExperience !== '') doctor.yearsExperience = Number(yearsExperience);
+    if (password) doctor.password = await bcrypt.hash(password, 10);
+
+    await doctor.save();
+    res.status(200).json({ message: 'Profile updated', doctor });
+  } catch (error) {
+    if (error.name === 'ValidationError') return res.status(400).json({ error: error.message });
+    if (error.code === 11000) return res.status(409).json({ error: 'That email is already in use' });
+    console.error('Error updating doctor:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+const getSpecializations = (req, res) => res.status(200).json(SPECIALIZATIONS);
+
+module.exports = { Signup, Signin, getDoctor, getAllDoctors, updateDoctor, getSpecializations };

@@ -1,10 +1,11 @@
 import { useMemo, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
-import { FiCheck, FiHome, FiMail, FiSearch, FiUserPlus } from 'react-icons/fi';
+import { FiAward, FiCheck, FiHome, FiMail, FiSearch, FiUserPlus } from 'react-icons/fi';
 import api from '../../api';
 import { useShell } from '../../layout/ShellContext';
 import { useFetch, fetchAllDoctors, fetchCareTeam } from '../../lib/data';
 import { apiError, doctorName } from '../../lib/format';
+import { SPECIALIZATIONS } from '../../lib/constants';
 import { Avatar, Button, EmptyState, PageHeader, Skeleton, rise, stagger } from '../../ui/Bits';
 import TiltCard from '../../ui/TiltCard';
 import { useFeedback } from '../../ui/Feedback';
@@ -14,6 +15,7 @@ const FindDoctors = () => {
   const { cnic } = useShell();
   const { toast } = useFeedback();
   const [query, setQuery] = useState('');
+  const [spec, setSpec] = useState('');
   const [selected, setSelected] = useState([]);
   const [saving, setSaving] = useState(false);
 
@@ -24,9 +26,11 @@ const FindDoctors = () => {
 
   const doctors = useMemo(() => {
     const q = query.trim().toLowerCase();
-    const list = data?.all ?? [];
-    return q ? list.filter((d) => `${d.firstName} ${d.lastName} ${d.hospital}`.toLowerCase().includes(q)) : list;
-  }, [data, query]);
+    const list = (data?.all ?? []).filter((d) => !spec || d.specialization === spec);
+    return q ? list.filter((d) => `${d.firstName} ${d.lastName} ${d.hospital} ${d.specialization}`.toLowerCase().includes(q)) : list;
+  }, [data, query, spec]);
+
+  const specsInUse = useMemo(() => SPECIALIZATIONS.filter((s) => (data?.all ?? []).some((d) => d.specialization === s)), [data]);
 
   const toggle = (id) => setSelected((s) => (s.includes(id) ? s.filter((x) => x !== id) : [...s, id]));
 
@@ -51,9 +55,15 @@ const FindDoctors = () => {
         title="Find doctors"
         subtitle="Add doctors to your care team. Only the doctors you add can see your records."
         actions={
-          <div className="search input-wrap">
-            <FiSearch size={16} />
-            <input className="input" placeholder="Name or hospital" value={query} onChange={(e) => setQuery(e.target.value)} />
+          <div className="row gap-8 wrap">
+            <select className="select" style={{ width: 200 }} value={spec} onChange={(e) => setSpec(e.target.value)} aria-label="Specialization">
+              <option value="">All specialties</option>
+              {specsInUse.map((s) => <option key={s} value={s}>{s}</option>)}
+            </select>
+            <div className="search input-wrap">
+              <FiSearch size={16} />
+              <input className="input" placeholder="Name or hospital" value={query} onChange={(e) => setQuery(e.target.value)} />
+            </div>
           </div>
         }
       />
@@ -82,9 +92,14 @@ const FindDoctors = () => {
                     <Avatar first={d.firstName} last={d.lastName} seed={d.doctorCNIC} size={50} />
                     {linked ? <span className="badge badge-green">In your team</span> : <span className="select-tick">{isSel && <FiCheck size={15} />}</span>}
                   </div>
-                  <div className="depth-1">
+                  <div className="depth-1 stack gap-4">
                     <div style={{ fontWeight: 600, fontSize: 17 }}>{doctorName(d)}</div>
+                    <div className="row gap-8 wrap">
+                      <span className="badge cat-badge">{d.specialization || 'General Physician'}</span>
+                      {d.yearsExperience != null && <span className="subtle row gap-4" style={{ fontSize: 12.5 }}><FiAward /> {d.yearsExperience} yrs</span>}
+                    </div>
                   </div>
+                  {d.bio && <p className="muted" style={{ fontSize: 13.5, lineHeight: 1.5 }}>{d.bio.length > 140 ? `${d.bio.slice(0, 140)}…` : d.bio}</p>}
                   <div className="meta">
                     <span><FiHome /> <span className="truncate">{d.hospital}</span></span>
                     <span><FiMail /> <span className="truncate">{d.email}</span></span>

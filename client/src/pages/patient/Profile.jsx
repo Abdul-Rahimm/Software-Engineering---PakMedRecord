@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { FiLock, FiMail, FiSave, FiUser } from 'react-icons/fi';
+import { FiLock, FiMail, FiPhone, FiSave, FiUser } from 'react-icons/fi';
 import api from '../../api';
 import { useShell } from '../../layout/ShellContext';
 import { apiError, formatCNIC, formatDate } from '../../lib/format';
@@ -12,11 +12,11 @@ import '../dashboard.css';
 const Profile = () => {
   const { cnic, profile, reloadProfile } = useShell();
   const { toast } = useFeedback();
-  const [form, setForm] = useState({ firstName: '', lastName: '', email: '', password: '', confirm: '' });
+  const [form, setForm] = useState({ firstName: '', lastName: '', email: '', phone: '', password: '', confirm: '' });
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
-    if (profile) setForm((f) => ({ ...f, firstName: profile.firstName, lastName: profile.lastName, email: profile.email }));
+    if (profile) setForm((f) => ({ ...f, firstName: profile.firstName, lastName: profile.lastName, email: profile.email, phone: profile.phone || '' }));
   }, [profile]);
 
   const set = (k) => (e) => setForm((f) => ({ ...f, [k]: e.target.value }));
@@ -27,7 +27,7 @@ const Profile = () => {
     if (mismatch) return;
     setSaving(true);
     try {
-      const body = { firstName: form.firstName.trim(), lastName: form.lastName.trim(), email: form.email.trim() };
+      const body = { firstName: form.firstName.trim(), lastName: form.lastName.trim(), email: form.email.trim(), phone: form.phone.trim() };
       if (form.password) body.password = form.password;
       await api.put(`/patient/update/${cnic}`, body);
       setForm((f) => ({ ...f, password: '', confirm: '' }));
@@ -66,7 +66,10 @@ const Profile = () => {
             <Field label="First name" icon={FiUser} value={form.firstName} onChange={set('firstName')} required />
             <Field label="Last name" icon={FiUser} value={form.lastName} onChange={set('lastName')} required />
           </div>
-          <Field label="Email" icon={FiMail} type="email" value={form.email} onChange={set('email')} required />
+          <div className="grid grid-2" style={{ gap: 16 }}>
+            <Field label="Email" icon={FiMail} type="email" value={form.email} onChange={set('email')} required />
+            <Field label="Phone" icon={FiPhone} type="tel" value={form.phone} onChange={set('phone')} placeholder="03xx-xxxxxxx" />
+          </div>
 
           <h2 className="section-title" style={{ marginTop: 8 }}>Change password</h2>
           <div className="grid grid-2" style={{ gap: 16 }}>

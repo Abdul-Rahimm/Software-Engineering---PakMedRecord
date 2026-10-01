@@ -7,17 +7,25 @@ export const useFetch = (loader, deps) => {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   const run = useCallback(loader, deps);
 
-  const reload = useCallback(async () => {
-    setState((s) => ({ ...s, loading: true, error: null }));
+  // silent: refresh in the background without showing loading skeletons
+  const reload = useCallback(async (silent = false) => {
+    if (!silent) setState((s) => ({ ...s, loading: true, error: null }));
     try {
       const data = await run();
       setState({ data, loading: false, error: null });
     } catch (error) {
-      setState({ data: null, loading: false, error });
+      if (!silent) setState({ data: null, loading: false, error });
     }
   }, [run]);
 
   useEffect(() => { reload(); }, [reload]);
+
+  // the AI assistant can book appointments / log vitals / save notes: refresh open pages
+  useEffect(() => {
+    const onChange = () => reload(true);
+    window.addEventListener('pakmed:data-changed', onChange);
+    return () => window.removeEventListener('pakmed:data-changed', onChange);
+  }, [reload]);
 
   const setData = useCallback((updater) => {
     setState((s) => ({ ...s, data: typeof updater === 'function' ? updater(s.data) : updater }));

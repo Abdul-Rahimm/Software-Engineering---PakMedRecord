@@ -38,7 +38,7 @@ const DoctorOverview = () => {
     if (!data) return [];
     const today = startOfToday();
     return data.appts
-      .filter((a) => a.status !== 'completed' && apptDay(a.date) >= today)
+      .filter((a) => a.status === 'pending' && apptDay(a.date) >= today)
       .sort((a, b) => apptDay(a.date) - apptDay(b.date) || a.time.localeCompare(b.time));
   }, [data]);
 

@@ -2,20 +2,24 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { useNavigate } from 'react-router-dom';
 import { AnimatePresence, motion } from 'framer-motion';
-import { FiCornerDownLeft, FiLogOut, FiSearch } from 'react-icons/fi';
+import { FiCornerDownLeft, FiLogOut, FiSearch, FiZap } from 'react-icons/fi';
 
 // ⌘K quick navigation
-const CommandPalette = ({ open, onClose, items, onLogout }) => {
+const CommandPalette = ({ open, onClose, items, onLogout, onAssistant }) => {
   const navigate = useNavigate();
   const [query, setQuery] = useState('');
   const [index, setIndex] = useState(0);
   const inputRef = useRef(null);
 
   const results = useMemo(() => {
-    const all = [...items.map((i) => ({ ...i, run: () => navigate(i.to) })), { label: 'Sign out', icon: FiLogOut, run: onLogout }];
+    const all = [
+      ...items.map((i) => ({ ...i, run: () => navigate(i.to) })),
+      ...(onAssistant ? [{ label: 'Ask the AI assistant', icon: FiZap, run: onAssistant }] : []),
+      { label: 'Sign out', icon: FiLogOut, run: onLogout },
+    ];
     const q = query.trim().toLowerCase();
     return q ? all.filter((i) => i.label.toLowerCase().includes(q)) : all;
-  }, [items, query, navigate, onLogout]);
+  }, [items, query, navigate, onLogout, onAssistant]);
 
   useEffect(() => {
     if (open) {

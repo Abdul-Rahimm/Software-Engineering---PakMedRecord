@@ -3,11 +3,16 @@ const MedicalRecord = require('../models/RecordModel');
 const Patient = require('../models/PatientModel');
 const Doctor = require('../models/DoctorModel');
 const Affiliation = require('../models/AffiliationModel');
+const { notify } = require('../lib/notify');
+const { RECORD_CATEGORIES } = require('../models/constants');
 
 // Endpoint to handle the creation of a medical record
 const addRecord = async (req, res) => {
   try {
-    const { patientCNIC, recordData } = req.body;
+    const { patientCNIC, recordData, title, category } = req.body;
+    if (category && !RECORD_CATEGORIES.includes(category)) {
+      return res.status(400).json({ error: 'Unknown record category' });
+    }
     // Records are always created by the signed-in doctor
     const doctorCNIC = req.user.cnic;
 
@@ -37,11 +42,21 @@ const addRecord = async (req, res) => {
     const medicalRecord = new MedicalRecord({
       patientCNIC,
       doctorCNIC,
-      recordData
+      recordData,
+      title: title ? String(title).trim() : undefined,
+      category: category || 'General',
+      source: 'doctor',
     });
 
     // Save the medical record to the database
     await medicalRecord.save();
+
+    notify('patient', patientCNIC, {
+      type: 'record',
+      title: 'New medical record',
+      body: `Dr. ${existingDoctor.firstName} ${existingDoctor.lastName} added ${medicalRecord.title ? `"${medicalRecord.title}"` : 'a record'} to your history.`,
+      link: `/record/getrecords/${patientCNIC}`,
+    });
 
     res.status(201).json({ message: 'Medical record created successfully', medicalRecord });
   } catch (error) {
@@ -55,7 +70,7 @@ const getRecords = async (req, res) => {
       const { patientCNIC } = req.params;
   
       // Fetch medical records based on patient CNIC
-      const medicalRecords = await MedicalRecord.find({ patientCNIC });
+      const medicalRecords = await MedicalRecord.find({ patientCNIC }).sort({ createdAt: -1 });
   
       res.status(200).json(medicalRecords);
     } catch (error) {
@@ -64,14 +79,15 @@ const getRecords = async (req, res) => {
     }
   };
 
+  // A doctor can delete a record they wrote (e.g. to correct a mistake)
   const removeRecords = async (req, res) => {
     try {
-      const { doctorCNIC } = req.params;
-  
-      // Delete medical records where the doctorCNIC matches
-      await MedicalRecord.deleteMany({ doctorCNIC });
-  
-      res.status(200).json({ message: 'Medical records removed successfully' });
+      const record = await MedicalRecord.findById(req.params.recordId);
+      if (!record) return res.status(404).json({ error: 'Record not found' });
+      if (record.doctorCNIC !== req.user.cnic) return res.status(403).json({ error: 'Not allowed' });
+
+      await record.deleteOne();
+      res.status(200).json({ message: 'Medical record removed' });
     } catch (error) {
       console.error('Error removing medical records:', error);
       res.status(500).json({ error: 'Internal server error' });

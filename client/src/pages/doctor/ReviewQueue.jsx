@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { AnimatePresence, motion } from 'framer-motion';
 import { FiCheck, FiCheckCircle, FiDownload, FiX } from 'react-icons/fi';
+import Modal from '../../ui/Modal';
 import api from '../../api';
 import { useShell } from '../../layout/ShellContext';
 import { useFetch, fetchPatients, indexBy } from '../../lib/data';
@@ -14,8 +15,10 @@ import '../dashboard.css';
 
 const ReviewQueue = () => {
   const { cnic, profile, refreshCounts } = useShell();
-  const { toast, confirm } = useFeedback();
+  const { toast } = useFeedback();
   const [busy, setBusy] = useState(null);
+  const [rejecting, setRejecting] = useState(null);
+  const [note, setNote] = useState('');
 
   const { data, loading, setData } = useFetch(async () => {
     const [pending, patients] = await Promise.all([
@@ -25,14 +28,12 @@ const ReviewQueue = () => {
     return { pending, patientsById: indexBy(patients, 'patientCNIC') };
   }, [cnic]);
 
-  const review = async (rec, status) => {
-    if (status === 'rejected') {
-      const ok = await confirm({ title: 'Reject this record?', message: 'It will not be added to the patient’s history.', confirmLabel: 'Reject', danger: true });
-      if (!ok) return;
-    }
+  const review = async (rec, status, reviewNote) => {
     setBusy(rec._id + status);
     try {
-      await api.patch(`/tempRecords/approve/${rec._id}`, { status });
+      await api.patch(`/tempRecords/approve/${rec._id}`, { status, reviewNote });
+      setRejecting(null);
+      setNote('');
       setData((d) => ({ ...d, pending: d.pending.filter((r) => r._id !== rec._id) }));
       refreshCounts();
       toast(status === 'approved' ? 'Approved and added to patient history' : 'Record rejected', status === 'approved' ? 'success' : 'info');
@@ -81,13 +82,17 @@ const ReviewQueue = () => {
                           <div className="mono subtle" style={{ fontSize: 12 }}>{formatCNIC(r.patientCNIC)}</div>
                         </div>
                       </div>
-                      <span className="badge badge-amber">Pending review</span>
+                      <div className="row gap-8 wrap">
+                        <span className="badge cat-badge">{r.category || 'General'}</span>
+                        <span className="badge badge-amber">Pending review</span>
+                      </div>
                     </div>
+                    {r.title && <h3 style={{ fontSize: 17 }}>{r.title}</h3>}
                     <p className="tl-body" style={{ padding: 16, borderRadius: 14, background: 'rgba(4,8,16,.45)', border: '1px solid var(--border)' }}>{r.recordData}</p>
                     <div className="row between wrap gap-12">
                       <button className="btn btn-ghost btn-sm" onClick={() => downloadRecordPDF({ record: { ...r, createdAt: new Date() }, patient: p, doctor: profile })}><FiDownload /> Preview PDF</button>
                       <div className="row gap-8">
-                        <Button className="btn btn-danger btn-sm" loading={busy === `${r._id}rejected`} onClick={() => review(r, 'rejected')}><FiX /> Reject</Button>
+                        <Button className="btn btn-danger btn-sm" loading={busy === `${r._id}rejected`} onClick={() => setRejecting(r)}><FiX /> Reject</Button>
                         <Button className="btn btn-primary btn-sm" loading={busy === `${r._id}approved`} onClick={() => review(r, 'approved')}><FiCheck /> Approve</Button>
                       </div>
                     </div>
@@ -98,6 +103,18 @@ const ReviewQueue = () => {
           </AnimatePresence>
         </div>
       )}
+      <Modal open={Boolean(rejecting)} onClose={() => setRejecting(null)} title="Reject this record?" subtitle="The patient will be notified and will see your reason." width={500}>
+        <div className="stack gap-16">
+          <div className="field">
+            <label className="field-label" htmlFor="rn">Reason for the patient</label>
+            <textarea id="rn" className="textarea" style={{ minHeight: 90 }} maxLength={500} value={note} onChange={(e) => setNote(e.target.value)} placeholder="e.g. Please upload the full lab report, including the reference ranges." />
+          </div>
+          <div className="row gap-12" style={{ justifyContent: 'flex-end' }}>
+            <button className="btn btn-ghost" onClick={() => setRejecting(null)}>Cancel</button>
+            <Button className="btn btn-danger" loading={busy === `${rejecting?._id}rejected`} onClick={() => review(rejecting, 'rejected', note.trim())}><FiX /> Reject record</Button>
+          </div>
+        </div>
+      </Modal>
     </>
   );
 };

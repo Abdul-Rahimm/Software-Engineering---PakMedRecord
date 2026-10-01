@@ -2,12 +2,13 @@ import { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import {
-  FiArrowRight, FiCalendar, FiCheck, FiEdit3, FiFileText, FiRefreshCw, FiSun, FiUploadCloud, FiUserPlus, FiUsers,
+  FiArrowRight, FiCalendar, FiCheck, FiFileText, FiRefreshCw, FiSun, FiUploadCloud, FiUserPlus, FiUsers,
 } from 'react-icons/fi';
 import api from '../../api';
 import { useShell } from '../../layout/ShellContext';
 import { useFetch, fetchCareTeam, indexBy, byNewest } from '../../lib/data';
-import { apiError, doctorName, formatDate, greeting } from '../../lib/format';
+import { apiError, apptDay, doctorName, formatDate, formatTime, greeting } from '../../lib/format';
+import { AssistantGlyph } from '../../layout/Assistant';
 import TiltCard from '../../ui/TiltCard';
 import HealthCard from '../../ui/HealthCard';
 import { Button, CountUp, Skeleton, rise, stagger } from '../../ui/Bits';
@@ -35,12 +36,16 @@ const PatientOverview = () => {
   const [saving, setSaving] = useState(false);
 
   const { data, loading, setData } = useFetch(async () => {
-    const [team, records, notes] = await Promise.all([
+    const [team, records, notes, appts] = await Promise.all([
       fetchCareTeam(cnic),
       api.get(`/record/getrecords/${cnic}`).then((r) => r.data),
       api.get(`/patient/${cnic}/getnote`).then((r) => r.data.notes),
+      api.get(`/appointments/mine/${cnic}`).then((r) => r.data.appointments),
     ]);
-    return { team, records: [...records].sort(byNewest), notes };
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const upcoming = appts.filter((a) => a.status === 'pending' && apptDay(a.date) >= today);
+    return { team, records: [...records].sort(byNewest), notes, upcoming };
   }, [cnic]);
 
   const doctorsById = useMemo(() => indexBy(data?.team, 'doctorCNIC'), [data]);
@@ -64,8 +69,12 @@ const PatientOverview = () => {
   const stats = [
     { label: 'Health records', value: data?.records.length, icon: FiFileText, to: `/record/getrecords/${cnic}` },
     { label: 'Care team', value: data?.team.length, icon: FiUsers, to: `/affiliation/getmydoctors/${cnic}` },
-    { label: 'Notes', value: data?.notes.length, icon: FiEdit3, to: `/patient/${cnic}/getnote` },
+    { label: 'Upcoming visits', value: data?.upcoming.length, icon: FiCalendar, to: `/appointments/mine/${cnic}` },
   ];
+
+  const next = data?.upcoming[0];
+  const nextDoctor = next && data.team.find((d) => d.doctorCNIC === next.doctorCNIC);
+  const healthDone = Boolean(profile?.bloodGroup || profile?.allergies?.length || profile?.medications?.length);
 
   const actions = [
     { label: 'Book appointment', text: 'Pick a slot with your doctor', icon: FiCalendar, to: `/appointments/book/${cnic}` },
@@ -75,6 +84,7 @@ const PatientOverview = () => {
 
   const checklist = [
     { label: 'Create your account', done: true },
+    { label: 'Complete your health profile', done: healthDone, to: `/patient/${cnic}/health` },
     { label: 'Link your first doctor', done: (data?.team.length ?? 0) > 0, to: '/doctor/doctors' },
     { label: 'Submit a medical record', done: (data?.records.length ?? 0) > 0, to: `/tempRecords/submit/${cnic}` },
     { label: 'Write a note for your next visit', done: (data?.notes.length ?? 0) > 0, to: `/patient/${cnic}/getnote` },
@@ -164,6 +174,50 @@ const PatientOverview = () => {
               </li>
             ))}
           </ul>
+        </section>
+      </div>
+
+      <div className="grid grid-3" style={{ alignItems: 'stretch' }}>
+        <section className="glass card-pad stack gap-12">
+          <div className="row between">
+            <h2 className="section-title">Next appointment</h2>
+            <Link to={`/appointments/mine/${cnic}`} className="btn btn-ghost btn-sm">All <FiArrowRight /></Link>
+          </div>
+          {loading ? <Skeleton height={70} /> : next ? (
+            <Link to={`/appointments/mine/${cnic}`} className="feed-item">
+              <div className="date-tile">
+                <span className="m">{apptDay(next.date).toLocaleDateString('en-GB', { month: 'short' })}</span>
+                <span className="d">{apptDay(next.date).getDate()}</span>
+              </div>
+              <div className="grow" style={{ minWidth: 0 }}>
+                <div className="truncate" style={{ fontWeight: 600 }}>{doctorName(nextDoctor)}</div>
+                <div className="subtle" style={{ fontSize: 13 }}>{apptDay(next.date).toLocaleDateString('en-GB', { weekday: 'long' })} · {formatTime(next.time)}</div>
+              </div>
+            </Link>
+          ) : (
+            <div className="mini-empty"><FiCalendar size={20} /><span>Nothing booked. <Link to={`/appointments/book/${cnic}`}>Book a visit</Link></span></div>
+          )}
+        </section>
+
+        <section className="glass card-pad stack gap-12">
+          <div className="row between">
+            <h2 className="section-title">Health snapshot</h2>
+            <Link to={`/patient/${cnic}/health`} className="btn btn-ghost btn-sm">Edit <FiArrowRight /></Link>
+          </div>
+          {profile && (
+            <div className="stack gap-8" style={{ fontSize: 14 }}>
+              <div className="row between"><span className="subtle">Blood group</span><strong>{profile.bloodGroup || '—'}</strong></div>
+              <div className="row between gap-12"><span className="subtle">Allergies</span><span className="truncate" style={{ color: profile.allergies?.length ? '#ff8fb1' : undefined }}>{profile.allergies?.join(', ') || 'None recorded'}</span></div>
+              <div className="row between gap-12"><span className="subtle">Medications</span><span className="truncate">{profile.medications?.length ? `${profile.medications.length} active` : 'None recorded'}</span></div>
+            </div>
+          )}
+        </section>
+
+        <section className="glass card-pad stack gap-12 ai-card">
+          <span className="ai-badge" style={{ alignSelf: 'flex-start' }}><AssistantGlyph size={12} /> AI assistant</span>
+          <h2 className="section-title">Questions about your health?</h2>
+          <p className="muted" style={{ fontSize: 14 }}>Ask in English or Urdu. It reads your records, explains results and can book visits for you.</p>
+          <p className="subtle" style={{ fontSize: 12.5, marginTop: 'auto' }}>Press <kbd>⌘J</kbd> or tap the glowing button.</p>
         </section>
       </div>
 

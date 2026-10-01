@@ -58,7 +58,10 @@ const CareTeam = () => {
                     <Avatar first={d.firstName} last={d.lastName} seed={d.doctorCNIC} size={54} />
                     <div className="grow depth-1">
                       <div style={{ fontWeight: 600, fontSize: 17 }} className="truncate">{doctorName(d)}</div>
-                      <span className="badge badge-green" style={{ marginTop: 6 }}>Has access</span>
+                      <div className="row gap-8 wrap" style={{ marginTop: 6 }}>
+                        <span className="badge cat-badge">{d.specialization || 'General Physician'}</span>
+                        <span className="badge badge-green">Has access</span>
+                      </div>
                     </div>
                   </div>
                   <div className="meta">

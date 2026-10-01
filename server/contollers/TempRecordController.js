@@ -5,14 +5,19 @@ const MedicalRecord = require('../models/RecordModel');
 const Doctor = require('../models/DoctorModel');
 const Patient = require('../models/PatientModel');
 const Affiliation = require('../models/AffiliationModel');
+const { notify } = require('../lib/notify');
+const { RECORD_CATEGORIES } = require('../models/constants');
 
 
 const submit = async (req, res) => {
     try {
-        const { doctorCNIC, recordData } = req.body;
+        const { doctorCNIC, recordData, title, category } = req.body;
 
         if (!doctorCNIC || !recordData) {
             return res.status(400).json({ error: 'Doctor and record data are required' });
+        }
+        if (category && !RECORD_CATEGORIES.includes(category)) {
+            return res.status(400).json({ error: 'Unknown record category' });
         }
         const { patientCNIC } = req.params;
         
@@ -34,8 +39,21 @@ const submit = async (req, res) => {
         }
 
         // Store the record as pending until the doctor reviews it
-        const tempRecord = new TempRecord({ patientCNIC, doctorCNIC, recordData });
+        const tempRecord = new TempRecord({
+            patientCNIC,
+            doctorCNIC,
+            recordData,
+            title: title ? String(title).trim() : undefined,
+            category: category || 'General',
+        });
         await tempRecord.save();
+
+        notify('doctor', doctorCNIC, {
+            type: 'submission',
+            title: 'Record awaiting review',
+            body: `${existingPatient.firstName} ${existingPatient.lastName} submitted ${tempRecord.title ? `"${tempRecord.title}"` : 'a record'} for approval.`,
+            link: `/tempRecords/pending/${doctorCNIC}`,
+        });
         
         res.status(201).json({ message: 'Medical record submitted for approval' });
     } catch (error) {
@@ -66,7 +84,7 @@ const pending = async (req, res) => {
 const approve = async (req, res) => {
     try {
         const { recordId } = req.params;
-        const { status } = req.body;
+        const { status, reviewNote } = req.body;
 
         if (!['approved', 'rejected'].includes(status)) {
             return res.status(400).json({ error: "Status must be 'approved' or 'rejected'" });
@@ -83,14 +101,26 @@ const approve = async (req, res) => {
             return res.status(409).json({ error: 'Record has already been reviewed' });
         }
 
+        // Keep the submission (with its outcome) so the patient can see what happened to it
+        tempRecord.status = status;
+        tempRecord.reviewNote = reviewNote ? String(reviewNote).trim().slice(0, 500) : undefined;
+        tempRecord.reviewedAt = new Date();
+        await tempRecord.save();
+
         if (status === 'approved') {
-            const { patientCNIC, doctorCNIC, recordData } = tempRecord;
-            await MedicalRecord.create({ patientCNIC, doctorCNIC, recordData });
-            await TempRecord.findByIdAndDelete(recordId);
-        } else {
-            tempRecord.status = 'rejected';
-            await tempRecord.save();
+            const { patientCNIC, doctorCNIC, recordData, title, category } = tempRecord;
+            await MedicalRecord.create({ patientCNIC, doctorCNIC, recordData, title, category, source: 'patient' });
         }
+
+        const label = tempRecord.title ? `"${tempRecord.title}"` : 'Your submitted record';
+        notify('patient', tempRecord.patientCNIC, {
+            type: status === 'approved' ? 'approved' : 'rejected',
+            title: status === 'approved' ? 'Record approved' : 'Record not approved',
+            body: status === 'approved'
+                ? `${label} was verified and added to your history.`
+                : `${label} was not approved${tempRecord.reviewNote ? `: ${tempRecord.reviewNote}` : '.'}`,
+            link: status === 'approved' ? `/record/getrecords/${tempRecord.patientCNIC}` : `/tempRecords/submit/${tempRecord.patientCNIC}`,
+        });
 
         res.status(200).json({ message: `Medical record ${status}` });
     } catch (error) {
@@ -121,4 +151,15 @@ const remove = async (req, res) => {
     }
 };
 
-module.exports = { submit, pending, approve, remove };
+// A patient's own submissions with their review outcome (newest first)
+const mine = async (req, res) => {
+    try {
+        const submissions = await TempRecord.find({ patientCNIC: req.params.patientCNIC }).sort({ createdAt: -1 }).limit(100);
+        res.status(200).json({ submissions });
+    } catch (error) {
+        console.error('Error fetching submissions:', error);
+        res.status(500).json({ error: 'Internal server error' });
+    }
+};
+
+module.exports = { submit, pending, approve, remove, mine };

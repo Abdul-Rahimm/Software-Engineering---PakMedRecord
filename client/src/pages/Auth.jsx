@@ -14,6 +14,7 @@ import { Button } from '../ui/Bits';
 import { useFeedback } from '../ui/Feedback';
 import Scene from '../three/Scene';
 import { apiError, isValidCNIC, maskCNIC, parseCNIC } from '../lib/format';
+import { SPECIALIZATIONS } from '../lib/constants';
 import './auth.css';
 
 const COPY = {
@@ -54,6 +55,7 @@ const Auth = ({ role, mode }) => {
     email: '',
     hospital: '',
     gender: 'Male',
+    specialization: 'General Physician',
   });
   const [showPw, setShowPw] = useState(false);
   const [errors, setErrors] = useState({});
@@ -97,6 +99,7 @@ const Auth = ({ role, mode }) => {
           password: form.password,
           hospital: form.hospital.trim(),
           ...(role === 'patient' && { gender: form.gender }),
+          ...(role === 'doctor' && { specialization: form.specialization }),
         };
         await api.post(`/${role}/signup`, body);
         toast('Account created. Sign in to continue.');
@@ -181,6 +184,11 @@ const Auth = ({ role, mode }) => {
                   </div>
                   <Field label="Email" icon={FiMail} type="email" value={form.email} onChange={set('email')} error={errors.email} autoComplete="email" placeholder="you@example.com" />
                   <Field label={role === 'doctor' ? 'Affiliated hospital' : 'Primary hospital'} icon={FiHome} value={form.hospital} onChange={set('hospital')} error={errors.hospital} placeholder="e.g. Aga Khan University Hospital" />
+                  {role === 'doctor' && (
+                    <Field as="select" label="Specialization" value={form.specialization} onChange={set('specialization')}>
+                      {SPECIALIZATIONS.map((s) => <option key={s} value={s}>{s}</option>)}
+                    </Field>
+                  )}
                   {role === 'patient' && (
                     <div className="field">
                       <span className="field-label">Gender</span>

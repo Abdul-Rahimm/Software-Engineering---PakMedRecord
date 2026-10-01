@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { AnimatePresence, motion } from 'framer-motion';
 import { FiCalendar, FiCheck, FiCheckCircle, FiClock, FiHome, FiUser, FiUserPlus } from 'react-icons/fi';
@@ -50,22 +50,36 @@ const BookAppointment = () => {
   const [time, setTime] = useState(null);
   const [saving, setSaving] = useState(false);
   const [booked, setBooked] = useState(null);
+  const [reason, setReason] = useState('');
+  const [taken, setTaken] = useState([]);
 
   const { data: team, loading } = useFetch(() => fetchCareTeam(cnic), [cnic]);
   const chosen = team?.find((d) => d.doctorCNIC === doctor);
 
+  // times already booked with this doctor on the chosen day
+  useEffect(() => {
+    setTaken([]);
+    if (!doctor || !date) return;
+    api.get(`/appointments/slots/${doctor}`, { params: { date } }).then((r) => setTaken(r.data.times)).catch(() => {});
+  }, [doctor, date]);
+
   const now = new Date();
   const slotDisabled = (slot) => {
+    if (taken.includes(slot)) return true;
     if (!date || date !== toKey(now)) return false;
     const [h, m] = slot.split(':').map(Number);
     return h * 60 + m <= now.getHours() * 60 + now.getMinutes();
   };
+  useEffect(() => {
+    if (time && taken.includes(time)) setTime(null);
+  }, [taken, time]);
 
   const book = async () => {
     setSaving(true);
     try {
-      await api.post(`/appointments/book/${cnic}`, { doctorCNIC: doctor, date, time });
+      await api.post(`/appointments/book/${cnic}`, { doctorCNIC: doctor, date, time, reason: reason.trim() });
       setBooked({ doctor: chosen, date, time });
+      setReason('');
       toast('Appointment booked');
     } catch (err) {
       toast(apiError(err), 'error');
@@ -113,7 +127,7 @@ const BookAppointment = () => {
             </p>
             <div className="row gap-12">
               <button className="btn" onClick={reset}>Book another</button>
-              <Link to={`/patient/home/${cnic}`} className="btn btn-primary">Back to overview</Link>
+              <Link to={`/appointments/mine/${cnic}`} className="btn btn-primary">My appointments</Link>
             </div>
           </motion.div>
         ) : (
@@ -152,7 +166,7 @@ const BookAppointment = () => {
                 {date ? (
                   <div className="chips">
                     {SLOTS.map((s) => (
-                      <button key={s} type="button" className="chip" aria-pressed={time === s} disabled={slotDisabled(s)} style={slotDisabled(s) ? { opacity: 0.3, cursor: 'not-allowed' } : undefined} onClick={() => setTime(s)}>
+                      <button key={s} type="button" className="chip" aria-pressed={time === s} disabled={slotDisabled(s)} title={taken.includes(s) ? 'Already booked' : undefined} style={slotDisabled(s) ? { opacity: 0.3, cursor: 'not-allowed', textDecoration: taken.includes(s) ? 'line-through' : undefined } : undefined} onClick={() => setTime(s)}>
                         {formatTime(s)}
                       </button>
                     ))}
@@ -160,6 +174,10 @@ const BookAppointment = () => {
                 ) : (
                   <p className="subtle">Pick a day to see available times.</p>
                 )}
+              </Step>
+
+              <Step n={4} title="Reason for visit (optional)" done={Boolean(reason.trim())}>
+                <textarea className="textarea" style={{ minHeight: 80 }} maxLength={300} value={reason} onChange={(e) => setReason(e.target.value)} placeholder="e.g. Follow-up on blood test results, recurring headaches…" aria-label="Reason for visit" />
               </Step>
             </div>
 

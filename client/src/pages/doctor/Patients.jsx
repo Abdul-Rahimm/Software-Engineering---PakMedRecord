@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { FiArrowRight, FiFilePlus, FiHome, FiMail, FiSearch, FiUsers } from 'react-icons/fi';
+import { FiAlertTriangle, FiArrowRight, FiFilePlus, FiHome, FiMail, FiSearch, FiUsers } from 'react-icons/fi';
 import { useShell } from '../../layout/ShellContext';
 import { useFetch, fetchPatients } from '../../lib/data';
 import { formatCNIC, fullName } from '../../lib/format';
@@ -56,8 +56,15 @@ const Patients = () => {
                     <div className="truncate" style={{ fontWeight: 600, fontSize: 17 }}>{fullName(p)}</div>
                     <div className="mono subtle" style={{ fontSize: 12.5 }}>{formatCNIC(p.patientCNIC)}</div>
                   </div>
-                  <span className="badge badge-cyan badge-plain">{p.gender}</span>
+                  <span className="badge badge-cyan badge-plain">{p.gender}{p.dateOfBirth ? ` · ${Math.floor((Date.now() - new Date(p.dateOfBirth)) / 3.15576e10)}` : ''}</span>
                 </div>
+                {(p.bloodGroup || p.allergies?.length > 0 || p.chronicConditions?.length > 0) && (
+                  <div className="row gap-8 wrap">
+                    {p.bloodGroup && <span className="badge badge-plain cat-badge">Blood {p.bloodGroup}</span>}
+                    {p.allergies?.length > 0 && <span className="badge badge-rose badge-plain"><FiAlertTriangle size={11} /> {p.allergies.length} allerg{p.allergies.length === 1 ? 'y' : 'ies'}</span>}
+                    {p.chronicConditions?.slice(0, 2).map((c) => <span key={c} className="badge badge-amber badge-plain">{c}</span>)}
+                  </div>
+                )}
                 <div className="meta">
                   <span><FiHome /> <span className="truncate">{p.hospital}</span></span>
                   <span><FiMail /> <a className="truncate" href={`mailto:${p.email}`}>{p.email}</a></span>

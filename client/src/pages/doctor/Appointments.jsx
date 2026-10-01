@@ -1,7 +1,8 @@
 import { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { AnimatePresence, motion } from 'framer-motion';
-import { FiCalendar, FiCheck, FiClock, FiSearch } from 'react-icons/fi';
+import { FiCalendar, FiCheck, FiClock, FiSearch, FiX } from 'react-icons/fi';
+import Modal from '../../ui/Modal';
 import api from '../../api';
 import { useShell } from '../../layout/ShellContext';
 import { useFetch, fetchPatients, indexBy } from '../../lib/data';
@@ -17,6 +18,8 @@ const Appointments = () => {
   const [tab, setTab] = useState('upcoming');
   const [query, setQuery] = useState('');
   const [busy, setBusy] = useState(null);
+  const [cancelling, setCancelling] = useState(null);
+  const [reason, setReason] = useState('');
 
   const { data, loading, setData } = useFetch(async () => {
     const [appts, patients] = await Promise.all([
@@ -30,7 +33,7 @@ const Appointments = () => {
     if (!data) return [];
     const q = query.trim().toLowerCase().replace(/-/g, '');
     const list = data.appts
-      .filter((a) => (tab === 'all' ? true : tab === 'upcoming' ? a.status !== 'completed' : a.status === 'completed'))
+      .filter((a) => (tab === 'all' ? true : tab === 'upcoming' ? a.status === 'pending' : a.status === tab))
       .filter((a) => {
         if (!q) return true;
         const p = data.patientsById[a.patientCNIC];
@@ -61,6 +64,21 @@ const Appointments = () => {
     }
   };
 
+  const cancel = async () => {
+    setBusy(`c${cancelling._id}`);
+    try {
+      const { data: res } = await api.patch(`/appointments/cancel/${cancelling._id}`, { reason: reason.trim() });
+      setData((d) => ({ ...d, appts: d.appts.map((x) => (x._id === cancelling._id ? res.appointment : x)) }));
+      toast('Appointment cancelled. The patient has been notified.');
+      setCancelling(null);
+      setReason('');
+    } catch (err) {
+      toast(apiError(err), 'error');
+    } finally {
+      setBusy(null);
+    }
+  };
+
   const count = (pred) => data?.appts.filter(pred).length ?? 0;
 
   return (
@@ -83,8 +101,9 @@ const Appointments = () => {
           value={tab}
           onChange={setTab}
           options={[
-            { value: 'upcoming', label: `Upcoming · ${count((a) => a.status !== 'completed')}` },
+            { value: 'upcoming', label: `Upcoming · ${count((a) => a.status === 'pending')}` },
             { value: 'completed', label: `Completed · ${count((a) => a.status === 'completed')}` },
+            { value: 'cancelled', label: `Cancelled · ${count((a) => a.status === 'cancelled')}` },
             { value: 'all', label: `All · ${data?.appts.length ?? 0}` },
           ]}
         />
@@ -123,10 +142,15 @@ const Appointments = () => {
                             <span style={{ fontWeight: 600 }}>Former patient</span>
                           )}
                           <div className="mono subtle" style={{ fontSize: 12 }}>{formatCNIC(a.patientCNIC)}</div>
+                          {a.reason && <div className="muted truncate" style={{ fontSize: 13, marginTop: 2 }}>“{a.reason}”</div>}
+                          {a.status === 'cancelled' && <div className="subtle" style={{ fontSize: 12.5, marginTop: 2 }}>Cancelled by {a.cancelledBy === 'doctor' ? 'you' : 'patient'}{a.cancelReason ? `: ${a.cancelReason}` : ''}</div>}
                         </div>
-                        {a.status === 'completed' ? <StatusBadge status="completed" /> : <span className="badge badge-cyan">Scheduled</span>}
-                        {a.status !== 'completed' && (
-                          <Button className="btn btn-sm" loading={busy === a._id} onClick={() => complete(a)}><FiCheck /> Complete</Button>
+                        {a.status === 'pending' ? <span className="badge badge-cyan">Scheduled</span> : <StatusBadge status={a.status} />}
+                        {a.status === 'pending' && (
+                          <>
+                            <Button className="btn btn-sm" loading={busy === a._id} onClick={() => complete(a)}><FiCheck /> Complete</Button>
+                            <button className="btn btn-ghost btn-sm btn-icon" onClick={() => setCancelling(a)} aria-label="Cancel appointment" title="Cancel"><FiX /></button>
+                          </>
                         )}
                       </motion.div>
                     );
@@ -137,6 +161,18 @@ const Appointments = () => {
           })}
         </div>
       )}
+      <Modal open={Boolean(cancelling)} onClose={() => setCancelling(null)} title="Cancel this appointment?" subtitle="The patient will be notified." width={480}>
+        <div className="stack gap-16">
+          <div className="field">
+            <label className="field-label" htmlFor="dcr">Reason (shared with the patient)</label>
+            <input id="dcr" className="input" value={reason} onChange={(e) => setReason(e.target.value)} maxLength={300} placeholder="e.g. Clinic closed — please rebook" />
+          </div>
+          <div className="row gap-12" style={{ justifyContent: 'flex-end' }}>
+            <button className="btn btn-ghost" onClick={() => setCancelling(null)}>Keep it</button>
+            <Button className="btn btn-danger" loading={busy === `c${cancelling?._id}`} onClick={cancel}>Cancel appointment</Button>
+          </div>
+        </div>
+      </Modal>
     </>
   );
 };
