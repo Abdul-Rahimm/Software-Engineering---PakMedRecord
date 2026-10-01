@@ -1,0 +1,85 @@
+.auth {
+  min-height: 100vh;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 560px);
+}
+
+.auth-visual {
+  position: relative;
+  overflow: hidden;
+  margin: 16px 0 16px 16px;
+  border-radius: var(--r-xl);
+  border: 1px solid var(--border);
+  background:
+    radial-gradient(circle at 50% 45%, rgba(61, 255, 176, .12), transparent 55%),
+    linear-gradient(180deg, rgba(10, 16, 30, .7), rgba(4, 8, 16, .9));
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+.auth-visual .scene-fill { position: absolute; inset: 0; }
+.auth-visual-top { position: relative; z-index: 2; padding: 28px 32px; }
+.auth-visual-copy {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 40px;
+  max-width: 560px;
+}
+.auth-visual-copy h2 { font-size: clamp(28px, 3vw, 42px); letter-spacing: -0.035em; }
+
+.auth-panel {
+  position: relative;
+  display: grid;
+  place-items: center;
+  padding: 48px 32px;
+  perspective: 1400px;
+}
+.auth-back { position: absolute; top: 24px; left: 24px; }
+.auth-card {
+  width: 100%;
+  max-width: 460px;
+  display: flex;
+  flex-direction: column;
+  gap: 28px;
+  padding: 36px;
+  background: var(--surface-strong);
+  transform-style: preserve-3d;
+}
+.mono-input .input { font-family: var(--font-mono); letter-spacing: .04em; }
+
+.pw-toggle {
+  position: absolute;
+  right: 6px;
+  width: 36px;
+  height: 36px;
+  display: grid;
+  place-items: center;
+  border: 0;
+  border-radius: 10px;
+  background: transparent;
+  color: var(--text-3);
+  cursor: pointer;
+}
+.pw-toggle:hover { color: var(--text); background: rgba(148, 197, 255, .08); }
+
+.strength { display: flex; gap: 4px; flex: 1; }
+.strength span { flex: 1; height: 4px; border-radius: 4px; background: rgba(148, 197, 255, .12); transition: background .3s; }
+.strength .on.s1 { background: var(--rose); }
+.strength .on.s2 { background: var(--amber); }
+.strength .on.s3 { background: var(--cyan); }
+.strength .on.s4 { background: var(--emerald); box-shadow: 0 0 8px rgba(61, 255, 176, .7); }
+
+@media (max-width: 960px) {
+  .auth { grid-template-columns: 1fr; }
+  .auth-visual { margin: 12px 12px 0; min-height: 300px; }
+  .auth-visual-copy { padding: 24px; }
+  .auth-panel { padding: 24px 16px 48px; }
+  .auth-back { display: none; }
+}
+@media (max-width: 560px) {
+  .auth-card { padding: 24px 20px; }
+  .auth-visual-copy .badge { display: none; }
+}

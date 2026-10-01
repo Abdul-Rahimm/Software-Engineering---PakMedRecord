@@ -13,9 +13,17 @@ module.exports = {
   plugins: ['react-refresh'],
   rules: {
     'react/jsx-no-target-blank': 'off',
+    'react/prop-types': 'off',
     'react-refresh/only-export-components': [
       'warn',
       { allowConstantExport: true },
     ],
   },
+  overrides: [
+    {
+      // react-three-fiber elements take three.js props (args, rotation, toneMapped…)
+      files: ['src/three/**'],
+      rules: { 'react/no-unknown-property': 'off' },
+    },
+  ],
 }

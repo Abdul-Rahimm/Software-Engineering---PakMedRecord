@@ -1,0 +1,123 @@
+.hc-stage {
+  perspective: 1100px;
+  padding: 18px 12px 34px;
+  position: relative;
+}
+.hc {
+  --rx: 8deg;
+  --ry: -14deg;
+  --px: 30%;
+  --py: 20%;
+  position: relative;
+  width: 100%;
+  max-width: 400px;
+  aspect-ratio: 1.586;
+  margin: 0 auto;
+  border-radius: 22px;
+  transform: rotateX(var(--rx)) rotateY(var(--ry));
+  transform-style: preserve-3d;
+  transition: transform .6s var(--ease);
+  background:
+    radial-gradient(120% 120% at 0% 0%, #0f2a2a 0%, transparent 55%),
+    linear-gradient(135deg, #0a1322 0%, #0b1a2c 45%, #120f2c 100%);
+  border: 1px solid rgba(148, 255, 220, .22);
+  box-shadow:
+    0 40px 80px -30px rgba(0, 0, 0, .9),
+    0 0 60px -20px rgba(61, 255, 176, .45),
+    inset 0 1px 0 rgba(255, 255, 255, .15);
+  overflow: hidden;
+}
+.hc-stage:hover .hc { transition-duration: .15s; }
+/* Idle bob lives on a wrapper so it doesn't fight the cursor tilt */
+.hc-float { transform-style: preserve-3d; animation: hc-idle 7s ease-in-out infinite; }
+.hc-stage:hover .hc-float { animation-play-state: paused; }
+@keyframes hc-idle {
+  0%, 100% { transform: translateY(0) rotateZ(-1deg); }
+  50% { transform: translateY(-10px) rotateZ(1deg); }
+}
+
+/* Iridescent foil that moves with the cursor */
+.hc-holo {
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background:
+    radial-gradient(circle at var(--px) var(--py), rgba(255, 255, 255, .22), transparent 35%),
+    linear-gradient(115deg, transparent 20%, rgba(61, 255, 176, .25) 35%, rgba(34, 211, 238, .22) 45%, rgba(139, 123, 255, .25) 55%, transparent 70%);
+  background-size: 100% 100%, 250% 250%;
+  background-position: 0 0, var(--px) var(--py);
+  mix-blend-mode: screen;
+  opacity: .8;
+  pointer-events: none;
+}
+.hc::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-image: repeating-linear-gradient(0deg, rgba(255, 255, 255, .025) 0 1px, transparent 1px 3px);
+  pointer-events: none;
+}
+
+.hc-content {
+  position: relative;
+  z-index: 1;
+  height: 100%;
+  padding: 22px 24px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  transform: translateZ(40px);
+}
+.hc-brand { font: 700 15px/1 var(--font-display); letter-spacing: -0.01em; }
+.hc-type { font: 600 10.5px/1 var(--font-mono); letter-spacing: .2em; color: var(--emerald); }
+.hc-chip {
+  width: 46px;
+  height: 34px;
+  border-radius: 7px;
+  background: linear-gradient(135deg, #f7e7a1, #c9a74a 45%, #f2dc8a 70%, #a8862e);
+  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, .25);
+  position: relative;
+  flex-shrink: 0;
+}
+.hc-chip::before {
+  content: '';
+  position: absolute;
+  inset: 7px 10px;
+  border: 1px solid rgba(80, 60, 10, .45);
+  border-radius: 3px;
+}
+.hc-pulse { flex: 1; height: 30px; }
+.hc-pulse path {
+  fill: none;
+  stroke: var(--emerald);
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  filter: drop-shadow(0 0 4px var(--emerald));
+  stroke-dasharray: 180;
+  stroke-dashoffset: 180;
+  animation: pulse-draw 2.8s ease-in-out infinite;
+}
+@keyframes pulse-draw {
+  0% { stroke-dashoffset: 180; }
+  55%, 100% { stroke-dashoffset: 0; }
+}
+.hc-cnic {
+  font: 500 clamp(17px, 2.2vw, 22px)/1 var(--font-mono);
+  letter-spacing: .12em;
+  text-shadow: 0 0 18px rgba(61, 255, 176, .35);
+}
+.hc-label { font: 600 9.5px/1 var(--font-mono); letter-spacing: .18em; text-transform: uppercase; color: var(--text-3); margin-bottom: 6px; }
+.hc-name { font: 600 16px/1.1 var(--font-display); }
+.hc-meta { font: 500 13px/1.1 var(--font); color: var(--text-2); }
+
+.hc-shadow {
+  position: absolute;
+  left: 18%;
+  right: 18%;
+  bottom: 6px;
+  height: 22px;
+  border-radius: 50%;
+  background: radial-gradient(ellipse, rgba(61, 255, 176, .35), transparent 70%);
+  filter: blur(10px);
+}
