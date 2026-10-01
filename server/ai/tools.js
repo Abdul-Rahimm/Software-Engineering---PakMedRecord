@@ -262,12 +262,13 @@ const doctorTools = [
 
 const TOOLSETS = { patient: patientTools, doctor: doctorTools };
 
-// Claude API tool definitions (JSON Schema from zod). Kept in a fixed order so the prompt prefix stays cacheable.
-const toolDefinitions = (role) =>
+// Provider-neutral tool specs (JSON Schema from zod); each AI provider adapter maps them to its own format.
+// Kept in a fixed order so the prompt prefix stays cacheable.
+const toolSpecs = (role) =>
   TOOLSETS[role].map((t) => {
-    const schema = z.toJSONSchema(t.schema);
-    delete schema.$schema;
-    return { name: t.name, description: t.description, input_schema: schema, eager_input_streaming: true };
+    const parameters = z.toJSONSchema(t.schema);
+    delete parameters.$schema;
+    return { name: t.name, description: t.description, parameters };
   });
 
 // Human-readable progress labels for the UI
@@ -305,4 +306,4 @@ const runTool = async (role, name, input, user) => {
   }
 };
 
-module.exports = { toolDefinitions, runTool, TOOL_LABELS };
+module.exports = { toolSpecs, runTool, TOOL_LABELS };

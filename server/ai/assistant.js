@@ -1,24 +1,27 @@
-// PakMedRecord AI assistant: Claude with role-scoped tools, streamed to the browser over SSE.
+// PakMedRecord AI assistant: an LLM with role-scoped tools, streamed to the browser over SSE.
+// The provider is chosen with AI_PROVIDER: "mistral" (default, free plan available) or "anthropic" (Claude).
 
-const Anthropic = require('@anthropic-ai/sdk');
 const ChatThread = require('../models/ChatThreadModel');
 const Patient = require('../models/PatientModel');
 const Doctor = require('../models/DoctorModel');
-const { toolDefinitions, runTool, TOOL_LABELS } = require('./tools');
+const { toolSpecs, runTool, TOOL_LABELS } = require('./tools');
 
-const MODEL = process.env.AI_MODEL || 'claude-opus-5-5';
-const MAX_TOOL_ROUNDS = 8;
-// Opt into server-side refusal fallbacks: a declined request is retried on Anthropic's recommended model
-const FALLBACK_BETA = 'server-side-fallback-2026-07-01';
-
-// The SDK resolves credentials from ANTHROPIC_API_KEY / ANTHROPIC_AUTH_TOKEN (or an `ant auth login` profile)
-const aiEnabled = () => Boolean(process.env.ANTHROPIC_API_KEY || process.env.ANTHROPIC_AUTH_TOKEN);
-
-let client;
-const getClient = () => {
-  if (!client) client = new Anthropic();
-  return client;
+const PROVIDERS = {
+  mistral: () => require('./providers/mistral'),
+  anthropic: () => require('./providers/anthropic'),
 };
+const providerName = (process.env.AI_PROVIDER || 'mistral').toLowerCase();
+if (!PROVIDERS[providerName]) {
+  throw new Error(`Unknown AI_PROVIDER "${providerName}". Use "mistral" or "anthropic".`);
+}
+const provider = PROVIDERS[providerName]();
+
+const MAX_TOOL_ROUNDS = 8;
+const MUTATING_TOOLS = ['book_appointment', 'log_vital', 'add_note'];
+
+const aiEnabled = () => provider.enabled();
+const aiInfo = () => ({ provider: provider.name, model: provider.model });
+const keyName = provider.name === 'mistral' ? 'MISTRAL_API_KEY' : 'ANTHROPIC_API_KEY';
 
 // ---------- prompts (stable text first so it can be cached) ----------
 
@@ -55,11 +58,6 @@ const contextBlock = async (user) => {
   return `Today is ${today} (${iso}). You are talking with ${name}${user.role === 'doctor' && person?.specialization ? `, ${person.specialization}` : ''}.`;
 };
 
-const systemFor = async (user) => [
-  { type: 'text', text: user.role === 'doctor' ? DOCTOR_SYSTEM : PATIENT_SYSTEM, cache_control: { type: 'ephemeral' } },
-  { type: 'text', text: await contextBlock(user) },
-];
-
 // ---------- SSE helpers ----------
 
 const openStream = (res) => {
@@ -73,25 +71,9 @@ const openStream = (res) => {
   return (event) => res.write(`data: ${JSON.stringify(event)}\n\n`);
 };
 
-const friendlyError = (err) => {
-  if (err instanceof Anthropic.AuthenticationError) return 'The AI service rejected our credentials. Check ANTHROPIC_API_KEY on the server.';
-  if (err instanceof Anthropic.RateLimitError) return 'The AI assistant is busy right now. Please try again in a moment.';
-  if (err instanceof Anthropic.APIConnectionError) return 'Could not reach the AI service. Check the server\'s internet connection.';
-  if (err instanceof Anthropic.APIError) return `The AI service returned an error (${err.status}).`;
-  return 'Something went wrong while generating a reply.';
-};
+const friendlyError = (err) => provider.friendlyError(err) || 'Something went wrong while generating a reply.';
 
 const REFUSAL_TEXT = "I'm not able to help with that request. If this is about your health, please speak to your doctor.";
-
-// Stream one model turn, forwarding text deltas. Returns the final message.
-const streamTurn = async ({ send, params, signal }) => {
-  const stream = getClient().beta.messages.stream(
-    { betas: [FALLBACK_BETA], fallbacks: 'default', ...params },
-    { signal }
-  );
-  stream.on('text', (text) => send({ type: 'text', text }));
-  return stream.finalMessage();
-};
 
 // ---------- chat with tools ----------
 
@@ -102,73 +84,63 @@ const chat = async ({ user, threadId, message, res }) => {
 
   try {
     let thread = threadId ? await ChatThread.findOne({ _id: threadId, role: user.role, cnic: user.cnic }) : null;
-    if (!thread) {
-      thread = await ChatThread.create({ role: user.role, cnic: user.cnic, title: message.slice(0, 60) });
+    // History formats differ between providers: a thread from another provider can't be continued
+    if (!thread || thread.provider !== provider.name) {
+      thread = await ChatThread.create({ role: user.role, cnic: user.cnic, title: message.slice(0, 60), provider: provider.name });
     }
     send({ type: 'thread', threadId: String(thread._id), title: thread.title });
 
     // Append-only history: we only ever push to it, never edit earlier turns
-    const messages = [...thread.messages, { role: 'user', content: message }];
-    const tools = toolDefinitions(user.role);
-    const system = await systemFor(user);
-    let jsonRetries = 0;
+    const history = [...thread.messages, { role: 'user', content: message }];
+    const tools = toolSpecs(user.role);
+    const stable = user.role === 'doctor' ? DOCTOR_SYSTEM : PATIENT_SYSTEM;
+    const context = await contextBlock(user);
+    let retries = 0;
 
     for (let round = 0; round <= MAX_TOOL_ROUNDS; round++) {
-      let final;
       send({ type: 'turn' });
+      let turn;
       try {
-        final = await streamTurn({
-          send,
-          signal: abort.signal,
-          params: {
-            model: MODEL,
-            max_tokens: 32000,
-            output_config: { effort: 'medium' },
-            system,
-            tools,
-            messages,
-          },
+        turn = await provider.runTurn({
+          stable, context, history, tools, signal: abort.signal, onText: (text) => send({ type: 'text', text }),
         });
-        jsonRetries = 0;
+        retries = 0;
       } catch (err) {
-        // With eager input streaming a tool input can arrive as unparseable JSON: re-issue the turn
-        if (!(err instanceof Anthropic.APIError) && !abort.signal.aborted && jsonRetries++ < 2) {
+        if (!abort.signal.aborted && provider.isRetryable(err) && retries++ < 2) {
           send({ type: 'reset' });
           continue;
         }
         throw err;
       }
 
-      const content = JSON.parse(JSON.stringify(final.content));
-
-      if (final.stop_reason === 'refusal') {
+      if (turn.refusal) {
         send({ type: 'text', text: REFUSAL_TEXT });
-        messages.push({ role: 'assistant', content: [{ type: 'text', text: REFUSAL_TEXT }] });
+        history.push(provider.refusalMessage(REFUSAL_TEXT));
         break;
       }
 
-      messages.push({ role: 'assistant', content });
-
-      const toolUses = content.filter((b) => b.type === 'tool_use');
-      if (final.stop_reason !== 'tool_use' || toolUses.length === 0) break;
+      history.push(...turn.append);
+      if (turn.toolCalls.length === 0) break;
 
       if (round === MAX_TOOL_ROUNDS) {
         send({ type: 'text', text: '\n\nI had to stop here because this needed too many steps. Could you narrow the question down?' });
         break;
       }
 
-      // Run every tool call from this turn, then return all results in one user message
+      // Run every tool call from this turn, then hand all results back together
       const results = [];
-      for (const tu of toolUses) {
-        send({ type: 'tool', name: tu.name, label: TOOL_LABELS[tu.name] || tu.name });
-        const { isError, content: out } = await runTool(user.role, tu.name, tu.input, user);
-        send({ type: 'tool_done', name: tu.name, ok: !isError, mutated: ['book_appointment', 'log_vital', 'add_note'].includes(tu.name) && !isError });
-        results.push({ type: 'tool_result', tool_use_id: tu.id, content: out, ...(isError && { is_error: true }) });
+      for (const call of turn.toolCalls) {
+        send({ type: 'tool', name: call.name, label: TOOL_LABELS[call.name] || call.name });
+        const { isError, content } = call.input === undefined
+          ? { isError: true, content: 'Invalid input: arguments were not valid JSON' }
+          : await runTool(user.role, call.name, call.input, user);
+        send({ type: 'tool_done', name: call.name, ok: !isError, mutated: MUTATING_TOOLS.includes(call.name) && !isError });
+        results.push({ id: call.id, name: call.name, content, isError });
       }
-      messages.push({ role: 'user', content: results });
+      history.push(...provider.toolResultMessages(results));
     }
 
-    thread.messages = messages;
+    thread.messages = history;
     thread.markModified('messages');
     await thread.save();
     send({ type: 'done' });
@@ -189,18 +161,8 @@ const generate = async ({ res, system, prompt, effort = 'low' }) => {
   const abort = new AbortController();
   res.on('close', () => abort.abort());
   try {
-    const final = await streamTurn({
-      send,
-      signal: abort.signal,
-      params: {
-        model: MODEL,
-        max_tokens: 16000,
-        output_config: { effort },
-        system,
-        messages: [{ role: 'user', content: prompt }],
-      },
-    });
-    if (final.stop_reason === 'refusal') send({ type: 'text', text: REFUSAL_TEXT });
+    const { refusal } = await provider.generate({ system, prompt, effort, signal: abort.signal, onText: (text) => send({ type: 'text', text }) });
+    if (refusal) send({ type: 'text', text: REFUSAL_TEXT });
     send({ type: 'done' });
   } catch (err) {
     if (!abort.signal.aborted) {
@@ -221,4 +183,4 @@ const SUMMARY_SYSTEM = `You write pre-consultation briefs for doctors in PakMedR
 Structure with short headings: **Snapshot** (age, sex, blood group, key conditions), **Alerts** (allergies, possible interactions, abnormal or worsening vitals; write "None found" if none), **History** (chronological, one line per relevant record), **Current medications**, **Suggested follow-ups** (things worth checking, phrased as considerations, not orders).
 Be concise and factual; cite dates. Never invent data. If information is missing, say so briefly.`;
 
-module.exports = { aiEnabled, chat, generate, EXPLAIN_SYSTEM, SUMMARY_SYSTEM, MODEL };
+module.exports = { aiEnabled, aiInfo, keyName, chat, generate, EXPLAIN_SYSTEM, SUMMARY_SYSTEM };

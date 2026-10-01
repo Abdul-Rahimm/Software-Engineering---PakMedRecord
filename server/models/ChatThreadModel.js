@@ -1,11 +1,13 @@
 const mongoose = require('mongoose');
 
-// One AI-assistant conversation. `messages` holds the exact Claude API message
-// params (including thinking and tool blocks) so history is replayed append-only.
+// One AI-assistant conversation. `messages` holds the exact message params of the
+// provider that created it (Mistral or Claude), so history is replayed append-only.
+// A thread can only be continued with the same provider.
 const chatThreadSchema = new mongoose.Schema({
   role: { type: String, enum: ['doctor', 'patient'], required: true },
   cnic: { type: Number, required: true },
   title: { type: String, default: 'New conversation' },
+  provider: { type: String, enum: ['mistral', 'anthropic'], default: 'anthropic' },
   messages: { type: [mongoose.Schema.Types.Mixed], default: [] },
 }, { timestamps: true, minimize: false });
 

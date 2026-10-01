@@ -6,15 +6,15 @@ const Doctor = require('../models/DoctorModel');
 const Affiliation = require('../models/AffiliationModel');
 const Vital = require('../models/VitalModel');
 const { VITAL_TYPES } = require('../models/constants');
-const { aiEnabled, chat, generate, EXPLAIN_SYSTEM, SUMMARY_SYSTEM, MODEL } = require('../ai/assistant');
+const { aiEnabled, aiInfo, keyName, chat, generate, EXPLAIN_SYSTEM, SUMMARY_SYSTEM } = require('../ai/assistant');
 
-const status = (req, res) => res.status(200).json({ enabled: aiEnabled(), model: aiEnabled() ? MODEL : null });
+const status = (req, res) => res.status(200).json({ enabled: aiEnabled(), ...aiInfo(), keyName });
 
 // Refuse AI endpoints cleanly when no credentials are configured
 const requireAI = (req, res, next) =>
   aiEnabled()
     ? next()
-    : res.status(503).json({ error: 'The AI assistant is not configured. Add ANTHROPIC_API_KEY to server/.env and restart the server.', code: 'AI_DISABLED' });
+    : res.status(503).json({ error: `The AI assistant is not configured. Add ${keyName} to server/.env and restart the server.`, code: 'AI_DISABLED' });
 
 const day = (d) => (d ? new Date(d).toISOString().slice(0, 10) : 'unknown date');
 

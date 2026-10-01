@@ -13,6 +13,7 @@
   "license": "ISC",
   "dependencies": {
     "@anthropic-ai/sdk": "^0.131.0",
+    "@mistralai/mistralai": "^2.7.0",
     "bcrypt": "^5.1.1",
     "cors": "^2.8.5",
     "dotenv": "^18.0.5",

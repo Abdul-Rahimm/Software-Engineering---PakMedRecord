@@ -41,6 +41,7 @@ const announceChange = () => window.dispatchEvent(new Event('pakmed:data-changed
 const Assistant = ({ role, open, onOpen, onClose }) => {
   const { toast } = useFeedback();
   const [enabled, setEnabled] = useState(null);
+  const [keyName, setKeyName] = useState('MISTRAL_API_KEY');
   const [messages, setMessages] = useState([]);
   const [threadId, setThreadId] = useState(null);
   const [input, setInput] = useState('');
@@ -52,7 +53,10 @@ const Assistant = ({ role, open, onOpen, onClose }) => {
   const inputRef = useRef(null);
 
   useEffect(() => {
-    api.get('/ai/status').then((r) => setEnabled(r.data.enabled)).catch(() => setEnabled(false));
+    api.get('/ai/status').then((r) => {
+      setEnabled(r.data.enabled);
+      if (r.data.keyName) setKeyName(r.data.keyName);
+    }).catch(() => setEnabled(false));
   }, []);
 
   useEffect(() => {
@@ -222,7 +226,7 @@ const Assistant = ({ role, open, onOpen, onClose }) => {
                   <div className="asst-orb disabled"><FiAlertTriangle size={26} /></div>
                   <h3>Assistant not configured</h3>
                   <p className="muted">
-                    The AI assistant needs an Anthropic API key. Add <code>ANTHROPIC_API_KEY</code> to <code>server/.env</code> and restart the server.
+                    The AI assistant needs an API key. Add <code>{keyName}</code> to <code>server/.env</code> and restart the server.
                   </p>
                 </div>
               ) : messages.length === 0 ? (

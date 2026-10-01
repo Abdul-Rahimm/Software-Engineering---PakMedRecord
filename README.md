@@ -21,7 +21,7 @@ PakMedRecord gives every patient in Pakistan one verified medical record that fo
 - Appointments by day, complete or cancel with a reason; clinic insights charts
 - Professional profile (specialty, experience, bio) shown in the directory
 
-**AI (Claude)**
+**AI (Mistral by default, Claude optional)**
 - PakMed Assistant chat (⌘J): answers questions using the user's own data through tools, can book appointments, log vitals and save notes after confirmation; English, Urdu and Roman Urdu
 - "Explain" any record in plain language for patients
 - AI pre-consultation brief of a patient for doctors
@@ -50,8 +50,17 @@ The frontend talks to `http://localhost:3009` by default; set `VITE_API_URL` in 
 
 ### AI features
 
-The assistant uses the Claude API (`claude-opus-5-5` by default; override with `AI_MODEL`). Put an API key from
-[console.anthropic.com](https://console.anthropic.com) in `server/.env` as `ANTHROPIC_API_KEY` and restart the server.
+The AI runs on **Mistral** by default, which has a free "Experiment" plan:
+
+1. Create a key at [console.mistral.ai](https://console.mistral.ai) (API keys).
+2. In `server/.env` set `AI_PROVIDER=mistral` and `MISTRAL_API_KEY=<your key>`, then restart the server.
+
+The default model is `mistral-small-latest`; set `AI_MODEL=mistral-large-latest` for higher quality.
+The free plan is rate-limited, so the assistant may occasionally ask you to wait a few seconds.
+
+To use **Claude** instead (paid), set `AI_PROVIDER=anthropic` and `ANTHROPIC_API_KEY` (default model `claude-opus-5-5`).
+Saved conversations belong to the provider that created them; after switching, an old conversation continues as a new one.
+
 Without a key the rest of the app works normally and the assistant shows a "not configured" message.
 
 AI requests are limited to 20 per minute per user and sign-in to 10 attempts per 10 minutes per IP
