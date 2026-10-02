@@ -80,7 +80,9 @@ const testComplete = expressAsyncHandler(async (req, res) => {
 });
 
 const byRef = expressAsyncHandler(async (req, res) => {
-  const payment = await Payment.findOne({ txnRef: req.params.txnRef }).lean();
+  // receipt number or payment id
+  const ref = req.params.txnRef;
+  const payment = await Payment.findOne(mongoose.isValidObjectId(ref) ? { _id: ref } : { txnRef: ref }).lean();
   const { role, cnic } = req.user;
   if (!payment || (role === 'patient' && payment.patientCNIC !== cnic) || (role === 'doctor' && payment.doctorCNIC !== cnic)) {
     return res.status(404).json({ error: 'Payment not found' });

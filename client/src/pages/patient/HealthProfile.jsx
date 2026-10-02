@@ -102,7 +102,7 @@ const HealthProfile = () => {
         subtitle="The essentials every doctor should know. Your care team sees this, and it powers your emergency card."
         actions={
           <>
-            <button type="button" className="btn" onClick={() => profile && downloadEmergencyCard({ ...profile, ...form })}><FiCreditCard /> Emergency card</button>
+            <button type="button" className="btn" onClick={() => profile && downloadEmergencyCard({ ...profile, ...form }, profile.emergencyAccess?.enabled && profile.emergencyAccess.token ? `${window.location.origin}/e/${profile.emergencyAccess.token}` : undefined)}><FiCreditCard /> Emergency card</button>
             <Button className="btn btn-primary" loading={saving} disabled={!dirty}><FiSave /> Save changes</Button>
           </>
         }

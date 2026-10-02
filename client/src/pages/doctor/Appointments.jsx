@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { AnimatePresence, motion } from 'framer-motion';
-import { FiCalendar, FiCheck, FiClock, FiSearch, FiX } from 'react-icons/fi';
+import { FiCalendar, FiCheck, FiClock, FiDollarSign, FiSearch, FiUserCheck, FiUserX, FiVideo, FiX } from 'react-icons/fi';
 import Modal from '../../ui/Modal';
 import api from '../../api';
 import { useShell } from '../../layout/ShellContext';
@@ -64,6 +64,31 @@ const Appointments = () => {
     }
   };
 
+  const noShow = async (a) => {
+    setBusy(a._id);
+    try {
+      await api.patch(`/appointments/update/${a._id}`, { status: 'no-show' });
+      setData((d) => ({ ...d, appts: d.appts.map((x) => (x._id === a._id ? { ...x, status: 'no-show' } : x)) }));
+      toast('Marked as no-show');
+    } catch (err) {
+      toast(apiError(err), 'error');
+    } finally {
+      setBusy(null);
+    }
+  };
+
+  const markPaid = async (a) => {
+    const amount = window.prompt('Amount received at the clinic (Rs)', a.fee || '');
+    if (!amount) return;
+    try {
+      const { data: res } = await api.post(`/appointments/${a._id}/paid`, { amount: Number(amount) });
+      setData((d) => ({ ...d, appts: d.appts.map((x) => (x._id === a._id ? res.appointment : x)) }));
+      toast('Payment recorded');
+    } catch (err) {
+      toast(apiError(err), 'error');
+    }
+  };
+
   const cancel = async () => {
     setBusy(`c${cancelling._id}`);
     try {
@@ -104,6 +129,7 @@ const Appointments = () => {
             { value: 'upcoming', label: `Upcoming · ${count((a) => a.status === 'pending')}` },
             { value: 'completed', label: `Completed · ${count((a) => a.status === 'completed')}` },
             { value: 'cancelled', label: `Cancelled · ${count((a) => a.status === 'cancelled')}` },
+            { value: 'no-show', label: `No-show · ${count((a) => a.status === 'no-show')}` },
             { value: 'all', label: `All · ${data?.appts.length ?? 0}` },
           ]}
         />
@@ -143,14 +169,22 @@ const Appointments = () => {
                           )}
                           <div className="mono subtle" style={{ fontSize: 12 }}>{formatCNIC(a.patientCNIC)}</div>
                           {a.reason && <div className="muted truncate" style={{ fontSize: 13, marginTop: 2 }}>“{a.reason}”</div>}
+                          <div className="row gap-8 wrap" style={{ marginTop: 4 }}>
+                            {a.mode === 'video' && <span className="badge badge-cyan badge-plain"><FiVideo size={11} /> Video</span>}
+                            {a.checkedInAt && a.status === 'pending' && <span className="badge badge-green badge-plain"><FiUserCheck size={11} /> Checked in</span>}
+                            {a.fee ? <span className={`badge badge-plain ${a.payment?.status === 'paid' ? 'badge-green' : ''}`}><FiDollarSign size={11} /> Rs {a.fee}{a.payment?.status === 'paid' ? ' paid' : ''}</span> : null}
+                          </div>
                           {a.status === 'cancelled' && <div className="subtle" style={{ fontSize: 12.5, marginTop: 2 }}>Cancelled by {a.cancelledBy === 'doctor' ? 'you' : 'patient'}{a.cancelReason ? `: ${a.cancelReason}` : ''}</div>}
                         </div>
                         {a.status === 'pending' ? <span className="badge badge-cyan">Scheduled</span> : <StatusBadge status={a.status} />}
                         {a.status === 'pending' && (
-                          <>
+                          <div className="row gap-4 wrap" style={{ justifyContent: 'flex-end' }}>
+                            {a.mode === 'video' && <Link to={`/visit/${a._id}`} className="btn btn-primary btn-sm"><FiVideo /> Start video</Link>}
                             <Button className="btn btn-sm" loading={busy === a._id} onClick={() => complete(a)}><FiCheck /> Complete</Button>
+                            {a.payment?.status !== 'paid' && <button className="btn btn-ghost btn-sm btn-icon" onClick={() => markPaid(a)} aria-label="Record payment" title="Record payment"><FiDollarSign /></button>}
+                            <button className="btn btn-ghost btn-sm btn-icon" onClick={() => noShow(a)} aria-label="Mark no-show" title="No-show"><FiUserX /></button>
                             <button className="btn btn-ghost btn-sm btn-icon" onClick={() => setCancelling(a)} aria-label="Cancel appointment" title="Cancel"><FiX /></button>
-                          </>
+                          </div>
                         )}
                       </motion.div>
                     );

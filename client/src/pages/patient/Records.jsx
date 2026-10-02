@@ -97,7 +97,7 @@ export const RecordTimeline = ({ records, doctorsById, patient, emptyAction, can
                   <AttachmentChips attachments={r.attachments} />
                   <div className="tl-meta">
                     <span><FiCalendar /> {formatDateTime(r.createdAt)}</span>
-                    <span><FiUser /> {doctorName(doc)}</span>
+                    <span><FiUser /> {r.partner ? `${r.partner.name} (partner lab)` : doctorName(doc)}</span>
                     {doc?.hospital && <span><FiHome /> {doc.hospital}</span>}
                   </div>
                 </TiltCard>

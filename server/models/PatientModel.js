@@ -99,6 +99,7 @@ const patientSchema = mongoose.Schema({
 // Never send password hashes back to the client
 patientSchema.set('toJSON', {
     transform: (doc, ret) => {
+        ret.hasPassword = Boolean(ret.password);
         delete ret.password;
         delete ret.twoFactor?.secret;
         return ret;

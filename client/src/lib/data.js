@@ -55,3 +55,18 @@ export const fetchAllDoctors = async () => (await api.get('/doctor/doctors')).da
 export const indexBy = (list, key) => Object.fromEntries((list || []).map((x) => [x[key], x]));
 
 export const byNewest = (a, b) => new Date(b.createdAt || b.date || 0) - new Date(a.createdAt || a.date || 0);
+
+// What the server has configured (payments, reminder channels…), fetched once per page load
+let optionsPromise;
+export const fetchServerOptions = () => {
+  optionsPromise ||= api.get('/auth/options').then((r) => r.data).catch(() => {
+    optionsPromise = undefined;
+    return { payments: [], channels: {} };
+  });
+  return optionsPromise;
+};
+export const useServerOptions = () => {
+  const [options, setOptions] = useState(null);
+  useEffect(() => { fetchServerOptions().then(setOptions); }, []);
+  return options;
+};

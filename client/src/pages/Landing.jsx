@@ -8,6 +8,7 @@ import Logo from '../ui/Logo';
 import TiltCard from '../ui/TiltCard';
 import Scene from '../three/Scene';
 import { ThemeToggle } from '../ui/Theme';
+import { LangToggle } from '../lib/i18n';
 import './landing.css';
 
 const features = [
@@ -56,7 +57,9 @@ const Landing = () => {
           <a href="#security">Security</a>
         </div>
         <div className="row gap-8">
+          <LangToggle />
           <ThemeToggle />
+          <Link to="/find-doctors" className="btn btn-ghost hide-sm">Find a doctor</Link>
           <Link to="/doctor/signin" className="btn btn-ghost hide-sm">Doctor sign in</Link>
           <Link to="/patient/signin" className="btn btn-primary">Patient sign in</Link>
         </div>
@@ -186,7 +189,13 @@ const Landing = () => {
       <footer className="land-footer">
         <Logo />
         <span className="subtle">© {new Date().getFullYear()} PakMedRecord · A 6th-semester Software Engineering project</span>
-        <a href="mailto:info@pakmedrecord.com" className="muted">info@pakmedrecord.com</a>
+        <span className="row gap-16 wrap">
+          <Link to="/find-doctors" className="muted">Find a doctor</Link>
+          <Link to="/terms" className="muted">Terms</Link>
+          <Link to="/privacy" className="muted">Privacy</Link>
+          <Link to="/developers" className="muted">Labs &amp; pharmacies</Link>
+          <Link to="/desk/signin" className="muted">Clinic front desk</Link>
+        </span>
       </footer>
     </div>
   );

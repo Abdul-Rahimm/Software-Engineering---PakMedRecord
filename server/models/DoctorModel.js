@@ -74,6 +74,7 @@ const doctorSchema = mongoose.Schema (
 doctorSchema.set('toJSON', {
     virtuals: true,
     transform: (doc, ret) => {
+        ret.hasPassword = Boolean(ret.password);
         delete ret.password;
         if (ret.verification?.document) delete ret.verification.document.gridId;
         return ret;

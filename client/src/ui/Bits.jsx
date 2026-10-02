@@ -80,6 +80,7 @@ export const rise = {
 
 export const StatusBadge = ({ status }) => {
   const s = String(status || '').toLowerCase();
-  const cls = s === 'completed' || s === 'approved' ? 'badge-green' : s === 'rejected' || s === 'cancelled' ? 'badge-rose' : 'badge-amber';
-  return <span className={`badge ${cls}`}>{s ? s[0].toUpperCase() + s.slice(1) : '—'}</span>;
+  const cls = s === 'completed' || s === 'approved' ? 'badge-green' : s === 'rejected' || s === 'cancelled' || s === 'no-show' ? 'badge-rose' : 'badge-amber';
+  const label = s === 'no-show' ? 'No-show' : s ? s[0].toUpperCase() + s.slice(1) : '—';
+  return <span className={`badge ${cls}`}>{label}</span>;
 };

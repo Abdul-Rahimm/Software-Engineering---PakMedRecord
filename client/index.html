@@ -8,10 +8,15 @@
       // apply the saved theme before first paint (light by default)
       try {
         if (localStorage.getItem('pakmedrecord.theme') === 'dark') document.documentElement.dataset.theme = 'dark';
+        if (localStorage.getItem('pakmedrecord.lang') === 'ur') { document.documentElement.lang = 'ur'; document.documentElement.dir = 'rtl'; }
       } catch (e) {}
     </script>
     <meta name="description" content="PakMedRecord — one secure medical record for every patient, across every hospital in Pakistan." />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="manifest" href="/manifest.webmanifest" />
+    <link rel="apple-touch-icon" href="/icons/icon-192.png" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-title" content="PakMedRecord" />
     <title>PakMedRecord</title>
   </head>
   <body>

@@ -11,6 +11,7 @@ import { apiError, apptDay, doctorName, formatDate, formatTime, greeting } from 
 import { AssistantGlyph } from '../../layout/Assistant';
 import TiltCard from '../../ui/TiltCard';
 import HealthCard from '../../ui/HealthCard';
+import FollowUps from '../../ui/FollowUps';
 import { Button, CountUp, Skeleton, rise, stagger } from '../../ui/Bits';
 import { useFeedback } from '../../ui/Feedback';
 import '../dashboard.css';
@@ -150,7 +151,7 @@ const PatientOverview = () => {
                   <span className="list-dot" />
                   <div className="grow">
                     <div className="truncate" style={{ fontWeight: 500 }}>{r.recordData}</div>
-                    <div className="subtle" style={{ fontSize: 13 }}>{doctorName(doctorsById[r.doctorCNIC])} · {formatDate(r.createdAt)}</div>
+                    <div className="subtle" style={{ fontSize: 13 }}>{r.partner ? r.partner.name : doctorName(doctorsById[r.doctorCNIC])} · {formatDate(r.createdAt)}</div>
                   </div>
                   <FiArrowRight className="subtle" />
                 </Link>
@@ -220,6 +221,8 @@ const PatientOverview = () => {
           <p className="subtle" style={{ fontSize: 12.5, marginTop: 'auto' }}>Press <kbd>⌘J</kbd> or tap the glowing button.</p>
         </section>
       </div>
+
+      <FollowUps cnic={cnic} compact />
 
       <div className="grid grid-3">
         {actions.map((a, i) => (

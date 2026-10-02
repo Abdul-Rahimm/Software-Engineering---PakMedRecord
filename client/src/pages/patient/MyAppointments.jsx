@@ -1,10 +1,11 @@
 import { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { AnimatePresence, motion } from 'framer-motion';
-import { FiCalendar, FiClock, FiHome, FiPlus, FiX } from 'react-icons/fi';
+import { FiCalendar, FiClock, FiCreditCard, FiDownload, FiHome, FiPlus, FiVideo, FiX } from 'react-icons/fi';
 import api from '../../api';
 import { useShell } from '../../layout/ShellContext';
-import { useFetch, fetchAllDoctors, indexBy } from '../../lib/data';
+import { useFetch, fetchAllDoctors, indexBy, useServerOptions } from '../../lib/data';
+import { downloadReceiptPDF } from '../../lib/pdf';
 import { apiError, apptDay, doctorName, formatTime } from '../../lib/format';
 import { Avatar, Button, EmptyState, PageHeader, Skeleton, StatusBadge } from '../../ui/Bits';
 import Segmented from '../../ui/Segmented';
@@ -18,9 +19,20 @@ const startOfToday = () => {
   return d;
 };
 
+// Video visits open 15 minutes before the slot and stay open for 2 hours
+const videoOpen = (a) => {
+  const d = apptDay(a.date);
+  const [h, m] = a.time.split(':').map(Number);
+  d.setHours(h, m, 0, 0);
+  const diff = d.getTime() - Date.now();
+  return diff < 15 * 60000 && diff > -2 * 3600000;
+};
+
 const MyAppointments = () => {
-  const { cnic } = useShell();
+  const { cnic, profile } = useShell();
   const { toast } = useFeedback();
+  const options = useServerOptions();
+  const [paying, setPaying] = useState(null);
   const [tab, setTab] = useState('upcoming');
   const [cancelling, setCancelling] = useState(null);
   const [reason, setReason] = useState('');
@@ -58,6 +70,42 @@ const MyAppointments = () => {
   };
 
   const upcomingCount = data?.appts.filter(isUpcoming).length ?? 0;
+
+  // Online payment: JazzCash posts a form to its hosted page; test mode opens our simulated checkout
+  const pay = async (a, provider) => {
+    setPaying(a._id);
+    try {
+      const { data: res } = await api.post('/payments/checkout', { appointmentId: a._id, provider });
+      if (res.checkout.redirect) {
+        window.location.assign(res.checkout.redirect);
+        return;
+      }
+      const form = document.createElement('form');
+      form.method = res.checkout.method;
+      form.action = res.checkout.action;
+      Object.entries(res.checkout.fields).forEach(([k, v]) => {
+        const input = document.createElement('input');
+        input.type = 'hidden';
+        input.name = k;
+        input.value = v;
+        form.appendChild(input);
+      });
+      document.body.appendChild(form);
+      form.submit();
+    } catch (err) {
+      toast(apiError(err), 'error');
+      setPaying(null);
+    }
+  };
+
+  const receipt = async (a) => {
+    try {
+      const { data: res } = await api.get(`/payments/${a.payment.paymentId}`);
+      await downloadReceiptPDF({ ...res, patient: profile });
+    } catch (err) {
+      toast(apiError(err, 'Receipt not available'), 'error');
+    }
+  };
 
   return (
     <>
@@ -105,7 +153,8 @@ const MyAppointments = () => {
                     </div>
                     <div className="tl-meta">
                       <span><FiClock /> {formatTime(a.time)}</span>
-                      {doc?.hospital && <span><FiHome /> {doc.hospital}</span>}
+                      {a.mode === 'video' ? <span><FiVideo /> Video visit</span> : doc?.hospital && <span><FiHome /> {doc.clinicAddress || doc.hospital}</span>}
+                      {a.fee ? <span><FiCreditCard /> Rs {a.fee.toLocaleString('en-PK')} · {a.payment?.status === 'paid' ? 'paid' : 'unpaid'}</span> : null}
                     </div>
                     {a.reason && <p className="muted" style={{ fontSize: 13.5 }}>“{a.reason}”</p>}
                     {a.status === 'cancelled' && (
@@ -114,6 +163,17 @@ const MyAppointments = () => {
                   </div>
                   <div className="stack gap-8" style={{ alignItems: 'flex-end' }}>
                     {isUpcoming(a) ? <span className="badge badge-cyan">Scheduled</span> : <StatusBadge status={a.status === 'pending' ? 'missed' : a.status} />}
+                    {isUpcoming(a) && a.mode === 'video' && (
+                      videoOpen(a)
+                        ? <Link to={`/visit/${a._id}`} className="btn btn-primary btn-sm"><FiVideo /> Join video</Link>
+                        : <span className="subtle" style={{ fontSize: 12 }}>Join opens 15 min before</span>
+                    )}
+                    {isUpcoming(a) && a.fee > 0 && a.payment?.status !== 'paid' && (options?.payments || []).map((p) => (
+                      <Button key={p} className="btn btn-sm" loading={paying === a._id} onClick={() => pay(a, p)}>
+                        <FiCreditCard /> {p === 'jazzcash' ? 'Pay with JazzCash' : 'Pay online (test)'}
+                      </Button>
+                    ))}
+                    {a.payment?.status === 'paid' && a.payment.paymentId && <button className="btn btn-ghost btn-sm" onClick={() => receipt(a)}><FiDownload /> Receipt</button>}
                     {isUpcoming(a) && <button className="btn btn-danger btn-sm" onClick={() => setCancelling(a)}><FiX /> Cancel</button>}
                   </div>
                 </motion.div>

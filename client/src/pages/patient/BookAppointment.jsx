@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { AnimatePresence, motion } from 'framer-motion';
-import { FiCalendar, FiCheck, FiCheckCircle, FiClock, FiHome, FiUser, FiUserPlus } from 'react-icons/fi';
+import { FiCalendar, FiCheck, FiCheckCircle, FiClock, FiCreditCard, FiHome, FiMapPin, FiUser, FiUserPlus, FiVideo } from 'react-icons/fi';
 import api from '../../api';
 import { useShell } from '../../layout/ShellContext';
 import { useFetch, fetchCareTeam } from '../../lib/data';
@@ -9,11 +9,6 @@ import { apiError, doctorName, formatTime } from '../../lib/format';
 import { Avatar, Button, EmptyState, PageHeader, Skeleton } from '../../ui/Bits';
 import { useFeedback } from '../../ui/Feedback';
 import '../dashboard.css';
-
-const SLOTS = [];
-for (let h = 9; h < 17; h++) {
-  SLOTS.push(`${String(h).padStart(2, '0')}:00`, `${String(h).padStart(2, '0')}:30`);
-}
 
 const toKey = (d) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 
@@ -51,17 +46,31 @@ const BookAppointment = () => {
   const [saving, setSaving] = useState(false);
   const [booked, setBooked] = useState(null);
   const [reason, setReason] = useState('');
-  const [taken, setTaken] = useState([]);
+  const [mode, setMode] = useState('in-person');
+  // the doctor's open slots for the chosen day: { slots, taken, workingDays, holidays, videoConsults, fee }
+  const [avail, setAvail] = useState(null);
+  const [week, setWeek] = useState(null); // working days / holidays, known once a doctor is picked
+  const taken = useMemo(() => avail?.taken || [], [avail]);
 
   const { data: team, loading } = useFetch(() => fetchCareTeam(cnic), [cnic]);
   const chosen = team?.find((d) => d.doctorCNIC === doctor);
 
-  // times already booked with this doctor on the chosen day
+  // the doctor's hours (working days, video, fee) as soon as a doctor is chosen
   useEffect(() => {
-    setTaken([]);
+    setWeek(null);
+    setMode('in-person');
+    if (!doctor) return;
+    api.get(`/appointments/availability/${doctor}`, { params: { date: toKey(new Date()) } }).then((r) => setWeek(r.data)).catch(() => {});
+  }, [doctor]);
+
+  // open and booked times for the chosen day
+  useEffect(() => {
+    setAvail(null);
     if (!doctor || !date) return;
-    api.get(`/appointments/slots/${doctor}`, { params: { date } }).then((r) => setTaken(r.data.times)).catch(() => {});
+    api.get(`/appointments/availability/${doctor}`, { params: { date } }).then((r) => setAvail(r.data)).catch(() => {});
   }, [doctor, date]);
+
+  const dayClosed = (d) => Boolean(week) && (!week.workingDays.includes(d.getDay()) || week.holidays.includes(toKey(d)));
 
   const now = new Date();
   const slotDisabled = (slot) => {
@@ -77,8 +86,8 @@ const BookAppointment = () => {
   const book = async () => {
     setSaving(true);
     try {
-      await api.post(`/appointments/book/${cnic}`, { doctorCNIC: doctor, date, time, reason: reason.trim() });
-      setBooked({ doctor: chosen, date, time });
+      await api.post(`/appointments/book/${cnic}`, { doctorCNIC: doctor, date, time, reason: reason.trim(), mode });
+      setBooked({ doctor: chosen, date, time, mode });
       setReason('');
       toast('Appointment booked');
     } catch (err) {
@@ -121,7 +130,7 @@ const BookAppointment = () => {
             <div className="empty-orb" style={{ width: 90, height: 90 }}><FiCheckCircle size={40} /></div>
             <h2 style={{ fontSize: 28 }}>You&apos;re booked!</h2>
             <p className="muted">
-              {doctorName(booked.doctor)} on{' '}
+              {booked.mode === 'video' ? 'Video visit with ' : ''}{doctorName(booked.doctor)} on{' '}
               <strong style={{ color: 'var(--text)' }}>{new Date(`${booked.date}T00:00:00`).toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long' })}</strong>{' '}
               at <strong style={{ color: 'var(--text)' }}>{formatTime(booked.time)}</strong>.
             </p>
@@ -152,7 +161,7 @@ const BookAppointment = () => {
                   {days.map((d) => {
                     const key = toKey(d);
                     return (
-                      <button key={key} type="button" className="day" aria-pressed={date === key} onClick={() => { setDate(key); setTime(null); }}>
+                      <button key={key} type="button" className="day" aria-pressed={date === key} disabled={dayClosed(d)} title={dayClosed(d) ? 'Doctor not available' : undefined} style={dayClosed(d) ? { opacity: 0.3, cursor: 'not-allowed' } : undefined} onClick={() => { setDate(key); setTime(null); }}>
                         <span className="dow">{d.toLocaleDateString('en-GB', { weekday: 'short' })}</span>
                         <span className="dom">{d.getDate()}</span>
                         <span className="dow">{d.toLocaleDateString('en-GB', { month: 'short' })}</span>
@@ -163,9 +172,11 @@ const BookAppointment = () => {
               </Step>
 
               <Step n={3} title="Time" done={Boolean(time)}>
-                {date ? (
+                {date && !avail ? <Skeleton height={40} /> : date && !avail.slots.length ? (
+                  <p className="subtle">The doctor isn&apos;t available on this day. Pick another day.</p>
+                ) : date ? (
                   <div className="chips">
-                    {SLOTS.map((s) => (
+                    {avail.slots.map((s) => (
                       <button key={s} type="button" className="chip" aria-pressed={time === s} disabled={slotDisabled(s)} title={taken.includes(s) ? 'Already booked' : undefined} style={slotDisabled(s) ? { opacity: 0.3, cursor: 'not-allowed', textDecoration: taken.includes(s) ? 'line-through' : undefined } : undefined} onClick={() => setTime(s)}>
                         {formatTime(s)}
                       </button>
@@ -176,7 +187,20 @@ const BookAppointment = () => {
                 )}
               </Step>
 
-              <Step n={4} title="Reason for visit (optional)" done={Boolean(reason.trim())}>
+              {week?.videoConsults && (
+                <Step n={4} title="Visit type" done>
+                  <div className="row gap-12 wrap">
+                    {[['in-person', FiMapPin, 'In person', chosen?.clinicAddress || chosen?.hospital], ['video', FiVideo, 'Video call', 'Join from the app at your time']].map(([v, Icon, label, sub]) => (
+                      <button key={v} type="button" className={`feed-item ${mode === v ? 'selected' : ''}`} style={{ font: 'inherit', cursor: 'pointer', flex: '1 1 200px', ...(mode === v ? { borderColor: 'rgba(61,255,176,.55)', boxShadow: 'var(--glow)' } : {}) }} aria-pressed={mode === v} onClick={() => setMode(v)}>
+                        <Icon size={18} />
+                        <div style={{ textAlign: 'left' }}><div style={{ fontWeight: 600 }}>{label}</div><div className="subtle" style={{ fontSize: 12.5 }}>{sub}</div></div>
+                      </button>
+                    ))}
+                  </div>
+                </Step>
+              )}
+
+              <Step n={week?.videoConsults ? 5 : 4} title="Reason for visit (optional)" done={Boolean(reason.trim())}>
                 <textarea className="textarea" style={{ minHeight: 80 }} maxLength={300} value={reason} onChange={(e) => setReason(e.target.value)} placeholder="e.g. Follow-up on blood test results, recurring headaches…" aria-label="Reason for visit" />
               </Step>
             </div>
@@ -187,6 +211,9 @@ const BookAppointment = () => {
               <div className="summary-row"><span className="k">Hospital</span><span className="row gap-8 truncate"><FiHome className="subtle" /> {chosen?.hospital || '—'}</span></div>
               <div className="summary-row"><span className="k">Date</span><span className="row gap-8"><FiCalendar className="subtle" /> {dateObj ? dateObj.toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' }) : '—'}</span></div>
               <div className="summary-row"><span className="k">Time</span><span className="row gap-8"><FiClock className="subtle" /> {time ? formatTime(time) : '—'}</span></div>
+              <div className="summary-row"><span className="k">Visit</span><span className="row gap-8">{mode === 'video' ? <><FiVideo className="subtle" /> Video call</> : <><FiMapPin className="subtle" /> In person</>}</span></div>
+              {week?.fee ? <div className="summary-row"><span className="k">Fee</span><span className="row gap-8"><FiCreditCard className="subtle" /> Rs {week.fee.toLocaleString('en-PK')}</span></div> : null}
+              {week?.fee ? <p className="subtle" style={{ fontSize: 12.5 }}>Pay online from My appointments, or at the clinic.</p> : null}
               <Button className="btn btn-primary btn-lg btn-block" style={{ marginTop: 12 }} disabled={!doctor || !date || !time} loading={saving} onClick={book}>
                 Confirm booking
               </Button>

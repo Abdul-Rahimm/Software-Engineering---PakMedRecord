@@ -6,6 +6,7 @@ const { completeSignIn } = require('../lib/session');
 const { startEmailVerification, TERMS_VERSION } = require('../lib/accounts');
 const { isCNIC, isEmail, cleanList } = require('../lib/validate');
 const { BLOOD_GROUPS } = require('../models/constants');
+const { timesFor } = require('./PrescriptionController');
 
 const Signup = expressAsyncHandler(async (req, res) => {
   const { patientCNIC, firstName, lastName, email, hospital, gender, password, acceptTerms } = req.body;
@@ -188,7 +189,8 @@ const getPatient = expressAsyncHandler(async (req, res) => {
             name: String(m.name).trim(),
             dose: String(m.dose || '').trim(),
             frequency: String(m.frequency || '').trim(),
-            times: [...new Set((Array.isArray(m.times) ? m.times : []).filter((t) => /^([01]\d|2[0-3]):[0-5]\d$/.test(t)))].sort().slice(0, 6),
+            // new medicines get dose times from "twice daily" etc.; an explicit list (even empty) is kept
+            times: m.times === undefined ? timesFor(m.frequency) : [...new Set((Array.isArray(m.times) ? m.times : []).filter((t) => /^([01]\d|2[0-3]):[0-5]\d$/.test(t)))].sort().slice(0, 6),
             startDate: validDate(m.startDate),
             endDate: validDate(m.endDate),
             refillDate: validDate(m.refillDate),

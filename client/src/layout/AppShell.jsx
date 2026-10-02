@@ -2,9 +2,11 @@ import { Suspense, useCallback, useEffect, useMemo, useState } from 'react';
 import { NavLink, useLocation, useNavigate, useOutlet } from 'react-router-dom';
 import { AnimatePresence, motion } from 'framer-motion';
 import {
-  FiActivity, FiBarChart2, FiCalendar, FiClipboard, FiCommand, FiEdit3, FiFileText, FiGrid, FiHeart,
-  FiLogOut, FiMenu, FiSearch, FiSettings, FiTrendingUp, FiUploadCloud, FiUserPlus, FiUsers, FiX,
+  FiActivity, FiAlertTriangle, FiBarChart2, FiCalendar, FiClipboard, FiClock, FiCommand, FiEdit3, FiFileText, FiGrid, FiHeart,
+  FiHome, FiLock, FiLogOut, FiMenu, FiPackage, FiSearch, FiSettings, FiShare2, FiShield, FiTrendingUp, FiUploadCloud, FiUserPlus, FiUsers, FiX,
 } from 'react-icons/fi';
+import { LangToggle } from '../lib/i18n';
+import { switchProfile } from '../lib/family';
 import api from '../api';
 import { getSession, clearSession } from '../session';
 import Logo from '../ui/Logo';
@@ -18,27 +20,37 @@ import { ThemeToggle } from '../ui/Theme';
 import { ShellContext } from './ShellContext';
 import './shell.css';
 
+// `group` starts a new labelled section in the sidebar
 export const navFor = (role, cnic) =>
   role === 'doctor'
     ? [
-        { to: `/doctor/home/${cnic}`, label: 'Overview', icon: FiGrid },
+        { to: `/doctor/home/${cnic}`, label: 'Overview', icon: FiGrid, group: 'Clinic' },
         { to: `/affiliation/getmypatients/${cnic}`, label: 'Patients', icon: FiUsers },
         { to: `/appointments/fetch/${cnic}`, label: 'Appointments', icon: FiCalendar },
         { to: `/tempRecords/pending/${cnic}`, label: 'Review queue', icon: FiClipboard, badge: 'pending' },
         { to: `/appointments/fetchByTime/${cnic}`, label: 'Insights', icon: FiBarChart2 },
-        { to: `/doctor/profile/${cnic}`, label: 'Profile', icon: FiSettings },
+        { to: `/doctor/hours/${cnic}`, label: 'Clinic hours', icon: FiClock, group: 'Practice' },
+        { to: `/clinic/${cnic}`, label: 'My clinic', icon: FiHome },
+        { to: `/doctor/profile/${cnic}`, label: 'Profile', icon: FiSettings, group: 'Account' },
+        { to: `/doctor/security/${cnic}`, label: 'Security & privacy', icon: FiLock },
       ]
     : [
-        { to: `/patient/home/${cnic}`, label: 'Overview', icon: FiGrid },
+        { to: `/patient/home/${cnic}`, label: 'Overview', icon: FiGrid, group: 'Your health' },
         { to: `/record/getrecords/${cnic}`, label: 'Health records', icon: FiFileText },
         { to: `/patient/${cnic}/health`, label: 'Health profile', icon: FiHeart },
+        { to: `/meds/${cnic}`, label: 'Medicines', icon: FiPackage },
         { to: `/vitals/${cnic}`, label: 'Vitals', icon: FiTrendingUp },
-        { to: `/appointments/mine/${cnic}`, label: 'Appointments', icon: FiCalendar },
+        { to: `/labs/${cnic}`, label: 'Lab trends', icon: FiBarChart2 },
+        { to: `/vaccines/${cnic}`, label: 'Vaccines', icon: FiShield },
+        { to: `/appointments/mine/${cnic}`, label: 'Appointments', icon: FiCalendar, group: 'Care' },
         { to: `/tempRecords/submit/${cnic}`, label: 'Submit a record', icon: FiUploadCloud },
         { to: `/affiliation/getmydoctors/${cnic}`, label: 'My care team', icon: FiActivity },
         { to: '/doctor/doctors', label: 'Find doctors', icon: FiUserPlus },
+        { to: `/sharing/${cnic}`, label: 'Sharing & emergency', icon: FiShare2 },
         { to: `/patient/${cnic}/getnote`, label: 'Notes', icon: FiEdit3 },
+        { to: `/family/${cnic}`, label: 'Family', icon: FiUsers, group: 'Account' },
         { to: `/patient/update/${cnic}`, label: 'Profile', icon: FiSettings },
+        { to: `/patient/${cnic}/security`, label: 'Security & privacy', icon: FiLock },
       ];
 
 const PageSkeleton = () => (
@@ -113,6 +125,8 @@ const AppShell = ({ role }) => {
     const ok = await confirm({ title: 'Sign out?', message: 'You will need your CNIC and password to sign back in.', confirmLabel: 'Sign out' });
     if (ok) {
       clearSession();
+      // offline copies of records must not outlive the session on a shared device
+      if ('caches' in window) caches.delete('pmr-api').catch(() => {});
       navigate('/');
     }
   };
@@ -134,9 +148,9 @@ const AppShell = ({ role }) => {
         <kbd><FiCommand size={11} />K</kbd>
       </button>
 
-      <nav className="stack gap-4" aria-label="Main">
-        <span className="nav-heading">{role === 'doctor' ? 'Clinic' : 'Your health'}</span>
-        {nav.map(({ to, label, icon: Icon, badge }) => (
+      <nav className="stack gap-4 nav-scroll" aria-label="Main">
+        {nav.map(({ to, label, icon: Icon, badge, group }) => [
+          group && <span key={`g-${group}`} className="nav-heading">{group}</span>,
           <NavLink key={to} to={to} end className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`}>
             {({ isActive }) => (
               <>
@@ -146,11 +160,9 @@ const AppShell = ({ role }) => {
                 {badge === 'pending' && pending > 0 && <span className="nav-count">{pending}</span>}
               </>
             )}
-          </NavLink>
-        ))}
+          </NavLink>,
+        ])}
       </nav>
-
-      <div className="grow" />
 
       <div className="user-card">
         <Avatar first={profile?.firstName} last={profile?.lastName} seed={cnic} size={40} />
@@ -202,6 +214,7 @@ const AppShell = ({ role }) => {
             <button className="btn btn-ghost btn-icon" onClick={() => setPalette(true)} aria-label="Search">
               <FiSearch size={18} />
             </button>
+            <LangToggle />
             <ThemeToggle />
             <NotificationBell />
           </div>
@@ -212,6 +225,7 @@ const AppShell = ({ role }) => {
             {new Date().toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}
           </span>
           <div className="row gap-8">
+            <LangToggle />
             <ThemeToggle className="btn btn-icon bell-btn" />
             <button className="btn btn-ai btn-sm" onClick={() => setAssistant(true)}>
               <AssistantGlyph size={15} /> Ask AI <kbd style={{ marginLeft: 2 }}>⌘J</kbd>
@@ -219,6 +233,20 @@ const AppShell = ({ role }) => {
             <NotificationBell />
           </div>
         </div>
+
+        {session?.guardian && (
+          <div className="shell-banner family">
+            <FiUsers /> <span>You&apos;re managing <strong>{displayName}</strong>&apos;s profile.</span>
+            <button className="btn btn-sm" onClick={() => switchProfile(session.guardian)}>Switch back to me</button>
+          </div>
+        )}
+        {role === 'doctor' && profile && !profile.isVerified && !location.pathname.startsWith('/doctor/profile') && (
+          <div className="shell-banner">
+            <FiAlertTriangle />
+            <span>{profile.verification?.status === 'pending' ? 'Your PMDC verification is in review. Patients can add you once it’s approved.' : 'Verify your PMDC registration so patients can add you and you can see their records.'}</span>
+            <NavLink to={`/doctor/profile/${cnic}`} className="btn btn-sm">{profile.verification?.status === 'pending' ? 'View status' : 'Verify now'}</NavLink>
+          </div>
+        )}
 
         <AnimatePresence mode="wait">
           <motion.main

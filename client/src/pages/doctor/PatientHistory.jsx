@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { AnimatePresence, motion } from 'framer-motion';
 import {
-  FiActivity, FiAlertTriangle, FiArrowLeft, FiFilePlus, FiFileText, FiHeart, FiHome, FiLock, FiMail, FiPhone, FiX,
+  FiActivity, FiAlertTriangle, FiArrowLeft, FiBarChart2, FiEdit3, FiFilePlus, FiFileText, FiHeart, FiHome, FiLock, FiMail, FiPackage, FiPhone, FiShield, FiX,
 } from 'react-icons/fi';
 import api from '../../api';
 import { useShell } from '../../layout/ShellContext';
@@ -15,6 +15,11 @@ import { AssistantGlyph } from '../../layout/Assistant';
 import { RecordTimeline } from '../patient/Records';
 import { VitalsView } from '../patient/Vitals';
 import AddRecordModal from './AddRecordModal';
+import PrescriptionModal from './PrescriptionModal';
+import { AdherenceView, PrescriptionList } from '../patient/Medicines';
+import { LabTrendsView } from '../patient/LabTrends';
+import { VaccineSchedule } from '../patient/Vaccines';
+import FollowUps from '../../ui/FollowUps';
 import '../dashboard.css';
 
 const age = (dob) => (dob ? Math.floor((Date.now() - new Date(dob)) / 3.15576e10) : null);
@@ -22,7 +27,10 @@ const age = (dob) => (dob ? Math.floor((Date.now() - new Date(dob)) / 3.15576e10
 const TABS = [
   { id: 'records', label: 'Records', icon: FiFileText },
   { id: 'profile', label: 'Health profile', icon: FiHeart },
+  { id: 'meds', label: 'Medicines', icon: FiPackage },
+  { id: 'labs', label: 'Lab trends', icon: FiBarChart2 },
   { id: 'vitals', label: 'Vitals', icon: FiActivity },
+  { id: 'vaccines', label: 'Vaccines', icon: FiShield, child: true },
 ];
 
 const ProfileFacts = ({ p }) => {
@@ -71,6 +79,7 @@ const PatientHistory = () => {
   const [adding, setAdding] = useState(false);
   const [tab, setTab] = useState('records');
   const [brief, setBrief] = useState(false);
+  const [prescribing, setPrescribing] = useState(false);
 
   const { data, loading, error, setData } = useFetch(async () => {
     const [patient, records, doctors] = await Promise.all([
@@ -131,7 +140,8 @@ const PatientHistory = () => {
         </div>
         <div className="stack gap-8 history-count">
           <button className="btn btn-ai" onClick={() => setBrief(true)}><AssistantGlyph size={15} /> AI brief</button>
-          <button className="btn btn-primary" onClick={() => setAdding(true)}><FiFilePlus /> New record</button>
+          <button className="btn btn-primary" onClick={() => setPrescribing(true)}><FiEdit3 /> Prescribe</button>
+          <button className="btn" onClick={() => setAdding(true)}><FiFilePlus /> New record</button>
         </div>
       </section>
 
@@ -155,7 +165,7 @@ const PatientHistory = () => {
       </AnimatePresence>
 
       <div className="tabs" role="tablist">
-        {TABS.map((t) => (
+        {TABS.filter((t) => !t.child || (age(patient.dateOfBirth) ?? 99) < 6).map((t) => (
           <button key={t.id} role="tab" className="tab" aria-selected={tab === t.id} onClick={() => setTab(t.id)}>
             <t.icon size={15} /> {t.label}{t.id === 'records' ? ` · ${records.length}` : ''}
             {tab === t.id && <motion.span layoutId="history-tab" className="tab-line" />}
@@ -175,6 +185,23 @@ const PatientHistory = () => {
       )}
       {tab === 'profile' && <ProfileFacts p={patient} />}
       {tab === 'vitals' && <VitalsView patientCNIC={patient.patientCNIC} readOnly />}
+      {tab === 'meds' && (
+        <div className="grid grid-2" style={{ alignItems: 'start' }}>
+          <section className="glass card-pad-lg stack gap-16"><h2 className="section-title">Adherence (30 days)</h2><AdherenceView cnic={patient.patientCNIC} /></section>
+          <section className="glass card-pad-lg stack gap-16">
+            <div className="row between"><h2 className="section-title">E-prescriptions</h2><button className="btn btn-sm btn-primary" onClick={() => setPrescribing(true)}><FiEdit3 /> Prescribe</button></div>
+            <PrescriptionList cnic={patient.patientCNIC} patient={patient} onCancel={async (rx) => {
+              if (rx.doctorCNIC !== cnic) { toast('Only the prescribing doctor can cancel it', 'error'); return; }
+              if (!(await confirm({ title: 'Cancel this prescription?', message: 'Pharmacies will see it as cancelled.', confirmLabel: 'Cancel prescription', danger: true }))) return;
+              try { await api.post(`/prescriptions/${rx.code}/cancel`); toast('Prescription cancelled'); } catch (err) { toast(apiError(err), 'error'); }
+            }} />
+          </section>
+        </div>
+      )}
+      {tab === 'labs' && <div className="stack gap-20"><FollowUps cnic={patient.patientCNIC} /><LabTrendsView cnic={patient.patientCNIC} /></div>}
+      {tab === 'vaccines' && <section className="glass card-pad-lg"><VaccineSchedule cnic={patient.patientCNIC} /></section>}
+
+      <PrescriptionModal open={prescribing} onClose={() => setPrescribing(false)} patient={patient} onCreated={({ record }) => record && setData((d) => ({ ...d, records: [record, ...d.records] }))} />
 
       <AddRecordModal
         open={adding}

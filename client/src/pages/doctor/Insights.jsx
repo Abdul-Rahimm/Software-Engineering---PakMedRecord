@@ -13,6 +13,7 @@ import { useFetch } from '../../lib/data';
 import { apptDay, formatTime } from '../../lib/format';
 import { CountUp, EmptyState, PageHeader, Skeleton, rise, stagger } from '../../ui/Bits';
 import TiltCard from '../../ui/TiltCard';
+import PracticeStats from '../../ui/PracticeStats';
 import '../dashboard.css';
 
 ChartJS.register(BarElement, CategoryScale, LinearScale, LineElement, PointElement, Filler, Tooltip, Legend);
@@ -145,6 +146,8 @@ const Insights = () => {
           </button>
         ) : null}
       />
+
+      <div style={{ marginBottom: 24 }}><PracticeStats path={`/analytics/doctor/${cnic}`} /></div>
 
       {loading ? (
         <div className="stack gap-20"><div className="grid grid-4">{[0, 1, 2, 3].map((i) => <Skeleton key={i} height={130} />)}</div><Skeleton height={340} /></div>

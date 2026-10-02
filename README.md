@@ -29,6 +29,36 @@ PakMedRecord gives every patient in Pakistan one verified medical record that fo
 - PakMed Assistant chat (⌘J): answers questions using the user's own data through tools, can book appointments, log vitals and save notes after confirmation; English, Urdu and Roman Urdu
 - "Explain" any record in plain language for patients
 - AI pre-consultation brief of a patient for doctors
+- Lab values read from uploaded reports and charted as trends; AI follow-up suggestions ("repeat HbA1c is due")
+- Prescription safety check: allergy, duplicate and drug-interaction warnings
+
+**Trust and safety**
+- Doctors upload their PMDC certificate; an admin verifies them before they can see records or appear in the directory
+- Admin portal (`/admin`): doctor verification queue, account suspension, user reports, lab/pharmacy API keys, server error log
+- Email verification, password reset by email, optional two-step sign-in (authenticator app + recovery codes)
+- "Who viewed my record" access log, Terms and Privacy Policy accepted at sign-up, full data export and account deletion
+
+**Everyday care**
+- Doctor clinic hours (several blocks a day, slot length, days off); booking only offers open slots
+- Video visits (peer-to-peer WebRTC, with a Jitsi backup link) with consultation notes saved to the record
+- Consultation fees: pay online (JazzCash, or a simulated test checkout) or at the clinic, with PDF receipts
+- E-prescriptions with a QR code pharmacies can verify at `/rx/<code>`; the patient's medicine list updates automatically
+- Medicine tracker: daily dose checklist, adherence history (visible to doctors), refill reminders
+- Family profiles: manage children's and parents' records under one login, switch profiles, hand over a login later
+- Pakistan EPI childhood vaccination schedule with due/overdue tracking
+- Time-limited share links (1 hour to 7 days, revocable) and an emergency QR card for paramedics
+- Reminders by in-app notification, email, WhatsApp or SMS (daily job via Vercel Cron)
+- Urdu interface with right-to-left layout; installable as an app (PWA) with offline access to recent records
+
+**Clinics and partners**
+- Clinics: doctors share front-desk staff and a schedule; staff (`/desk`) book walk-ins, check patients in, mark no-shows and record payments, without access to records
+- Practice and clinic analytics: no-show and cancellation rates, returning patients, fees collected, busiest hours and days
+- Public doctor directory (`/find-doctors`) with fees, timings and verified badges, searchable by city and specialty
+- Partner API for labs (push results into a patient's record) and pharmacies (verify and dispense prescriptions); docs at `/developers`
+
+**Operations**
+- `/health` endpoint, helmet security headers, CORS allowlist, central error log
+- Nightly database backup GitHub Action (`.github/workflows/backup.yml`, needs a `MONGODB_URI` repository secret); `npm run backup` / `npm run restore` locally
 
 ## Running locally
 

@@ -74,8 +74,10 @@ export const downloadRecordPDF = async ({ record, patient, doctor }) => {
 const age = (dob) => (dob ? Math.floor((Date.now() - new Date(dob)) / 3.15576e10) : null);
 
 // Wallet-size emergency card: blood group, allergies, conditions, medications, emergency contact
-export const downloadEmergencyCard = async (p) => {
+// `qrUrl`: link to the patient's emergency page, printed as a QR code on the back
+export const downloadEmergencyCard = async (p, qrUrl) => {
   const { jsPDF } = await import('jspdf');
+  const qr = qrUrl ? await (await import('../ui/QRCode')).qrDataUrl(qrUrl, 300) : null;
   // credit-card proportions, landscape, two pages (front/back)
   const doc = new jsPDF({ unit: 'mm', format: [85.6, 54], orientation: 'landscape' });
   const W = 85.6;
@@ -137,7 +139,14 @@ export const downloadEmergencyCard = async (p) => {
   doc.setFont('helvetica', 'normal');
   doc.setFontSize(7.4);
   doc.setTextColor(15, 22, 35);
-  (meds.length ? meds.slice(0, 7) : ['No current medications recorded']).forEach((m, i) => doc.text(`•  ${m}`, 4, 19 + i * 4.2, { maxWidth: 78 }));
+  const medWidth = qr ? 50 : 78;
+  (meds.length ? meds.slice(0, 7) : ['No current medications recorded']).forEach((m, i) => doc.text(doc.splitTextToSize(`•  ${m}`, medWidth)[0], 4, 19 + i * 4.2));
+  if (qr) {
+    doc.addImage(qr, 'PNG', W - 30, 16, 26, 26);
+    doc.setFontSize(5);
+    doc.setTextColor(90, 100, 115);
+    doc.text('Scan for full emergency info', W - 17, 45, { align: 'center' });
+  }
   doc.setFontSize(5.6);
   doc.setTextColor(120, 130, 145);
   doc.text(`In an emergency call 1122.  Generated ${new Date().toLocaleDateString('en-GB')}`, 4, 51);
@@ -236,4 +245,137 @@ export const downloadHistoryPDF = async ({ patient: p, records, doctorsById }) =
     doc.text(`PakMedRecord · ${p.firstName} ${p.lastName} · page ${i} of ${pages}`, M, H - 28);
   }
   doc.save(`PakMedRecord-history-${formatCNIC(p.patientCNIC)}.pdf`);
+};
+
+const pdfHeader = (doc, W, M, subtitle) => {
+  doc.setFillColor(4, 10, 18);
+  doc.rect(0, 0, W, 96, 'F');
+  doc.setFillColor(61, 255, 176);
+  doc.rect(0, 96, W, 3, 'F');
+  doc.setTextColor(61, 255, 176);
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(22);
+  doc.text('PakMedRecord', M, 50);
+  doc.setTextColor(170, 185, 205);
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(11);
+  doc.text(subtitle, M, 72);
+};
+
+// E-prescription with a QR code pharmacies scan to verify it
+export const downloadPrescriptionPDF = async ({ prescription: rx, doctor, patient, appUrl = window.location.origin }) => {
+  const [{ jsPDF }, { qrDataUrl }] = await Promise.all([import('jspdf'), import('../ui/QRCode')]);
+  const doc = new jsPDF({ unit: 'pt', format: 'a4' });
+  const W = doc.internal.pageSize.getWidth();
+  const H = doc.internal.pageSize.getHeight();
+  const M = 48;
+  pdfHeader(doc, W, M, 'E-prescription');
+  doc.setTextColor(170, 185, 205);
+  doc.text(`Issued ${formatDateTime(rx.createdAt)}`, W - M, 72, { align: 'right' });
+
+  const qr = await qrDataUrl(`${appUrl}/rx/${rx.code}`, 300);
+  doc.addImage(qr, 'PNG', W - M - 96, 118, 96, 96);
+  doc.setFontSize(8);
+  doc.setTextColor(120, 130, 145);
+  doc.text('Scan to verify', W - M - 48, 226, { align: 'center' });
+  doc.setFont('courier', 'bold');
+  doc.setFontSize(11);
+  doc.setTextColor(20, 28, 40);
+  doc.text(rx.code, W - M - 48, 240, { align: 'center' });
+
+  const label = (text, x, y) => {
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(9);
+    doc.setTextColor(120, 130, 145);
+    doc.text(text.toUpperCase(), x, y);
+  };
+  const value = (text, x, y, w = 300) => {
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(12);
+    doc.setTextColor(20, 28, 40);
+    doc.text(doc.splitTextToSize(String(text || '—'), w), x, y);
+  };
+  label('Doctor', M, 132);
+  value(doctor ? `Dr. ${doctor.firstName} ${doctor.lastName}` : '—', M, 149);
+  doc.setFontSize(10);
+  doc.setTextColor(90, 100, 115);
+  doc.text([doctor?.specialization, doctor?.hospital].filter(Boolean).join(' · '), M, 165);
+  if (doctor?.verification?.pmdcNumber) doc.text(`PMDC ${doctor.verification.pmdcNumber}`, M, 179);
+  label('Patient', M, 206);
+  value(patient ? `${patient.firstName} ${patient.lastName}` : '—', M, 223);
+  doc.setFontSize(10);
+  doc.setTextColor(90, 100, 115);
+  doc.text(`CNIC ${formatCNIC(rx.patientCNIC)}${patient?.gender ? ` · ${patient.gender}` : ''}${age(patient?.dateOfBirth) != null ? ` · ${age(patient.dateOfBirth)} yrs` : ''}`, M, 239);
+
+  let y = 270;
+  if (rx.diagnosis) {
+    label('Diagnosis', M, y);
+    value(rx.diagnosis, M, y + 17, W - M * 2);
+    y += 44;
+  }
+  doc.setFont('times', 'bolditalic');
+  doc.setFontSize(26);
+  doc.setTextColor(5, 150, 105);
+  doc.text('Rx', M, y + 14);
+  y += 36;
+  rx.items.forEach((item, i) => {
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(12.5);
+    doc.setTextColor(20, 28, 40);
+    doc.text(`${i + 1}. ${item.name}${item.dose ? `  ${item.dose}` : ''}`, M, y);
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(11);
+    doc.setTextColor(70, 80, 95);
+    const detail = [item.frequency, item.durationDays ? `for ${item.durationDays} days` : null, item.instructions].filter(Boolean).join(' · ');
+    if (detail) doc.text(doc.splitTextToSize(detail, W - M * 2 - 16), M + 16, y + 16);
+    y += detail ? 42 : 26;
+  });
+  if (rx.notes) {
+    y += 8;
+    label('Notes', M, y);
+    value(rx.notes, M, y + 17, W - M * 2);
+  }
+  doc.setDrawColor(200, 206, 216);
+  doc.line(W - M - 180, H - 110, W - M, H - 110);
+  doc.setFontSize(9);
+  doc.setTextColor(120, 130, 145);
+  doc.text('Electronically issued via PakMedRecord', W - M - 90, H - 96, { align: 'center' });
+  doc.text(`Verify at ${appUrl}/rx/${rx.code}. Valid only if the status there is "Valid".`, M, H - 36);
+  doc.save(`Prescription-${rx.code}.pdf`);
+};
+
+// Payment receipt for a consultation
+export const downloadReceiptPDF = async ({ payment, appointment, doctor, patient }) => {
+  const { jsPDF } = await import('jspdf');
+  const doc = new jsPDF({ unit: 'pt', format: 'a5' });
+  const W = doc.internal.pageSize.getWidth();
+  const M = 32;
+  pdfHeader(doc, W, M, 'Payment receipt');
+  const rows = [
+    ['Receipt no.', payment.txnRef],
+    ['Paid on', formatDateTime(payment.paidAt)],
+    ['Patient', patient ? `${patient.firstName} ${patient.lastName}` : formatCNIC(payment.patientCNIC)],
+    ['Doctor', doctor ? `Dr. ${doctor.firstName} ${doctor.lastName}` : '—'],
+    ['Clinic', doctor?.clinicAddress || doctor?.hospital || '—'],
+    ['Appointment', appointment ? `${new Date(appointment.date).toLocaleDateString('en-GB', { timeZone: 'UTC' })} at ${appointment.time}` : '—'],
+    ['Method', { jazzcash: 'JazzCash', test: 'Test payment (no money moved)', clinic: 'Paid at clinic' }[payment.provider] || payment.provider],
+    ['Reference', payment.providerRef || '—'],
+  ];
+  let y = 130;
+  rows.forEach(([k, v]) => {
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(10);
+    doc.setTextColor(120, 130, 145);
+    doc.text(k, M, y);
+    doc.setTextColor(20, 28, 40);
+    doc.text(String(v), W - M, y, { align: 'right', maxWidth: W / 2 });
+    y += 22;
+  });
+  doc.setDrawColor(225, 230, 238);
+  doc.line(M, y, W - M, y);
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(14);
+  doc.text('Total paid', M, y + 28);
+  doc.text(`Rs ${Number(payment.amount).toLocaleString('en-PK')}`, W - M, y + 28, { align: 'right' });
+  doc.save(`Receipt-${payment.txnRef}.pdf`);
 };

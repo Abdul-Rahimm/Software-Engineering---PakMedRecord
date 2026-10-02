@@ -10,6 +10,7 @@ router.post('/2fa/setup', c.noDependents, c.twoFactorSetup);
 router.post('/2fa/enable', c.noDependents, signinLimiter, c.twoFactorEnable);
 router.post('/2fa/disable', c.noDependents, signinLimiter, c.twoFactorDisable);
 router.get('/export', c.exportData);
+router.get('/access-log', c.accessLog);
 router.post('/delete', signinLimiter, c.deleteAccount);
 
 module.exports = router;

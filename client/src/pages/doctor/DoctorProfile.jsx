@@ -1,5 +1,7 @@
 import { useEffect, useState } from 'react';
-import { FiAward, FiHome, FiLock, FiMail, FiPhone, FiSave, FiUser } from 'react-icons/fi';
+import { Link } from 'react-router-dom';
+import { FiAward, FiClock, FiDollarSign, FiExternalLink, FiGlobe, FiHome, FiLock, FiMail, FiMapPin, FiPhone, FiSave, FiUser } from 'react-icons/fi';
+import VerificationCard from '../../ui/VerificationCard';
 import api from '../../api';
 import { useShell } from '../../layout/ShellContext';
 import { apiError, formatCNIC } from '../../lib/format';
@@ -10,7 +12,7 @@ import HealthCard from '../../ui/HealthCard';
 import { useFeedback } from '../../ui/Feedback';
 import '../dashboard.css';
 
-const EMPTY = { firstName: '', lastName: '', email: '', phone: '', hospital: '', specialization: 'General Physician', yearsExperience: '', bio: '', password: '', confirm: '' };
+const EMPTY = { firstName: '', lastName: '', email: '', phone: '', hospital: '', specialization: 'General Physician', yearsExperience: '', bio: '', city: '', clinicAddress: '', fee: '', languages: '', qualifications: '', password: '', confirm: '' };
 
 const DoctorProfile = () => {
   const { cnic, profile, reloadProfile } = useShell();
@@ -30,6 +32,11 @@ const DoctorProfile = () => {
         specialization: profile.specialization || 'General Physician',
         yearsExperience: profile.yearsExperience ?? '',
         bio: profile.bio || '',
+        city: profile.city || '',
+        clinicAddress: profile.clinicAddress || '',
+        fee: profile.fee ?? '',
+        languages: (profile.languages || []).join(', '),
+        qualifications: profile.qualifications || '',
       }));
     }
   }, [profile]);
@@ -44,7 +51,7 @@ const DoctorProfile = () => {
     try {
       const { password } = form;
       const body = Object.fromEntries(Object.entries(form).filter(([k]) => k !== 'confirm' && k !== 'password'));
-      await api.put(`/doctor/update/${cnic}`, { ...body, ...(password && { password }) });
+      await api.put(`/doctor/update/${cnic}`, { ...body, languages: form.languages.split(',').map((l) => l.trim()).filter(Boolean), ...(password && { password }) });
       setForm((f) => ({ ...f, password: '', confirm: '' }));
       await reloadProfile();
       toast('Profile updated');
@@ -57,7 +64,18 @@ const DoctorProfile = () => {
 
   return (
     <>
-      <PageHeader eyebrow="Account" title="Profile" subtitle="Patients see your specialty, experience and bio in the doctor directory." />
+      <PageHeader
+        eyebrow="Account"
+        title="Profile"
+        subtitle="Patients see your specialty, fee, clinic and timings in the public doctor directory once you're verified."
+        actions={
+          <>
+            <Link to={`/doctor/hours/${cnic}`} className="btn"><FiClock /> Clinic hours</Link>
+            {profile?.isVerified && <a href={`/find-doctors/${profile._id}`} target="_blank" rel="noreferrer" className="btn"><FiExternalLink /> Public profile</a>}
+          </>
+        }
+      />
+      {profile && <div style={{ marginBottom: 20 }}><VerificationCard doctor={profile} onChange={reloadProfile} /></div>}
       <div className="grid profile-grid">
         <div className="stack gap-20">
           <HealthCard person={profile} cnic={cnic} role="doctor" />
@@ -81,6 +99,14 @@ const DoctorProfile = () => {
             <Field label="Phone" icon={FiPhone} type="tel" value={form.phone} onChange={set('phone')} placeholder="03xx-xxxxxxx" />
           </div>
           <Field label="Email" icon={FiMail} type="email" value={form.email} onChange={set('email')} required />
+          <h2 className="section-title" style={{ marginTop: 8 }}>Directory listing</h2>
+          <div className="grid grid-2" style={{ gap: 16 }}>
+            <Field label="City" icon={FiMapPin} value={form.city} onChange={set('city')} placeholder="e.g. Karachi" />
+            <Field label="Consultation fee (Rs)" icon={FiDollarSign} type="number" min="0" value={form.fee} onChange={set('fee')} placeholder="e.g. 2500" />
+            <Field label="Qualifications" icon={FiAward} value={form.qualifications} onChange={set('qualifications')} placeholder="e.g. MBBS, FCPS (Cardiology)" />
+            <Field label="Languages" icon={FiGlobe} value={form.languages} onChange={set('languages')} placeholder="Urdu, English, Sindhi" hint="Separate with commas" />
+          </div>
+          <Field label="Clinic address" icon={FiHome} value={form.clinicAddress} onChange={set('clinicAddress')} placeholder="Room, building, area" />
           <Field as="textarea" label="Bio" value={form.bio} onChange={set('bio')} maxLength={600} hint={`${form.bio.length}/600 · shown in the doctor directory`} placeholder="Training, areas of interest, languages spoken…" style={{ minHeight: 100 }} />
 
           <h2 className="section-title" style={{ marginTop: 8 }}>Change password</h2>

@@ -18,6 +18,8 @@ import { apiError, isValidCNIC, maskCNIC, parseCNIC } from '../lib/format';
 import { SPECIALIZATIONS } from '../lib/constants';
 import { googleConfigured, signInWithGoogle } from '../lib/firebase';
 import GoogleButton from '../ui/GoogleButton';
+import TwoFactorStep from '../ui/TwoFactorStep';
+import Consent from '../ui/Consent';
 import './auth.css';
 
 const COPY = {
@@ -59,7 +61,9 @@ const Auth = ({ role, mode }) => {
     hospital: '',
     gender: 'Male',
     specialization: 'General Physician',
+    acceptTerms: false,
   });
+  const [challenge, setChallenge] = useState(null); // two-step sign-in
   const [showPw, setShowPw] = useState(false);
   const [errors, setErrors] = useState({});
   const [loading, setLoading] = useState(false);
@@ -79,9 +83,14 @@ const Auth = ({ role, mode }) => {
     setInbox(null);
     setUnverified(null);
     setGoogleReg(null);
+    setChallenge(null);
   }, [role, mode]);
 
   const finishSignIn = (data, as) => {
+    if (data.twoFactorRequired) {
+      setChallenge(data.challenge);
+      return;
+    }
     const user = data[as];
     const key = as === 'doctor' ? 'doctorCNIC' : 'patientCNIC';
     saveSession({ token: data.token, role: as, cnic: user[key] });
@@ -127,6 +136,7 @@ const Auth = ({ role, mode }) => {
     if (!form.firstName.trim()) er.firstName = 'Required';
     if (!form.lastName.trim()) er.lastName = 'Required';
     if (!form.hospital.trim()) er.hospital = 'Required';
+    if (!form.acceptTerms) er.acceptTerms = 'Please accept to continue';
     setErrors(er);
     if (Object.keys(er).length) return;
     setLoading(true);
@@ -137,6 +147,7 @@ const Auth = ({ role, mode }) => {
         firstName: form.firstName.trim(),
         lastName: form.lastName.trim(),
         hospital: form.hospital.trim(),
+        acceptTerms: form.acceptTerms,
         ...(role === 'patient' ? { gender: form.gender } : { specialization: form.specialization }),
       });
       finishSignIn(data, role);
@@ -165,6 +176,7 @@ const Auth = ({ role, mode }) => {
       if (!form.lastName.trim()) er.lastName = 'Required';
       if (!/^\S+@\S+\.\S+$/.test(form.email)) er.email = 'Enter a valid email';
       if (!form.hospital.trim()) er.hospital = 'Required';
+      if (!form.acceptTerms) er.acceptTerms = 'Please accept to create an account';
     }
     setErrors(er);
     return Object.keys(er).length === 0;
@@ -184,6 +196,7 @@ const Auth = ({ role, mode }) => {
           email: form.email.trim(),
           password: form.password,
           hospital: form.hospital.trim(),
+          acceptTerms: form.acceptTerms,
           ...(role === 'patient' && { gender: form.gender }),
           ...(role === 'doctor' && { specialization: form.specialization }),
         };
@@ -258,9 +271,9 @@ const Auth = ({ role, mode }) => {
               ]}
             />
             <div className="stack gap-8">
-              <h1 style={{ fontSize: 32 }}>{inbox ? 'Check your inbox' : googleReg ? 'Almost done' : isSignup ? 'Create your account' : 'Welcome back'}</h1>
+              <h1 style={{ fontSize: 32 }}>{challenge ? 'Two-step sign-in' : inbox ? 'Check your inbox' : googleReg ? 'Almost done' : isSignup ? 'Create your account' : 'Welcome back'}</h1>
               <p className="muted">
-                {inbox
+                {challenge ? 'One more step to keep your account safe.' : inbox
                   ? 'One last step before you can sign in.'
                   : googleReg
                     ? `Finish setting up your ${role} account for ${googleReg.profile.email}.`
@@ -269,7 +282,9 @@ const Auth = ({ role, mode }) => {
             </div>
           </div>
 
-          {inbox ? (
+          {challenge ? (
+            <TwoFactorStep challenge={challenge} onDone={(data) => { setChallenge(null); finishSignIn(data, role); }} onCancel={() => setChallenge(null)} />
+          ) : inbox ? (
             <div className="stack gap-16" style={{ textAlign: 'center' }}>
               <div className="inbox-orb"><FiInbox size={30} /></div>
               <p>
@@ -299,6 +314,7 @@ const Auth = ({ role, mode }) => {
                   <Segmented id="g-gender" value={form.gender} onChange={(g) => setForm((f) => ({ ...f, gender: g }))} options={['Male', 'Female', 'Other'].map((g) => ({ value: g, label: g }))} />
                 </div>
               )}
+              <Consent checked={form.acceptTerms} onChange={(v) => { setForm((f) => ({ ...f, acceptTerms: v })); setErrors((er) => ({ ...er, acceptTerms: undefined })); }} error={errors.acceptTerms} />
               <Button type="submit" className="btn btn-primary btn-lg btn-block" loading={loading}>Create account {!loading && <FiArrowRight />}</Button>
               <button type="button" className="btn btn-ghost btn-sm" onClick={() => setGoogleReg(null)}>Use a different method</button>
             </form>
@@ -356,6 +372,7 @@ const Auth = ({ role, mode }) => {
                 </button>
               </div>
               {errors.password && <span className="field-error">{errors.password}</span>}
+              {!isSignup && <Link to={`/forgot-password?role=${role}`} className="forgot-link">Forgot password?</Link>}
               {isSignup && form.password && (
                 <div className="row gap-12">
                   <div className="strength">
@@ -366,6 +383,8 @@ const Auth = ({ role, mode }) => {
               )}
             </div>
 
+            {isSignup && <Consent checked={form.acceptTerms} onChange={(v) => { setForm((f) => ({ ...f, acceptTerms: v })); setErrors((er) => ({ ...er, acceptTerms: undefined })); }} error={errors.acceptTerms} />}
+
             <Button type="submit" className="btn btn-primary btn-lg btn-block" loading={loading} style={{ marginTop: 6 }}>
               {isSignup ? 'Create account' : 'Sign in'} {!loading && <FiArrowRight />}
             </Button>
@@ -375,6 +394,11 @@ const Auth = ({ role, mode }) => {
             {isSignup ? 'Already have an account? ' : 'New to PakMedRecord? '}
             <Link to={`/${role}/${isSignup ? 'signin' : 'signup'}`}>{isSignup ? 'Sign in' : 'Create an account'}</Link>
           </p>
+          {!isSignup && role === 'doctor' && (
+            <p className="subtle" style={{ textAlign: 'center', fontSize: 13 }}>
+              Clinic front desk? <Link to="/desk/signin">Staff sign-in</Link>
+            </p>
+          )}
           </>
           )}
         </motion.div>

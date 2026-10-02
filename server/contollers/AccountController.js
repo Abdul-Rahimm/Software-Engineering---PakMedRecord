@@ -129,6 +129,22 @@ const exportData = expressAsyncHandler(async (req, res) => {
   res.status(200).json({ exportedAt: new Date(), format: 'PakMedRecord export v1', role, ...data });
 });
 
+// Patient's "who viewed my record" list, with the viewers' names
+const accessLog = expressAsyncHandler(async (req, res) => {
+  if (req.user.role !== 'patient') return res.status(400).json({ error: 'Only for patients' });
+  const logs = await AccessLog.find({ patientCNIC: req.user.cnic }).sort({ lastAt: -1 }).limit(200).lean();
+  const Doctor = MODELS.doctor.Model;
+  const doctors = await Doctor.find({ doctorCNIC: { $in: [...new Set(logs.filter((l) => l.actor.role === 'doctor').map((l) => l.actor.cnic))] } }).select('doctorCNIC firstName lastName hospital').lean();
+  res.status(200).json(logs.map((l) => {
+    const d = l.actor.role === 'doctor' && doctors.find((x) => x.doctorCNIC === l.actor.cnic);
+    return {
+      _id: l._id, action: l.action, count: l.count, at: l.lastAt, role: l.actor.role,
+      who: d ? `Dr. ${d.firstName} ${d.lastName}` : l.actor.name || { doctor: 'A doctor (account closed)', public: 'Emergency QR scan', share: 'Share link', partner: 'Partner' }[l.actor.role],
+      where: d?.hospital || '',
+    };
+  }));
+});
+
 // ---------- delete ----------
 
 const purgePatient = async (cnic) => {
@@ -185,5 +201,5 @@ const deleteAccount = expressAsyncHandler(async (req, res) => {
 });
 
 module.exports = {
-  noDependents, twoFactorStatus, twoFactorSetup, twoFactorEnable, twoFactorDisable, exportData, deleteAccount, purgePatient, patientBundle,
+  accessLog, noDependents, twoFactorStatus, twoFactorSetup, twoFactorEnable, twoFactorDisable, exportData, deleteAccount, purgePatient, patientBundle,
 };

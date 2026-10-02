@@ -81,7 +81,8 @@ const labResults = expressAsyncHandler(async (req, res) => {
     patientCNIC: patient.patientCNIC,
     title,
     category: 'Lab result',
-    recordData: [String(b.summary || '').trim(), table].filter(Boolean).join('\n\n') || 'See attached report.',
+    // readable lines in the timeline; the full table lives on the attached values
+    recordData: [String(b.summary || '').trim(), ...results.map((r) => `${r.test}: ${r.value}${r.unit ? ` ${r.unit}` : ''}${r.flag ? ` (${r.flag === 'H' ? 'high' : 'low'})` : ''}${r.range ? ` · ref ${r.range}` : ''}`)].filter(Boolean).join('\n') || 'See attached report.',
     source: 'lab',
     partner: { id: req.partner._id, name: req.partner.name },
     attachments: att ? [att._id] : [],
