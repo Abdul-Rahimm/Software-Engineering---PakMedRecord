@@ -3,6 +3,7 @@ const expressAsyncHandler = require('express-async-handler');
 const Attachment = require('../models/AttachmentModel');
 const Affiliation = require('../models/AffiliationModel');
 const { saveFile, readFile, openFileStream, deleteFile } = require('../lib/files');
+const { logAccess } = require('../lib/accessLog');
 const { ocrEnabled, extractDocument, friendlyOcrError } = require('../ai/ocr');
 
 const MAX_BYTES = 4 * 1024 * 1024; // keeps every upload under the hosting request limit
@@ -19,6 +20,7 @@ const sniff = (buf) => {
 
 const canAccess = async (user, att) => {
   if (user.role === 'patient') return att.patientCNIC === user.cnic;
+  if (user.role !== 'doctor' || !user.verified) return false;
   return Boolean(await Affiliation.findOne({ patientCNIC: att.patientCNIC, doctorCNIC: user.cnic }));
 };
 
@@ -80,6 +82,7 @@ const meta = expressAsyncHandler(async (req, res) => {
 const content = expressAsyncHandler(async (req, res) => {
   const att = await loadAttachment(req, res);
   if (!att) return;
+  if (req.user.role === 'doctor') logAccess(att.patientCNIC, { role: 'doctor', cnic: req.user.cnic }, `Opened "${att.name}"`, req.ip);
   const disposition = req.query.download ? 'attachment' : 'inline';
   res.set({
     'Content-Type': att.mime,

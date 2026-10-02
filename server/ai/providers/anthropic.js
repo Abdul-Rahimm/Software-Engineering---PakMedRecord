@@ -64,6 +64,17 @@ module.exports = {
     return { refusal: final.stop_reason === 'refusal' };
   },
 
+  // One-shot JSON answer (no streaming)
+  async completeJSON({ system, prompt, maxTokens = 4000 }) {
+    const msg = await getClient().messages.create({
+      model: MODEL,
+      max_tokens: maxTokens,
+      system: `${system}\nRespond with a single JSON object and nothing else.`,
+      messages: [{ role: 'user', content: prompt }],
+    });
+    return msg.content.filter((b) => b.type === 'text').map((b) => b.text).join('');
+  },
+
   // With eager input streaming a tool input can arrive as unparseable JSON: worth re-issuing the turn
   isRetryable: (err) => !(err instanceof Anthropic.APIError),
 

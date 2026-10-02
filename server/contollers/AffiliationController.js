@@ -10,7 +10,13 @@ const affiliate = async (req, res) => {
   try {
     // The patient is always the signed-in user
     const patientCNIC = req.user.cnic;
-    const doctorCNIC = [].concat(req.body.doctorCNIC || []).map(Number);
+    // Doctors can be chosen by CNIC (in-app search) or by id (public directory)
+    let doctorCNIC = [].concat(req.body.doctorCNIC || []).map(Number);
+    const ids = [].concat(req.body.doctorId || []).filter((id) => /^[a-f0-9]{24}$/i.test(String(id)));
+    if (ids.length) {
+      const found = await Doctor.find({ _id: { $in: ids } }).select('doctorCNIC');
+      doctorCNIC = [...doctorCNIC, ...found.map((d) => d.doctorCNIC)];
+    }
 
     if (doctorCNIC.length === 0) {
       return res.status(400).json({ error: 'Select at least one doctor' });
@@ -26,6 +32,9 @@ const affiliate = async (req, res) => {
     const existingDoctors = await Doctor.find({ doctorCNIC: { $in: doctorCNIC } });
     if (existingDoctors.length !== new Set(doctorCNIC).size) {
       return res.status(404).json({ error: 'One or more doctors not found' });
+    }
+    if (existingDoctors.some((d) => !d.isVerified || d.disabled)) {
+      return res.status(403).json({ error: 'You can only add PMDC-verified doctors to your care team' });
     }
 
     // Check if any of the selected doctors are already affiliated with the patient

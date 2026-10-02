@@ -1,11 +1,15 @@
 const Appointment = require('../models/AppointmentModel');
 const { notify } = require('../lib/notify');
+const Doctor = require('../models/DoctorModel');
+const Payment = require('../models/PaymentModel');
+const Clinic = require('../models/ClinicModel');
 const { ACTIVE, createAppointment, describe } = require('../lib/appointments');
+const { slotsFor, scheduleOf } = require('../lib/availability');
 
 // Book an appointment with a doctor in the patient's care team
 const book = async (req, res) => {
     try {
-        const { status, body } = await createAppointment({ ...req.body, patientCNIC: Number(req.params.patientCNIC) });
+        const { status, body } = await createAppointment({ ...req.body, patientCNIC: Number(req.params.patientCNIC), bookedBy: { role: 'patient' } });
         res.status(status).json(body);
     } catch (error) {
         console.error('Error booking appointment:', error);
@@ -23,6 +27,30 @@ const bookedSlots = async (req, res) => {
         res.status(200).json({ times: taken.map((a) => a.time) });
     } catch (error) {
         console.error('Error fetching booked slots:', error);
+        res.status(500).json({ error: 'Internal server error.' });
+    }
+};
+
+// Open slots for a doctor on a day: the doctor's hours minus booked times
+const availability = async (req, res) => {
+    try {
+        const { date } = req.query;
+        if (!/^\d{4}-\d{2}-\d{2}$/.test(String(date || ''))) return res.status(400).json({ error: 'date=YYYY-MM-DD is required' });
+        const doctor = await Doctor.findOne({ doctorCNIC: Number(req.params.doctorCNIC) });
+        if (!doctor) return res.status(404).json({ error: 'Doctor not found' });
+        const taken = await Appointment.find({ doctorCNIC: doctor.doctorCNIC, date, status: ACTIVE }).select('time -_id');
+        const s = scheduleOf(doctor);
+        res.status(200).json({
+            slots: slotsFor(doctor, date),
+            taken: taken.map((a) => a.time),
+            slotMinutes: s.slotMinutes,
+            videoConsults: s.videoConsults,
+            fee: doctor.fee ?? null,
+            workingDays: [...new Set(s.days.map((d) => d.day))],
+            holidays: s.holidays,
+        });
+    } catch (error) {
+        console.error('Error fetching availability:', error);
         res.status(500).json({ error: 'Internal server error.' });
     }
 };
@@ -71,6 +99,12 @@ const completeAppointment = async (req, res) => {
         if (appointment.doctorCNIC !== req.user.cnic) return res.status(403).json({ error: 'Not allowed' });
         if (appointment.status === 'cancelled') return res.status(409).json({ error: 'This appointment was cancelled' });
 
+        // { status: 'no-show' } marks a missed visit instead
+        if (req.body?.status === 'no-show') {
+            appointment.status = 'no-show';
+            await appointment.save();
+            return res.status(200).json({ message: 'Marked as no-show', appointment });
+        }
         appointment.status = 'completed';
         await appointment.save();
 
@@ -121,6 +155,35 @@ const cancelAppointment = async (req, res) => {
     }
 };
 
+// Doctor records a fee paid at the clinic (cash / card machine)
+const markPaid = async (req, res) => {
+    try {
+        const appointment = await Appointment.findById(req.params.appointmentId);
+        if (!appointment) return res.status(404).json({ error: 'Appointment not found' });
+        let allowed = req.user.role === 'doctor' && appointment.doctorCNIC === req.user.cnic;
+        if (req.user.role === 'staff' && req.user.clinicId) {
+            const clinic = await Clinic.findById(req.user.clinicId);
+            allowed = Boolean(clinic?.doctors.some((d) => d.status === 'active' && d.doctorCNIC === appointment.doctorCNIC));
+        }
+        if (!allowed) return res.status(403).json({ error: 'Not allowed' });
+        if (appointment.payment?.status === 'paid') return res.status(409).json({ error: 'Already paid' });
+        const amount = Number(req.body?.amount) || appointment.fee;
+        if (!amount || amount < 1) return res.status(400).json({ error: 'Enter the amount received' });
+        const payment = await Payment.create({
+            appointmentId: appointment._id, patientCNIC: appointment.patientCNIC, doctorCNIC: appointment.doctorCNIC,
+            amount, provider: 'clinic', status: 'paid', txnRef: `CASH${Date.now()}${Math.floor(Math.random() * 1000)}`, paidAt: new Date(),
+        });
+        appointment.fee = amount;
+        appointment.payment = { status: 'paid', method: 'clinic', paidAt: new Date(), paymentId: payment._id };
+        await appointment.save();
+        res.status(200).json({ message: 'Payment recorded', appointment });
+    } catch (error) {
+        console.error('Error recording payment:', error);
+        res.status(500).json({ error: 'Internal server error' });
+    }
+};
+
 module.exports = {
+    availability, markPaid,
     book, bookedSlots, getAppointments, getPatientAppointments, completeAppointment, cancelAppointment, getAppointmentTimes,
 };

@@ -4,7 +4,12 @@ const Doctor = require('../models/DoctorModel');
 const Patient = require('../models/PatientModel');
 const { jwt_secret } = require('../config');
 const { signToken } = require('../middleware/auth');
-const { ROLES, hashToken, emailQuery, startEmailVerification } = require('../lib/accounts');
+const bcrypt = require('bcrypt');
+const { ROLES, TERMS_VERSION, hashToken, emailQuery, startEmailVerification, startPasswordReset } = require('../lib/accounts');
+const { completeSignIn, verifySecondFactor } = require('../lib/session');
+const { forgetAccountStatus } = require('../middleware/auth');
+const { channels } = require('../lib/messaging');
+const { providers: paymentProviders } = require('../lib/payments');
 const { mailEnabled } = require('../lib/mailer');
 const { googleEnabled, verifyGoogleIdToken } = require('../lib/firebase');
 const { isCNIC } = require('../lib/validate');
@@ -13,7 +18,14 @@ const { SPECIALIZATIONS } = require('../models/constants');
 const roleOf = (role) => ROLES[role] || null;
 
 // Which sign-in options the frontend should show
-const options = (req, res) => res.status(200).json({ emailVerification: mailEnabled(), google: googleEnabled() });
+const options = (req, res) => res.status(200).json({
+  emailVerification: mailEnabled(),
+  passwordReset: mailEnabled(),
+  google: googleEnabled(),
+  channels: channels(),
+  payments: paymentProviders(),
+  termsVersion: TERMS_VERSION,
+});
 
 // GET-style link from the email lands on the frontend, which posts { role, token } here
 const verifyEmail = expressAsyncHandler(async (req, res) => {
@@ -43,12 +55,6 @@ const resendVerification = expressAsyncHandler(async (req, res) => {
   res.status(200).json({ message: 'If that account needs verifying, a new email is on its way.' });
 });
 
-const sessionResponse = (role, user, message) => ({
-  message,
-  token: signToken(role, user[ROLES[role].cnicKey]),
-  [role]: user,
-});
-
 // Sign in with Google: existing account -> session; new person -> short-lived registration ticket
 const googleSignIn = expressAsyncHandler(async (req, res) => {
   if (!googleEnabled()) return res.status(503).json({ error: 'Google sign-in is not configured.' });
@@ -68,7 +74,8 @@ const googleSignIn = expressAsyncHandler(async (req, res) => {
     if (!user.googleUid) user.googleUid = google.uid;
     user.emailVerified = true; // Google has verified this address
     await user.save();
-    return res.status(200).json(sessionResponse(role, user, 'Signed in with Google'));
+    const { status, body } = completeSignIn(role, user, 'Signed in with Google');
+    return res.status(status).json(body);
   }
 
   const [firstName = '', ...rest] = google.name.split(' ');
@@ -78,7 +85,7 @@ const googleSignIn = expressAsyncHandler(async (req, res) => {
 
 // Finish creating an account for a first-time Google user
 const googleComplete = expressAsyncHandler(async (req, res) => {
-  const { ticket, cnic, firstName, lastName, hospital, gender, specialization } = req.body || {};
+  const { ticket, cnic, firstName, lastName, hospital, gender, specialization, acceptTerms } = req.body || {};
   let claims;
   try {
     claims = jwt.verify(String(ticket || ''), jwt_secret);
@@ -91,6 +98,7 @@ const googleComplete = expressAsyncHandler(async (req, res) => {
   if (!String(firstName || '').trim() || !String(lastName || '').trim() || !String(hospital || '').trim()) {
     return res.status(400).json({ error: 'Name and hospital are required' });
   }
+  if (!acceptTerms) return res.status(400).json({ error: 'Please accept the Terms of Service and Privacy Policy' });
   if (claims.role === 'patient' && !['Male', 'Female', 'Other'].includes(gender)) return res.status(400).json({ error: 'Select a gender' });
   if (claims.role === 'doctor' && specialization && !SPECIALIZATIONS.includes(specialization)) return res.status(400).json({ error: 'Unknown specialization' });
 
@@ -108,11 +116,61 @@ const googleComplete = expressAsyncHandler(async (req, res) => {
     lastName: String(lastName).trim(),
     email: claims.email,
     hospital: String(hospital).trim(),
-    ...(claims.role === 'patient' ? { gender } : { specialization: specialization || 'General Physician' }),
+    ...(claims.role === 'patient' ? { gender } : { specialization: specialization || 'General Physician', verification: { status: 'unverified' } }),
     googleUid: claims.uid,
     emailVerified: true,
+    consentAt: new Date(),
+    termsVersion: TERMS_VERSION,
   });
-  res.status(201).json(sessionResponse(claims.role, user, 'Account created with Google'));
+  res.status(201).json({ message: 'Account created with Google', token: signToken(claims.role, user[r.cnicKey]), [claims.role]: user });
 });
 
-module.exports = { options, verifyEmail, resendVerification, googleSignIn, googleComplete };
+// Forgot password: CNIC or email; always the same answer so it can't be used to find accounts
+const forgotPassword = expressAsyncHandler(async (req, res) => {
+  const { role, identifier } = req.body || {};
+  const r = roleOf(role);
+  const id = String(identifier || '').trim();
+  if (!r || !id) return res.status(400).json({ error: 'Enter your CNIC or email' });
+  if (!mailEnabled()) return res.status(503).json({ error: 'Password reset by email is not available right now. Contact support.' });
+  const digits = id.replace(/\D/g, '');
+  const user = isCNIC(digits) && !id.includes('@')
+    ? await r.Model.findOne({ [r.cnicKey]: Number(digits) })
+    : await r.Model.findOne(emailQuery(id));
+  if (user && !user.disabled && user.email) {
+    try {
+      await startPasswordReset(user, role);
+    } catch (err) {
+      console.error('Failed to send reset email:', err.message);
+    }
+  }
+  res.status(200).json({ message: 'If an account matches, we have emailed a link to reset the password. Check your inbox.' });
+});
+
+const resetPassword = expressAsyncHandler(async (req, res) => {
+  const { role, token, password } = req.body || {};
+  const r = roleOf(role);
+  if (!r || !token) return res.status(400).json({ error: 'Invalid reset link' });
+  if (String(password || '').length < 8) return res.status(400).json({ error: 'Use at least 8 characters' });
+  const user = await r.Model.findOne({ passwordResetTokenHash: hashToken(String(token)) }).select('+passwordResetExpires');
+  if (!user || user.passwordResetExpires < new Date()) {
+    return res.status(400).json({ error: 'This link is invalid or has expired. Ask for a new one.', code: 'INVALID_TOKEN' });
+  }
+  user.password = await bcrypt.hash(String(password), 10);
+  user.passwordResetTokenHash = undefined;
+  user.passwordResetExpires = undefined;
+  user.passwordChangedAt = new Date(Date.now() - 1000);
+  // they proved they own the email
+  if (user.emailVerified === false) user.emailVerified = true;
+  await user.save();
+  forgetAccountStatus(role, user[r.cnicKey]);
+  res.status(200).json({ message: 'Password changed. Sign in with your new password.', cnic: user[r.cnicKey] });
+});
+
+// Second sign-in step for accounts with an authenticator app
+const twoFactor = expressAsyncHandler(async (req, res) => {
+  const { challenge, code } = req.body || {};
+  const { status, body } = await verifySecondFactor(challenge, code);
+  res.status(status).json(body);
+});
+
+module.exports = { options, verifyEmail, resendVerification, googleSignIn, googleComplete, forgotPassword, resetPassword, twoFactor };

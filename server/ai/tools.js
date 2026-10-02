@@ -12,6 +12,7 @@ const Note = require('../models/NotesModel');
 const Vital = require('../models/VitalModel');
 const { RECORD_CATEGORIES, SPECIALIZATIONS, VITAL_TYPES } = require('../models/constants');
 const { createAppointment } = require('../lib/appointments');
+const { slotsFor, scheduleOf } = require('../lib/availability');
 
 const day = (d) => (d ? new Date(d).toISOString().slice(0, 10) : null);
 
@@ -162,24 +163,28 @@ const patientTools = [
   },
   {
     name: 'get_booked_times',
-    description: 'Get the times already taken for a doctor on a given date (YYYY-MM-DD), so you can offer free 30-minute slots between 09:00 and 17:00.',
+    description: 'Get the free appointment slots for a doctor on a given date (YYYY-MM-DD), based on the doctor\'s clinic hours and existing bookings. Only offer times from freeSlots.',
     schema: z.object({ doctorCNIC: z.number().int(), date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/) }),
-    handler: async ({ doctorCNIC, date }) => ({
-      date,
-      taken: (await Appointment.find({ doctorCNIC, date, status: { $ne: 'cancelled' } })).map((a) => a.time),
-    }),
+    handler: async ({ doctorCNIC, date }) => {
+      const doctor = await Doctor.findOne({ doctorCNIC });
+      if (!doctor) return { error: 'Doctor not found' };
+      const taken = (await Appointment.find({ doctorCNIC, date, status: { $ne: 'cancelled' } })).map((a) => a.time);
+      const freeSlots = slotsFor(doctor, date).filter((t) => !taken.includes(t));
+      return { date, freeSlots, closed: freeSlots.length === 0 && taken.length === 0, videoConsults: scheduleOf(doctor).videoConsults, fee: doctor.fee ?? null };
+    },
   },
   {
     name: 'book_appointment',
-    description: 'Book an appointment with a doctor in the patient\'s care team. ONLY call this after the patient has explicitly confirmed the doctor, date and time you proposed. date is YYYY-MM-DD, time is HH:MM (24-hour, on the hour or half hour).',
+    description: 'Book an appointment with a doctor in the patient\'s care team. ONLY call this after the patient has explicitly confirmed the doctor, date and time you proposed. date is YYYY-MM-DD, time is HH:MM (24-hour) and must be one of the doctor\'s free slots. mode is "video" only if the doctor offers video consultations and the patient asked for one.',
     schema: z.object({
       doctorCNIC: z.number().int(),
       date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
       time: z.string().regex(/^\d{2}:\d{2}$/),
       reason: z.string().max(300).optional(),
+      mode: z.enum(['in-person', 'video']).optional(),
     }),
     handler: async (input, user) => {
-      const { status, body } = await createAppointment({ ...input, patientCNIC: user.cnic });
+      const { status, body } = await createAppointment({ ...input, patientCNIC: user.cnic, bookedBy: { role: 'assistant' } });
       return status === 201
         ? { booked: { date: input.date, time: input.time, doctorCNIC: input.doctorCNIC, reason: input.reason || null } }
         : { error: body.error };

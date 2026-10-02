@@ -7,8 +7,9 @@ const attachmentSchema = new mongoose.Schema({
   gridId: { type: mongoose.Schema.Types.ObjectId, required: true },
   patientCNIC: { type: Number, required: true, index: true },
   uploadedBy: {
-    role: { type: String, enum: ['doctor', 'patient'], required: true },
-    cnic: { type: Number, required: true },
+    role: { type: String, enum: ['doctor', 'patient', 'partner'], required: true },
+    cnic: { type: Number },
+    partnerId: { type: mongoose.Schema.Types.ObjectId },
   },
   name: { type: String, required: true, maxlength: 200 },
   mime: { type: String, required: true },
@@ -23,6 +24,15 @@ const attachmentSchema = new mongoose.Schema({
     documentDate: { type: String, default: '' },
     summary: { type: String, default: '' },
     error: { type: String, default: '' },
+    // structured lab values found on the document, used for lab trend charts
+    labs: [{
+      _id: false,
+      test: String,
+      value: Number,
+      unit: String,
+      range: String,
+      flag: String,
+    }],
   },
 }, { timestamps: true });
 

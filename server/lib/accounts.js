@@ -3,7 +3,7 @@
 const crypto = require('crypto');
 const Doctor = require('../models/DoctorModel');
 const Patient = require('../models/PatientModel');
-const { mailEnabled, sendMail, verificationEmail } = require('./mailer');
+const { mailEnabled, sendMail, verificationEmail, resetEmail } = require('./mailer');
 
 const ROLES = {
   doctor: { Model: Doctor, cnicKey: 'doctorCNIC' },
@@ -12,6 +12,9 @@ const ROLES = {
 
 const APP_URL = () => (process.env.APP_URL || 'http://localhost:5173').replace(/\/$/, '');
 const VERIFY_TTL_MS = 24 * 60 * 60 * 1000;
+const RESET_TTL_MS = 60 * 60 * 1000;
+// bump when the Terms or Privacy Policy change materially
+const TERMS_VERSION = '2026-10';
 
 const hashToken = (token) => crypto.createHash('sha256').update(token).digest('hex');
 
@@ -43,4 +46,16 @@ const startEmailVerification = async (user, role) => {
   }
 };
 
-module.exports = { ROLES, hashToken, emailQuery, startEmailVerification };
+// Emails a one-hour password reset link. Returns false if mail isn't configured.
+const startPasswordReset = async (user, role) => {
+  if (!mailEnabled() || !user.email) return false;
+  const token = crypto.randomBytes(32).toString('hex');
+  user.passwordResetTokenHash = hashToken(token);
+  user.passwordResetExpires = new Date(Date.now() + RESET_TTL_MS);
+  await user.save();
+  const link = `${APP_URL()}/reset-password?role=${role}&token=${token}`;
+  await sendMail({ to: user.email, ...resetEmail({ name: user.firstName || user.name, link }) });
+  return true;
+};
+
+module.exports = { ROLES, APP_URL, TERMS_VERSION, hashToken, emailQuery, startEmailVerification, startPasswordReset };

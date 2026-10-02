@@ -107,6 +107,20 @@ module.exports = {
     return { refusal: false };
   },
 
+  // One-shot JSON answer (no streaming), e.g. interaction checks and follow-up suggestions
+  async completeJSON({ system, prompt, maxTokens = 2048 }) {
+    const { client } = await loadSdk();
+    const res = await client.chat.complete({
+      model: MODEL,
+      temperature: 0.1,
+      maxTokens,
+      responseFormat: { type: 'json_object' },
+      messages: [{ role: 'system', content: system }, { role: 'user', content: prompt }],
+    });
+    const raw = res.choices?.[0]?.message?.content;
+    return typeof raw === 'string' ? raw : (raw || []).map((p) => p.text || '').join('');
+  },
+
   isRetryable: () => false,
 
   friendlyError(err) {

@@ -8,8 +8,10 @@ const medicalRecordSchema = new mongoose.Schema({
   },
   doctorCNIC: {
     type: Number,
-    required: true
+    required: function () { return this.source !== 'lab'; }
   },
+  // results pushed by a partner laboratory through the partner API
+  partner: { id: mongoose.Schema.Types.ObjectId, name: String },
   title: { type: String, trim: true, maxlength: 120 },
   category: { type: String, enum: RECORD_CATEGORIES, default: 'General' },
   recordData: {
@@ -17,8 +19,9 @@ const medicalRecordSchema = new mongoose.Schema({
     required: true
   },
   attachments: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Attachment' }],
+  // 'lab' when sent by a partner lab;
   // 'doctor' when written by the doctor, 'patient' when approved from a patient submission
-  source: { type: String, enum: ['doctor', 'patient'], default: 'doctor' },
+  source: { type: String, enum: ['doctor', 'patient', 'lab'], default: 'doctor' },
 }, { timestamps: true });
 
 const MedicalRecord = mongoose.model('MedicalRecord', medicalRecordSchema);

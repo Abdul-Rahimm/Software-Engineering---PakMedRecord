@@ -195,4 +195,18 @@ const SUMMARY_SYSTEM = `You write pre-consultation briefs for doctors in PakMedR
 Structure with short headings: **Snapshot** (age, sex, blood group, key conditions), **Alerts** (allergies, possible interactions, abnormal or worsening vitals; write "None found" if none), **History** (chronological, one line per relevant record), **Current medications**, **Suggested follow-ups** (things worth checking, phrased as considerations, not orders).
 Be concise and factual; cite dates. Never invent data. If information is missing, say so briefly.`;
 
-module.exports = { aiEnabled, aiInfo, keyName, chat, generate, EXPLAIN_SYSTEM, SUMMARY_SYSTEM };
+// Structured answer parsed from JSON; null if the AI is off or the answer can't be parsed
+const generateJSON = async ({ system, prompt, maxTokens }) => {
+  if (!aiEnabled()) return null;
+  const text = await provider.completeJSON({ system, prompt, maxTokens });
+  const start = text.indexOf('{');
+  const end = text.lastIndexOf('}');
+  if (start < 0 || end < start) return null;
+  try {
+    return JSON.parse(text.slice(start, end + 1));
+  } catch {
+    return null;
+  }
+};
+
+module.exports = { aiEnabled, aiInfo, keyName, chat, generate, generateJSON, EXPLAIN_SYSTEM, SUMMARY_SYSTEM };

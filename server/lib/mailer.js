@@ -60,24 +60,42 @@ const sendMail = async (message) => {
 
 const escapeHtml = (s) => String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 
-const verificationEmail = ({ name, link }) => ({
-  subject: 'Verify your PakMedRecord email',
-  text: `Hi ${name},\n\nWelcome to PakMedRecord. Confirm your email address by opening this link (valid for 24 hours):\n\n${link}\n\nIf you didn't create this account, you can ignore this email.\n\n— PakMedRecord`,
-  html: `<!doctype html><html><body style="margin:0;background:#f3f6fb;font-family:Arial,Helvetica,sans-serif;color:#0f172a">
+// Branded email: greeting, paragraphs, optional button
+const brandedEmail = ({ subject, name, paragraphs, button, footnote }) => {
+  const paras = paragraphs.filter(Boolean);
+  const text = [`Hi ${name},`, '', ...paras.flatMap((p) => [p, '']), ...(button ? [`${button.label}: ${button.link}`, ''] : []), ...(footnote ? [footnote, ''] : []), '— PakMedRecord'].join('\n');
+  const html = `<!doctype html><html><body style="margin:0;background:#f3f6fb;font-family:Arial,Helvetica,sans-serif;color:#0f172a">
   <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="padding:32px 12px"><tr><td align="center">
     <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:520px;background:#ffffff;border-radius:16px;border:1px solid #e2e8f0">
       <tr><td style="padding:28px 32px 8px;font-size:20px;font-weight:bold">PakMed<span style="color:#059669">Record</span></td></tr>
       <tr><td style="padding:8px 32px;font-size:15px;line-height:1.6">
         <p style="margin:0 0 12px">Hi ${escapeHtml(name)},</p>
-        <p style="margin:0 0 20px">Welcome to PakMedRecord. Please confirm your email address to activate your account.</p>
-        <p style="margin:0 0 24px"><a href="${link}" style="display:inline-block;background:#059669;color:#ffffff;text-decoration:none;font-weight:bold;padding:12px 22px;border-radius:10px">Verify my email</a></p>
-        <p style="margin:0 0 8px;font-size:13px;color:#64748b">Or paste this link into your browser (valid for 24 hours):</p>
-        <p style="margin:0 0 20px;font-size:12px;word-break:break-all;color:#475569">${link}</p>
-        <p style="margin:0;font-size:13px;color:#64748b">If you didn't create this account, you can ignore this email.</p>
+        ${paras.map((p) => `<p style="margin:0 0 16px">${escapeHtml(p)}</p>`).join('')}
+        ${button ? `<p style="margin:8px 0 24px"><a href="${button.link}" style="display:inline-block;background:#059669;color:#ffffff;text-decoration:none;font-weight:bold;padding:12px 22px;border-radius:10px">${escapeHtml(button.label)}</a></p>
+        <p style="margin:0 0 8px;font-size:13px;color:#64748b">Or paste this link into your browser:</p>
+        <p style="margin:0 0 20px;font-size:12px;word-break:break-all;color:#475569">${button.link}</p>` : ''}
+        ${footnote ? `<p style="margin:0;font-size:13px;color:#64748b">${escapeHtml(footnote)}</p>` : ''}
       </td></tr>
       <tr><td style="padding:20px 32px 28px;font-size:12px;color:#94a3b8">PakMedRecord · One medical record, every hospital.</td></tr>
     </table>
-  </td></tr></table></body></html>`,
+  </td></tr></table></body></html>`;
+  return { subject, text, html };
+};
+
+const verificationEmail = ({ name, link }) => brandedEmail({
+  subject: 'Verify your PakMedRecord email',
+  name,
+  paragraphs: ['Welcome to PakMedRecord. Please confirm your email address to activate your account. The link is valid for 24 hours.'],
+  button: { label: 'Verify my email', link },
+  footnote: "If you didn't create this account, you can ignore this email.",
 });
 
-module.exports = { mailEnabled, sendMail, verificationEmail };
+const resetEmail = ({ name, link }) => brandedEmail({
+  subject: 'Reset your PakMedRecord password',
+  name,
+  paragraphs: ['We received a request to reset your password. Use the button below to choose a new one. The link is valid for 1 hour and can be used once.'],
+  button: { label: 'Choose a new password', link },
+  footnote: "If you didn't ask for this, you can ignore this email. Your password won't change.",
+});
+
+module.exports = { mailEnabled, sendMail, brandedEmail, verificationEmail, resetEmail, escapeHtml };

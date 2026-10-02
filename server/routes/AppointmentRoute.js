@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const {
+  availability, markPaid,
   book, bookedSlots, getAppointments, getPatientAppointments, completeAppointment, cancelAppointment, getAppointmentTimes,
 } = require('../contollers/AppointmentController');
 const { requireAuth, requireRole, requireSelf } = require('../middleware/auth');
@@ -9,6 +10,8 @@ const { requireAuth, requireRole, requireSelf } = require('../middleware/auth');
 router.use(requireAuth);
 router.route('/book/:patientCNIC').post(requireSelf('patient', 'patientCNIC'), book);
 router.get('/slots/:doctorCNIC', bookedSlots);
+router.get('/availability/:doctorCNIC', availability);
+router.post('/:appointmentId/paid', requireRole('doctor', 'staff'), markPaid);
 router.get('/mine/:patientCNIC', requireSelf('patient', 'patientCNIC'), getPatientAppointments);
 router.get('/fetch/:doctorCNIC', requireSelf('doctor', 'doctorCNIC'), getAppointments);
 router.get('/fetchByTime/:doctorCNIC', requireSelf('doctor', 'doctorCNIC'), getAppointmentTimes);

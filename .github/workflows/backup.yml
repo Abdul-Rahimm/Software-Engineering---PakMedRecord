@@ -1,0 +1,34 @@
+# Nightly database backup. Add the production connection string as the MONGODB_URI repository secret.
+# Backups are kept as workflow artifacts for 30 days (Actions > Nightly backup > run > Artifacts).
+name: Nightly backup
+
+on:
+  schedule:
+    - cron: '30 21 * * *' # 02:30 Pakistan time
+  workflow_dispatch:
+
+jobs:
+  backup:
+    runs-on: ubuntu-latest
+    if: ${{ github.repository_owner != '' }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: server/package-lock.json
+      - run: npm ci --omit=dev
+        working-directory: server
+      - name: Dump database
+        working-directory: server
+        env:
+          MONGODB_URI: ${{ secrets.MONGODB_URI }}
+        run: |
+          if [ -z "$MONGODB_URI" ]; then echo "MONGODB_URI secret is not set"; exit 1; fi
+          node scripts/backup.js ../backups
+      - uses: actions/upload-artifact@v4
+        with:
+          name: pakmedrecord-backup-${{ github.run_id }}
+          path: backups/
+          retention-days: 30

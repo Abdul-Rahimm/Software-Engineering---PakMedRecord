@@ -6,7 +6,10 @@
   "scripts": {
     "start": "node index.js",
     "dev": "nodemon index.js",
-    "migrate": "node migration.js"
+    "migrate": "node migration.js",
+    "create-admin": "node scripts/create-admin.js",
+    "backup": "node scripts/backup.js",
+    "restore": "node scripts/restore.js"
   },
   "keywords": [],
   "author": "",
@@ -22,6 +25,7 @@
     "express-rate-limit": "^8.7.0",
     "firebase-admin": "^13.10.0",
     "google-auth-library": "^10.9.1",
+    "helmet": "^8.3.0",
     "jsonwebtoken": "^9.0.3",
     "mongoose": "^8.3.2",
     "zod": "^4.6.5"
