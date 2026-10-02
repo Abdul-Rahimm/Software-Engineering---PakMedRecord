@@ -4,6 +4,7 @@ import RequireAuth from './RequireAuth';
 import AppShell from './layout/AppShell';
 import Landing from './pages/Landing';
 import Auth from './pages/Auth';
+import VerifyEmail from './pages/VerifyEmail';
 const PatientOverview = lazy(() => import('./pages/patient/Overview'));
 const Records = lazy(() => import('./pages/patient/Records'));
 const FindDoctors = lazy(() => import('./pages/patient/FindDoctors'));
@@ -41,6 +42,7 @@ const Routes = () => (
     <Route path="/doctor/signup" element={<Auth role="doctor" mode="signup" />} />
     <Route path="/patient/signin" element={<Auth role="patient" mode="signin" />} />
     <Route path="/patient/signup" element={<Auth role="patient" mode="signup" />} />
+    <Route path="/verify-email" element={<VerifyEmail />} />
 
     <Route element={<RequireAuth role="patient"><AppShell role="patient" /></RequireAuth>}>
       <Route path="/patient/home/:patientCNIC" element={patient(<PatientOverview />)} />

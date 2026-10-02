@@ -24,7 +24,8 @@ const doctorSchema = mongoose.Schema (
         },
         password: {
             type: String,
-            required: [true, 'Please enter a password']
+            // Google-only accounts have no password
+            required: [function () { return !this.googleUid; }, 'Please enter a password']
         },
         hospital: {
             type: String,
@@ -34,6 +35,12 @@ const doctorSchema = mongoose.Schema (
         phone: { type: String, trim: true },
         bio: { type: String, trim: true, maxlength: 600 },
         yearsExperience: { type: Number, min: 0, max: 70 },
+        // Email verification (accounts created before this feature have no flag and count as verified)
+        emailVerified: { type: Boolean },
+        emailVerifyTokenHash: { type: String, select: false },
+        emailVerifyExpires: { type: Date, select: false },
+        // Linked Google account (Firebase Auth uid) for "Sign in with Google"
+        googleUid: { type: String, index: { unique: true, sparse: true } },
     },
     { timestamps: true }
 );

@@ -1,0 +1,118 @@
+const jwt = require('jsonwebtoken');
+const expressAsyncHandler = require('express-async-handler');
+const Doctor = require('../models/DoctorModel');
+const Patient = require('../models/PatientModel');
+const { jwt_secret } = require('../config');
+const { signToken } = require('../middleware/auth');
+const { ROLES, hashToken, emailQuery, startEmailVerification } = require('../lib/accounts');
+const { mailEnabled } = require('../lib/mailer');
+const { googleEnabled, verifyGoogleIdToken } = require('../lib/firebase');
+const { isCNIC } = require('../lib/validate');
+const { SPECIALIZATIONS } = require('../models/constants');
+
+const roleOf = (role) => ROLES[role] || null;
+
+// Which sign-in options the frontend should show
+const options = (req, res) => res.status(200).json({ emailVerification: mailEnabled(), google: googleEnabled() });
+
+// GET-style link from the email lands on the frontend, which posts { role, token } here
+const verifyEmail = expressAsyncHandler(async (req, res) => {
+  const { role, token } = req.body || {};
+  const r = roleOf(role);
+  if (!r || !token) return res.status(400).json({ error: 'Invalid verification link' });
+
+  const user = await r.Model.findOne({ emailVerifyTokenHash: hashToken(String(token)) }).select('+emailVerifyExpires');
+  if (!user) return res.status(400).json({ error: 'This link is invalid or was already used.', code: 'INVALID_TOKEN' });
+  if (user.emailVerifyExpires < new Date()) {
+    return res.status(400).json({ error: 'This link has expired. Sign in to get a new one.', code: 'EXPIRED_TOKEN' });
+  }
+  user.emailVerified = true;
+  user.emailVerifyTokenHash = undefined;
+  user.emailVerifyExpires = undefined;
+  await user.save();
+  res.status(200).json({ message: 'Email verified. You can sign in now.', cnic: user[r.cnicKey] });
+});
+
+// Re-send the link; the same generic answer either way so it can't be used to probe accounts
+const resendVerification = expressAsyncHandler(async (req, res) => {
+  const { role, cnic } = req.body || {};
+  const r = roleOf(role);
+  if (!r || !isCNIC(cnic)) return res.status(400).json({ error: 'Enter a valid CNIC' });
+  const user = await r.Model.findOne({ [r.cnicKey]: Number(cnic) });
+  if (user && user.emailVerified === false) await startEmailVerification(user, role);
+  res.status(200).json({ message: 'If that account needs verifying, a new email is on its way.' });
+});
+
+const sessionResponse = (role, user, message) => ({
+  message,
+  token: signToken(role, user[ROLES[role].cnicKey]),
+  [role]: user,
+});
+
+// Sign in with Google: existing account -> session; new person -> short-lived registration ticket
+const googleSignIn = expressAsyncHandler(async (req, res) => {
+  if (!googleEnabled()) return res.status(503).json({ error: 'Google sign-in is not configured.' });
+  const { role, idToken } = req.body || {};
+  const r = roleOf(role);
+  if (!r || !idToken) return res.status(400).json({ error: 'Missing role or Google token' });
+
+  let google;
+  try {
+    google = await verifyGoogleIdToken(idToken);
+  } catch (err) {
+    return res.status(401).json({ error: 'Google sign-in failed. Please try again.' });
+  }
+
+  const user = (await r.Model.findOne({ googleUid: google.uid })) || (await r.Model.findOne(emailQuery(google.email)));
+  if (user) {
+    if (!user.googleUid) user.googleUid = google.uid;
+    user.emailVerified = true; // Google has verified this address
+    await user.save();
+    return res.status(200).json(sessionResponse(role, user, 'Signed in with Google'));
+  }
+
+  const [firstName = '', ...rest] = google.name.split(' ');
+  const ticket = jwt.sign({ purpose: 'google-register', role, uid: google.uid, email: google.email }, jwt_secret, { expiresIn: '30m' });
+  res.status(200).json({ needsRegistration: true, ticket, profile: { email: google.email, firstName, lastName: rest.join(' ') } });
+});
+
+// Finish creating an account for a first-time Google user
+const googleComplete = expressAsyncHandler(async (req, res) => {
+  const { ticket, cnic, firstName, lastName, hospital, gender, specialization } = req.body || {};
+  let claims;
+  try {
+    claims = jwt.verify(String(ticket || ''), jwt_secret);
+    if (claims.purpose !== 'google-register') throw new Error('wrong purpose');
+  } catch {
+    return res.status(401).json({ error: 'Your Google sign-in expired. Please continue with Google again.' });
+  }
+  const r = roleOf(claims.role);
+  if (!isCNIC(cnic)) return res.status(400).json({ error: 'CNIC must be 13 digits' });
+  if (!String(firstName || '').trim() || !String(lastName || '').trim() || !String(hospital || '').trim()) {
+    return res.status(400).json({ error: 'Name and hospital are required' });
+  }
+  if (claims.role === 'patient' && !['Male', 'Female', 'Other'].includes(gender)) return res.status(400).json({ error: 'Select a gender' });
+  if (claims.role === 'doctor' && specialization && !SPECIALIZATIONS.includes(specialization)) return res.status(400).json({ error: 'Unknown specialization' });
+
+  const n = Number(cnic);
+  if ((await Doctor.findOne({ doctorCNIC: n })) || (await Patient.findOne({ patientCNIC: n }))) {
+    return res.status(409).json({ error: 'This CNIC is already registered. Sign in with your password, then use Google next time.' });
+  }
+  if (await r.Model.findOne({ $or: [{ googleUid: claims.uid }, emailQuery(claims.email)] })) {
+    return res.status(409).json({ error: 'An account with this Google email already exists. Continue with Google to sign in.' });
+  }
+
+  const user = await r.Model.create({
+    [r.cnicKey]: n,
+    firstName: String(firstName).trim(),
+    lastName: String(lastName).trim(),
+    email: claims.email,
+    hospital: String(hospital).trim(),
+    ...(claims.role === 'patient' ? { gender } : { specialization: specialization || 'General Physician' }),
+    googleUid: claims.uid,
+    emailVerified: true,
+  });
+  res.status(201).json(sessionResponse(claims.role, user, 'Account created with Google'));
+});
+
+module.exports = { options, verifyEmail, resendVerification, googleSignIn, googleComplete };

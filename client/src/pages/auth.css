@@ -88,3 +88,29 @@
   .auth-card { padding: 24px 20px; }
   .auth-visual-copy .badge { display: none; }
 }
+
+/* Sign in with Google */
+.google-btn { background: var(--field-strong); border-color: var(--border-strong); color: var(--text); gap: 12px; }
+.google-btn:hover { background: var(--surface-hover); border-color: var(--border-strong); }
+.auth-divider { display: flex; align-items: center; gap: 12px; color: var(--text-3); font-size: 12.5px; }
+.auth-divider::before, .auth-divider::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+.auth-notice {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  padding: 14px 16px;
+  border-radius: 14px;
+  font-size: 14px;
+  background: rgba(255, 200, 87, .1);
+  border: 1px solid rgba(255, 200, 87, .3);
+}
+.auth-notice svg { color: var(--amber); flex-shrink: 0; margin-top: 2px; }
+.inbox-orb {
+  width: 76px; height: 76px;
+  display: grid; place-items: center;
+  margin: 0 auto;
+  border-radius: 24px;
+  color: var(--emerald);
+  background: var(--grad-soft);
+  border: 1px solid var(--border-strong);
+}

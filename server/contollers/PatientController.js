@@ -3,6 +3,7 @@ const Patient = require('../models/PatientModel');
 const Doctor = require('../models/DoctorModel');
 const expressAsyncHandler = require('express-async-handler');
 const { signToken } = require('../middleware/auth');
+const { startEmailVerification } = require('../lib/accounts');
 const { isCNIC, isEmail, cleanList } = require('../lib/validate');
 const { BLOOD_GROUPS } = require('../models/constants');
 
@@ -32,15 +33,20 @@ const Signup = expressAsyncHandler(async (req, res) => {
       patientCNIC,
       firstName,
       lastName,
-      email,
+      email: String(email).trim().toLowerCase(),
       hospital,
       gender,
       password: await bcrypt.hash(password, 10),
     });
 
     await newPatient.save();
+    const verification = await startEmailVerification(newPatient, 'patient');
 
-    res.status(201).json({ message: 'Patient Signup successful' });
+    res.status(201).json({
+      message: verification.required ? 'Account created. Check your email to verify it.' : 'Patient Signup successful',
+      verificationRequired: verification.required,
+      emailSent: verification.sent,
+    });
   } catch (error) {
     console.error(error);
     res.status(500).json({ error: 'Internal server error' });
@@ -62,10 +68,18 @@ const Signin = expressAsyncHandler(async (req, res) => {
             return res.status(401).json({ error: 'Authentication failed' });
         }
 
+        if (!patient.password) {
+            return res.status(401).json({ error: 'This account uses Google sign-in. Choose "Continue with Google".' });
+        }
+
         const passwordMatch = await bcrypt.compare(password, patient.password);
 
         if (!passwordMatch) {
             return res.status(401).json({ error: 'Authentication failed' });
+        }
+
+        if (patient.emailVerified === false) {
+            return res.status(403).json({ error: 'Please verify your email first. Check your inbox for the link we sent when you signed up.', code: 'EMAIL_NOT_VERIFIED' });
         }
 
         const token = signToken('patient', patient.patientCNIC);

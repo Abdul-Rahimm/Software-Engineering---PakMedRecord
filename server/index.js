@@ -12,6 +12,7 @@ const TempRecordsRoutes = require('./routes/TempRecordRoute');
 const VitalRoutes = require('./routes/VitalRoute');
 const NotificationRoutes = require('./routes/NotificationRoute');
 const AIRoutes = require('./routes/AIRoute');
+const AuthRoutes = require('./routes/AuthRoute');
 
 // One shared connection per process; serverless instances reuse it across requests
 let dbReady;
@@ -45,6 +46,7 @@ app.use('/tempRecords', TempRecordsRoutes);
 app.use('/vitals', VitalRoutes);
 app.use('/notifications', NotificationRoutes);
 app.use('/ai', AIRoutes);
+app.use('/auth', AuthRoutes);
 
 // Vercel imports the app; locally (npm start / npm run dev) we listen ourselves
 if (!process.env.VERCEL) {
