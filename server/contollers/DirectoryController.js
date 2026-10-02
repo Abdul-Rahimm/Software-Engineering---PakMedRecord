@@ -7,7 +7,8 @@ const Appointment = require('../models/AppointmentModel');
 const { scheduleOf, slotsFor } = require('../lib/availability');
 const { pktDate, addDays } = require('../lib/dates');
 
-const VERIFIED = { $or: [{ 'verification.status': { $exists: false } }, { 'verification.status': 'verified' }], disabled: { $ne: true } };
+// Only doctors an admin has explicitly verified (accounts older than verification are not listed publicly)
+const VERIFIED = { 'verification.status': 'verified', disabled: { $ne: true } };
 
 const publicView = (d) => ({
   id: String(d._id),
