@@ -14,6 +14,11 @@ const { RECORD_CATEGORIES, SPECIALIZATIONS, VITAL_TYPES } = require('../models/c
 const { createAppointment } = require('../lib/appointments');
 
 const day = (d) => (d ? new Date(d).toISOString().slice(0, 10) : null);
+
+// Text the AI extracted from files attached to a record (kept short for the model's context)
+const docsOf = (r) => (r.attachments || [])
+  .filter((a) => a && a.ocr?.status === 'done' && a.ocr.text)
+  .map((a) => ({ file: a.name, text: a.ocr.text.slice(0, 4000) }));
 const todayKey = () => new Date().toISOString().slice(0, 10);
 
 const doctorBrief = (d) => d && ({
@@ -71,7 +76,7 @@ const patientTools = [
     }),
     handler: async ({ category, limit = 20 }, user) => {
       const filter = { patientCNIC: user.cnic, ...(category && { category }) };
-      const records = await MedicalRecord.find(filter).sort({ createdAt: -1 }).limit(limit);
+      const records = await MedicalRecord.find(filter).sort({ createdAt: -1 }).limit(limit).populate('attachments');
       const doctors = await Doctor.find({ doctorCNIC: { $in: records.map((r) => r.doctorCNIC) } });
       const byId = Object.fromEntries(doctors.map((d) => [d.doctorCNIC, d]));
       return records.map((r) => ({
@@ -80,6 +85,7 @@ const patientTools = [
         category: r.category,
         doctor: byId[r.doctorCNIC] ? `Dr. ${byId[r.doctorCNIC].firstName} ${byId[r.doctorCNIC].lastName}` : null,
         details: r.recordData,
+        attachedDocuments: docsOf(r),
       }));
     },
   },
@@ -210,13 +216,13 @@ const doctorTools = [
       if (!(await isAffiliated(patientCNIC, user.cnic))) return { error: 'This patient has not added you to their care team.' };
       const [patient, records, vitals] = await Promise.all([
         Patient.findOne({ patientCNIC }),
-        MedicalRecord.find({ patientCNIC }).sort({ createdAt: -1 }).limit(50),
+        MedicalRecord.find({ patientCNIC }).sort({ createdAt: -1 }).limit(50).populate('attachments'),
         Vital.find({ patientCNIC }).sort({ recordedAt: -1 }).limit(40),
       ]);
       if (!patient) return { error: 'Patient not found' };
       return {
         profile: healthProfile(patient),
-        records: records.map((r) => ({ date: day(r.createdAt), title: r.title || null, category: r.category, details: r.recordData })),
+        records: records.map((r) => ({ date: day(r.createdAt), title: r.title || null, category: r.category, details: r.recordData, attachedDocuments: docsOf(r) })),
         recentVitals: vitals.map(formatVital),
       };
     },

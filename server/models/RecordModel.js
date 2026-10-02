@@ -16,6 +16,7 @@ const medicalRecordSchema = new mongoose.Schema({
     type: String,
     required: true
   },
+  attachments: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Attachment' }],
   // 'doctor' when written by the doctor, 'patient' when approved from a patient submission
   source: { type: String, enum: ['doctor', 'patient'], default: 'doctor' },
 }, { timestamps: true });

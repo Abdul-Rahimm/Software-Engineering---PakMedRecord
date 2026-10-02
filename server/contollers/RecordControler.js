@@ -5,19 +5,20 @@ const Doctor = require('../models/DoctorModel');
 const Affiliation = require('../models/AffiliationModel');
 const { notify } = require('../lib/notify');
 const { RECORD_CATEGORIES } = require('../models/constants');
+const { claimAttachments } = require('./FileController');
 
 // Endpoint to handle the creation of a medical record
 const addRecord = async (req, res) => {
   try {
-    const { patientCNIC, recordData, title, category } = req.body;
+    const { patientCNIC, recordData, title, category, attachments } = req.body;
     if (category && !RECORD_CATEGORIES.includes(category)) {
       return res.status(400).json({ error: 'Unknown record category' });
     }
     // Records are always created by the signed-in doctor
     const doctorCNIC = req.user.cnic;
 
-    if (!patientCNIC || !recordData) {
-      return res.status(400).json({ error: 'Patient and record data are required' });
+    if (!patientCNIC || (!String(recordData || '').trim() && !(attachments || []).length)) {
+      return res.status(400).json({ error: 'Add record details or attach a file' });
     }
 
     // Check if patient exists
@@ -38,14 +39,26 @@ const addRecord = async (req, res) => {
       return res.status(403).json({ error: 'Patient and doctor are not affiliated' });
     }
 
+    // Files uploaded for this record (read by the AI); their summaries stand in if no notes were typed
+    let files;
+    try {
+      files = await claimAttachments(attachments, req.user, patientCNIC);
+    } catch (err) {
+      return res.status(err.status || 500).json({ error: err.message });
+    }
+    const details = String(recordData || '').trim()
+      || files.map((f) => f.ocr?.summary).filter(Boolean).join('\n')
+      || 'See attached document.';
+
     // Create a new medical record
     const medicalRecord = new MedicalRecord({
       patientCNIC,
       doctorCNIC,
-      recordData,
+      recordData: details,
       title: title ? String(title).trim() : undefined,
       category: category || 'General',
       source: 'doctor',
+      attachments: files.map((f) => f._id),
     });
 
     // Save the medical record to the database
@@ -70,7 +83,7 @@ const getRecords = async (req, res) => {
       const { patientCNIC } = req.params;
   
       // Fetch medical records based on patient CNIC
-      const medicalRecords = await MedicalRecord.find({ patientCNIC }).sort({ createdAt: -1 });
+      const medicalRecords = await MedicalRecord.find({ patientCNIC }).sort({ createdAt: -1 }).populate('attachments');
   
       res.status(200).json(medicalRecords);
     } catch (error) {

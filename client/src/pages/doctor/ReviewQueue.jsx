@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { AnimatePresence, motion } from 'framer-motion';
 import { FiCheck, FiCheckCircle, FiDownload, FiX } from 'react-icons/fi';
 import Modal from '../../ui/Modal';
+import { AttachmentChips } from '../../ui/Attachments';
 import api from '../../api';
 import { useShell } from '../../layout/ShellContext';
 import { useFetch, fetchPatients, indexBy } from '../../lib/data';
@@ -88,6 +89,7 @@ const ReviewQueue = () => {
                       </div>
                     </div>
                     {r.title && <h3 style={{ fontSize: 17 }}>{r.title}</h3>}
+                    <AttachmentChips attachments={r.attachments} />
                     <p className="tl-body" style={{ padding: 16, borderRadius: 14, background: 'var(--field)', border: '1px solid var(--border)' }}>{r.recordData}</p>
                     <div className="row between wrap gap-12">
                       <button className="btn btn-ghost btn-sm" onClick={() => downloadRecordPDF({ record: { ...r, createdAt: new Date() }, patient: p, doctor: profile })}><FiDownload /> Preview PDF</button>

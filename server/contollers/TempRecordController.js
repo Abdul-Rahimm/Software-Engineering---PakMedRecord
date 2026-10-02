@@ -7,14 +7,15 @@ const Patient = require('../models/PatientModel');
 const Affiliation = require('../models/AffiliationModel');
 const { notify } = require('../lib/notify');
 const { RECORD_CATEGORIES } = require('../models/constants');
+const { claimAttachments } = require('./FileController');
 
 
 const submit = async (req, res) => {
     try {
-        const { doctorCNIC, recordData, title, category } = req.body;
+        const { doctorCNIC, recordData, title, category, attachments } = req.body;
 
-        if (!doctorCNIC || !recordData) {
-            return res.status(400).json({ error: 'Doctor and record data are required' });
+        if (!doctorCNIC || (!String(recordData || '').trim() && !(attachments || []).length)) {
+            return res.status(400).json({ error: 'Choose a doctor and add details or a file' });
         }
         if (category && !RECORD_CATEGORIES.includes(category)) {
             return res.status(400).json({ error: 'Unknown record category' });
@@ -38,13 +39,25 @@ const submit = async (req, res) => {
           return res.status(403).json({ error: 'Patient and doctor are not affiliated' });
         }
 
+        // Files uploaded for this record (read by the AI); their summaries stand in if no notes were typed
+        let files;
+        try {
+          files = await claimAttachments(attachments, req.user, patientCNIC);
+        } catch (err) {
+          return res.status(err.status || 500).json({ error: err.message });
+        }
+        const details = String(recordData || '').trim()
+          || files.map((f) => f.ocr?.summary).filter(Boolean).join('\n')
+          || 'See attached document.';
+
         // Store the record as pending until the doctor reviews it
         const tempRecord = new TempRecord({
             patientCNIC,
             doctorCNIC,
-            recordData,
+            recordData: details,
             title: title ? String(title).trim() : undefined,
             category: category || 'General',
+            attachments: files.map((f) => f._id),
         });
         await tempRecord.save();
 
@@ -71,7 +84,7 @@ const pending = async (req, res) => {
             return res.status(404).json({ error: 'Doctor not found' });
         }
         // Get pending medical records of affiliated patients
-        const pendingRecords = await TempRecord.find({ status: 'pending', doctorCNIC: doctorCNIC });
+        const pendingRecords = await TempRecord.find({ status: 'pending', doctorCNIC: doctorCNIC }).populate('attachments');
         res.status(200).json({ pendingRecords });
     } catch (error) {
         console.error('Error fetching pending medical records:', error);
@@ -108,8 +121,8 @@ const approve = async (req, res) => {
         await tempRecord.save();
 
         if (status === 'approved') {
-            const { patientCNIC, doctorCNIC, recordData, title, category } = tempRecord;
-            await MedicalRecord.create({ patientCNIC, doctorCNIC, recordData, title, category, source: 'patient' });
+            const { patientCNIC, doctorCNIC, recordData, title, category, attachments } = tempRecord;
+            await MedicalRecord.create({ patientCNIC, doctorCNIC, recordData, title, category, attachments, source: 'patient' });
         }
 
         const label = tempRecord.title ? `"${tempRecord.title}"` : 'Your submitted record';
@@ -154,7 +167,7 @@ const remove = async (req, res) => {
 // A patient's own submissions with their review outcome (newest first)
 const mine = async (req, res) => {
     try {
-        const submissions = await TempRecord.find({ patientCNIC: req.params.patientCNIC }).sort({ createdAt: -1 }).limit(100);
+        const submissions = await TempRecord.find({ patientCNIC: req.params.patientCNIC }).sort({ createdAt: -1 }).limit(100).populate('attachments');
         res.status(200).json({ submissions });
     } catch (error) {
         console.error('Error fetching submissions:', error);

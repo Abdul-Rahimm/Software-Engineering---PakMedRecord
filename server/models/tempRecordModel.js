@@ -16,6 +16,7 @@ const tempRecordSchema = new mongoose.Schema({
         type: String,
         required: true
     },
+    attachments: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Attachment' }],
     reviewNote: { type: String, trim: true, maxlength: 500 },
     reviewedAt: { type: Date },
     status: {

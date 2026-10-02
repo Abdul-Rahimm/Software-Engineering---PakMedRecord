@@ -1,0 +1,115 @@
+.dropzone {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+  padding: 30px 20px;
+  border-radius: 20px;
+  border: 2px dashed var(--border-strong);
+  background: var(--tint-1);
+  text-align: center;
+  cursor: pointer;
+  transition: border-color .2s, background .2s, transform .2s var(--ease);
+}
+.dropzone:hover, .dropzone:focus-visible { border-color: var(--emerald); background: var(--tint-2); }
+.dropzone.drag { border-color: var(--emerald); background: rgba(16, 185, 129, .08); transform: scale(1.01); }
+.dropzone.compact { padding: 18px 16px; gap: 10px; flex-direction: row; flex-wrap: wrap; justify-content: center; text-align: left; }
+.dz-icon {
+  width: 56px;
+  height: 56px;
+  display: grid;
+  place-items: center;
+  border-radius: 18px;
+  color: var(--emerald);
+  background: var(--grad-soft);
+  border: 1px solid var(--border-strong);
+}
+.compact .dz-icon { width: 42px; height: 42px; border-radius: 14px; }
+/* the camera shortcut only makes sense on touch devices */
+@media (hover: hover) and (pointer: fine) { .dz-camera { display: none; } }
+
+.up-item {
+  padding: 12px 14px;
+  border-radius: 16px;
+  border: 1px solid var(--border);
+  background: var(--surface-strong);
+}
+.up-item.unread, .up-item.error { border-color: rgba(245, 158, 11, .4); }
+.up-thumb {
+  width: 46px;
+  height: 46px;
+  flex-shrink: 0;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  border-radius: 12px;
+  color: var(--violet);
+  background: var(--tint-2);
+  border: 1px solid var(--border);
+}
+.up-thumb img { width: 100%; height: 100%; object-fit: cover; }
+.up-status { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; font-size: 12.5px; color: var(--text-2); margin-top: 2px; }
+.up-item.done .up-status svg { color: var(--emerald); }
+.up-item.unread .up-status svg, .up-item.error .up-status svg { color: var(--amber); }
+.up-text {
+  overflow: hidden;
+  margin-top: 12px;
+  padding: 14px;
+  max-height: 320px;
+  overflow-y: auto;
+  border-radius: 12px;
+  background: var(--field);
+  border: 1px solid var(--border);
+  font-size: 13.5px;
+}
+
+/* indeterminate bar while the AI reads */
+.progress.reading span {
+  width: 35%;
+  animation: reading 1.2s ease-in-out infinite;
+}
+@keyframes reading {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(300%); }
+}
+
+/* Attachment chips on records */
+.att-chips { display: flex; flex-wrap: wrap; gap: 8px; }
+.att-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  max-width: 100%;
+  height: 34px;
+  padding: 0 12px;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  background: var(--tint-1);
+  color: var(--text);
+  font: 500 13px/1 var(--font);
+  cursor: pointer;
+  transition: border-color .2s, background .2s;
+}
+.att-chip:hover { border-color: var(--emerald); background: var(--tint-2); }
+.att-chip svg { color: var(--violet); flex-shrink: 0; }
+
+/* Viewer */
+.viewer { display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr); gap: 16px; min-height: 60vh; }
+.viewer-doc, .viewer-text {
+  border-radius: 14px;
+  border: 1px solid var(--border);
+  background: var(--field);
+  overflow: auto;
+  max-height: 72vh;
+}
+.viewer-doc { display: grid; place-items: center; }
+.viewer-doc:has(.pdf-preview) { place-items: start center; }
+.pdf-preview { width: 100%; padding: 12px; }
+.pdf-page { max-width: 100%; height: auto; border-radius: 6px; background: #fff; box-shadow: 0 6px 20px -10px rgba(15, 23, 42, .35); }
+.viewer-doc img { max-width: 100%; height: auto; display: block; }
+.viewer-doc iframe { width: 100%; height: 72vh; border: 0; }
+.viewer-text { padding: 16px; font-size: 14px; }
+@media (max-width: 860px) {
+  .viewer { grid-template-columns: 1fr; }
+  .viewer-doc iframe { height: 55vh; }
+}

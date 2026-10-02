@@ -15,6 +15,7 @@ import TiltCard from '../../ui/TiltCard';
 import Modal from '../../ui/Modal';
 import AIStream from '../../ui/AIStream';
 import { AssistantGlyph } from '../../layout/Assistant';
+import { AttachmentChips } from '../../ui/Attachments';
 import '../dashboard.css';
 
 // Shared by the patient's own records page and the doctor's patient-history page
@@ -35,7 +36,8 @@ export const RecordTimeline = ({ records, doctorsById, patient, emptyAction, can
       if (category !== 'All' && (r.category || 'General') !== category) return false;
       if (!q) return true;
       const doc = doctorsById[r.doctorCNIC];
-      return `${r.title} ${r.recordData} ${r.category} ${doc?.firstName} ${doc?.lastName} ${doc?.hospital}`.toLowerCase().includes(q);
+      const fileText = (r.attachments || []).map((a) => `${a?.name} ${a?.ocr?.text || ''}`).join(' ');
+      return `${r.title} ${r.recordData} ${r.category} ${doc?.firstName} ${doc?.lastName} ${doc?.hospital} ${fileText}`.toLowerCase().includes(q);
     });
   }, [records, query, category, doctorsById]);
 
@@ -92,6 +94,7 @@ export const RecordTimeline = ({ records, doctorsById, patient, emptyAction, can
                     </div>
                   </div>
                   <p className="tl-body">{r.recordData}</p>
+                  <AttachmentChips attachments={r.attachments} />
                   <div className="tl-meta">
                     <span><FiCalendar /> {formatDateTime(r.createdAt)}</span>
                     <span><FiUser /> {doctorName(doc)}</span>

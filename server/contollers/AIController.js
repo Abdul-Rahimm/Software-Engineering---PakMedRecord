@@ -68,7 +68,7 @@ const postChat = async (req, res) => {
 // Plain-language explanation of one record (patient's own, or an affiliated doctor's patient)
 const explainRecord = async (req, res) => {
   if (!mongoose.isValidObjectId(req.params.recordId)) return res.status(404).json({ error: 'Record not found' });
-  const record = await MedicalRecord.findById(req.params.recordId);
+  const record = await MedicalRecord.findById(req.params.recordId).populate('attachments');
   if (!record) return res.status(404).json({ error: 'Record not found' });
   const { role, cnic } = req.user;
   const allowed = role === 'patient'
@@ -86,6 +86,9 @@ const explainRecord = async (req, res) => {
     '<record>',
     record.recordData,
     '</record>',
+    ...(record.attachments || [])
+      .filter((a) => a?.ocr?.status === 'done' && a.ocr.text)
+      .map((a) => `<attached_document name="${a.name.replace(/"/g, '')}">\n${a.ocr.text.slice(0, 8000)}\n</attached_document>`),
     '',
     'Explain this record to the patient.',
   ].filter((l) => l !== null).join('\n');
@@ -101,7 +104,7 @@ const summarizePatient = async (req, res) => {
   }
   const [patient, records, vitals] = await Promise.all([
     Patient.findOne({ patientCNIC }),
-    MedicalRecord.find({ patientCNIC }).sort({ createdAt: 1 }),
+    MedicalRecord.find({ patientCNIC }).sort({ createdAt: 1 }).populate('attachments'),
     Vital.find({ patientCNIC }).sort({ recordedAt: -1 }).limit(40),
   ]);
   if (!patient) return res.status(404).json({ error: 'Patient not found' });
@@ -118,7 +121,11 @@ const summarizePatient = async (req, res) => {
     `Vaccinations: ${patient.vaccinations.map((v) => `${v.name}${v.dose ? ` (${v.dose})` : ''}${v.date ? ` ${day(v.date)}` : ''}`).join('; ') || 'none recorded'}`,
     '</profile>',
     '<records>',
-    ...records.map((r) => `[${day(r.createdAt)}] ${r.category}${r.title ? ` — ${r.title}` : ''}: ${r.recordData}`),
+    ...records.map((r) => {
+      const docs = (r.attachments || []).filter((a) => a?.ocr?.status === 'done' && a.ocr.text)
+        .map((a) => `\n  (attached ${a.name}: ${a.ocr.text.slice(0, 1500).replace(/\n+/g, ' ')})`).join('');
+      return `[${day(r.createdAt)}] ${r.category}${r.title ? ` — ${r.title}` : ''}: ${r.recordData}${docs}`;
+    }),
     '</records>',
     '<vitals newest_first="true">',
     ...vitals.map((v) => `[${day(v.recordedAt)}] ${VITAL_TYPES[v.type]?.label}: ${v.value2 != null ? `${v.value}/${v.value2}` : v.value} ${VITAL_TYPES[v.type]?.unit}`),

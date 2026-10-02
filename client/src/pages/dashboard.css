@@ -287,3 +287,17 @@
 
 .appt-card { display: flex; align-items: flex-start; gap: 18px; padding: 18px; border-radius: 20px; }
 @media (max-width: 560px) { .appt-card { flex-wrap: wrap; } }
+
+/* Numbered form steps */
+.step-head { display: flex; align-items: flex-start; gap: 14px; }
+.step-num {
+  width: 30px;
+  height: 30px;
+  flex-shrink: 0;
+  display: grid;
+  place-items: center;
+  border-radius: 10px;
+  font: 700 14px/1 var(--font-mono);
+  color: var(--on-accent);
+  background: var(--grad);
+}
