@@ -65,3 +65,25 @@ Without a key the rest of the app works normally and the assistant shows a "not 
 
 AI requests are limited to 20 per minute per user and sign-in to 10 attempts per 10 minutes per IP
 (`AI_RATE_LIMIT` / `SIGNIN_RATE_LIMIT` to change).
+
+## Deployment
+
+Live at **https://pakmedrecord.vercel.app** (API: https://pakmedrecord-api.vercel.app).
+
+| Part | Host | Notes |
+|---|---|---|
+| Frontend (`client/`) | Vercel project `pakmedrecord` | `VITE_API_URL` points at the API |
+| Backend (`server/`) | Vercel project `pakmedrecord-api` | Express runs as a Vercel Function in Mumbai (`bom1`) |
+| Database | MongoDB Atlas project `PakMedRecord` | Free M0 cluster in Mumbai |
+
+Secrets (`MONGODB_URI`, `JWT_SECRET`, `MISTRAL_API_KEY`) live in the Vercel project settings, never in the repo.
+
+To redeploy after changes (with the Vercel CLI logged in):
+
+```sh
+cd server && npx vercel deploy --prod   # backend
+cd client && npx vercel deploy --prod   # frontend
+```
+
+Vercel only accepts deploys whose latest commit author belongs to the Vercel account,
+so commit with the account's email (`git config user.email`).
