@@ -38,7 +38,8 @@
   position: relative;
   display: grid;
   place-items: center;
-  padding: 48px 32px;
+  /* room above the card for the Home link and theme toggle */
+  padding: 80px 32px 48px;
   perspective: 1400px;
 }
 .auth-back { position: absolute; top: 24px; left: 24px; }
