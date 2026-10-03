@@ -4,6 +4,7 @@ This repo is made for our 6th semester SE project
 **Live demo: https://pakmedrecord.vercel.app**
 
 Demo accounts (password `demo1234`): patient CNIC `42101-9999999-1`, doctor CNIC `42101-1234567-1`.
+Clinic front desk (`/desk/signin`): `frontdesk@pakmedrecord.demo` / `desk-demo-1234`.
 
 PakMedRecord gives every patient in Pakistan one verified medical record that follows them across hospitals.
 
