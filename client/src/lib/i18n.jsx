@@ -6,7 +6,9 @@ import { UR, UR_PATTERNS } from './ur';
 // placeholder, title or aria-label whose English text is in the dictionary (and re-runs as React updates).
 const KEY = 'pakmedrecord.lang';
 const ATTRS = ['placeholder', 'aria-label', 'title'];
-const SKIP = new Set(['SCRIPT', 'STYLE', 'TEXTAREA', 'CODE', 'PRE', 'svg', 'CANVAS']);
+// never translate inside these (text the user typed, code); their placeholders still are
+const SKIP = new Set(['SCRIPT', 'STYLE', 'CODE', 'PRE', 'svg', 'CANVAS']);
+const NO_CHILDREN = new Set(['TEXTAREA']);
 
 const readLang = () => {
   try {
@@ -69,6 +71,7 @@ const walk = (root, fn) => {
   if (root.nodeType === 3) return fn(root);
   if (root.nodeType !== 1 || SKIP.has(root.nodeName) || root.closest?.('[data-no-translate]')) return;
   fn(root);
+  if (NO_CHILDREN.has(root.nodeName)) return;
   for (const child of root.childNodes) walk(child, fn);
 };
 
@@ -94,7 +97,9 @@ const startTranslating = () => {
   translate(document.body);
   observer = new MutationObserver((mutations) => {
     for (const m of mutations) {
-      if (m.type === 'characterData') translateText(m.target);
+      if (m.type === 'characterData') {
+        if (!NO_CHILDREN.has(m.target.parentNode?.nodeName) && !m.target.parentElement?.closest('[data-no-translate]')) translateText(m.target);
+      }
       else if (m.type === 'attributes') translateAttrs(m.target);
       else m.addedNodes.forEach(translate);
     }

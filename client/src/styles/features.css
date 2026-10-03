@@ -2,8 +2,11 @@
    sharing, clinic tools. Built on the tokens in global.css. */
 
 /* ---------- Urdu / right-to-left ---------- */
-:root[lang='ur'] body { font-family: 'Noto Naskh Arabic Variable', var(--font); }
-:root[lang='ur'] h1, :root[lang='ur'] h2, :root[lang='ur'] h3 { font-family: 'Noto Naskh Arabic Variable', var(--font-display, var(--font)); letter-spacing: 0; line-height: 1.5; }
+/* English letters (names, CNICs) keep the normal font; Urdu letters fall through to Naskh */
+:root[lang='ur'] body { font-family: 'Inter Variable', 'Noto Naskh Arabic Variable', system-ui, sans-serif; }
+:root[lang='ur'] h1, :root[lang='ur'] h2, :root[lang='ur'] h3 { font-family: 'Space Grotesk Variable', 'Noto Naskh Arabic Variable', system-ui, sans-serif; letter-spacing: 0; line-height: 1.5; }
+:root[lang='ur'] .btn, :root[lang='ur'] .input, :root[lang='ur'] .select, :root[lang='ur'] .textarea, :root[lang='ur'] .badge, :root[lang='ur'] .chip, :root[lang='ur'] .field-label, :root[lang='ur'] .nav-item { font-family: 'Inter Variable', 'Noto Naskh Arabic Variable', system-ui, sans-serif; }
+:root[lang='ur'] .date-tile { white-space: nowrap; }
 :root[lang='ur'] .eyebrow { letter-spacing: 0; }
 :root[dir='rtl'] .mono, :root[dir='rtl'] input[inputmode='numeric'], :root[dir='rtl'] input[type='email'], :root[dir='rtl'] code { direction: ltr; unicode-bidi: isolate; }
 :root[dir='rtl'] .input-wrap > svg { left: auto; right: 14px; }
@@ -265,3 +268,6 @@
   .landing .land-nav .btn-primary { padding: 0 12px; height: 40px; }
   .landing .land-nav .lang-toggle { padding: 0 6px; }
 }
+/* values like "B+", "500mg", "10:00" keep their own direction inside Urdu text */
+:root[dir='rtl'] strong, :root[dir='rtl'] b, :root[dir='rtl'] td, :root[dir='rtl'] .tag, :root[dir='rtl'] .chip, :root[dir='rtl'] .summary-row span { unicode-bidi: plaintext; }
+:root[dir='rtl'] .select, :root[dir='rtl'] .input { unicode-bidi: plaintext; }

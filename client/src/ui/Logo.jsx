@@ -27,7 +27,7 @@ export const LogoMark = ({ size = 34 }) => {
 };
 
 const Logo = ({ to = '/', size = 34, showText = true }) => (
-  <Link to={to} className="row gap-12" style={{ color: 'var(--text)' }} aria-label="PakMedRecord home">
+  <Link to={to} className="row gap-12" style={{ color: 'var(--text)' }} aria-label="PakMedRecord home" data-no-translate dir="ltr">
     <LogoMark size={size} />
     {showText && (
       <span style={{ font: '700 19px/1 var(--font-display)', letterSpacing: '-0.02em' }}>

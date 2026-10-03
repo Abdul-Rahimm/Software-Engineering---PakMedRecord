@@ -149,7 +149,7 @@ const Appointments = () => {
                 <div className="row gap-12">
                   <h3 style={{ fontSize: 16 }}>{d.toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long' })}</h3>
                   {isToday && <span className="badge badge-green">Today</span>}
-                  <span className="subtle mono" style={{ fontSize: 12 }}>{items.length} visit{items.length === 1 ? '' : 's'}</span>
+                  <span className="subtle mono" style={{ fontSize: 12 }}>{`${items.length} visit${items.length === 1 ? '' : 's'}`}</span>
                 </div>
                 <AnimatePresence>
                   {items.map((a) => {

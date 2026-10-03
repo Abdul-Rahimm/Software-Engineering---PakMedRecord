@@ -38,7 +38,7 @@ const FollowUps = ({ cnic, compact = false }) => {
       <div className="row between wrap gap-8">
         <h2 className="section-title row gap-8"><AssistantGlyph size={16} /> Follow-ups</h2>
         <div className="row gap-8">
-          {state.data && <span className="subtle" style={{ fontSize: 12 }}>Checked {formatDateTime(state.data.checkedAt)}</span>}
+          {state.data && <span className="subtle" style={{ fontSize: 12 }}>{`Checked ${formatDateTime(state.data.checkedAt)}`}</span>}
           <button className="btn btn-ghost btn-sm btn-icon" onClick={run} disabled={state.loading} aria-label="Check again"><FiRefreshCw className={state.loading ? 'spin' : ''} /></button>
         </div>
       </div>

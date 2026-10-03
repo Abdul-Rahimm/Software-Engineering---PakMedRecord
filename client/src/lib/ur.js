@@ -1175,6 +1175,13 @@ export const UR = {
 const DAYS = { Sun: 'اتوار', Mon: 'پیر', Tue: 'منگل', Wed: 'بدھ', Thu: 'جمعرات', Fri: 'جمعہ', Sat: 'ہفتہ' };
 const MONTHS = { Jan: 'جنوری', Feb: 'فروری', Mar: 'مارچ', Apr: 'اپریل', May: 'مئی', Jun: 'جون', Jul: 'جولائی', Aug: 'اگست', Sep: 'ستمبر', Oct: 'اکتوبر', Nov: 'نومبر', Dec: 'دسمبر' };
 const tr = (s) => UR[s] || s;
+const LONG_MONTHS = { January: 'جنوری', February: 'فروری', March: 'مارچ', April: 'اپریل', May: 'مئی', June: 'جون', July: 'جولائی', August: 'اگست', September: 'ستمبر', October: 'اکتوبر', November: 'نومبر', December: 'دسمبر' };
+// time of day the way people say it: صبح / دوپہر / شام / رات
+const partOfDay = (h24) => (h24 >= 4 && h24 < 12 ? 'صبح' : h24 < 16 ? 'دوپہر' : h24 < 19 ? 'شام' : 'رات');
+const lookupTime = (t) => {
+  const m = String(t).match(/^(\d+):(\d+) (AM|PM)$/);
+  return m ? `${m[1]}:${m[2]} ${partOfDay(Number(m[1]) % 12 + (m[3] === 'PM' ? 12 : 0))}` : t;
+};
 
 // Phrases with values in them: [regex, (...groups) => urdu]
 export const UR_PATTERNS = [
@@ -1201,5 +1208,14 @@ export const UR_PATTERNS = [
   [/^(\d+) (Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec) (\d{4})$/, (d, m, y) => `${d} ${MONTHS[m]} ${y}`],
   [/^(\d+) (Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)$/, (d, m) => `${d} ${MONTHS[m]}`],
   [/^(Mon|Tue|Wed|Thu|Fri|Sat|Sun) (\d+) (Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)$/, (w, d, m) => `${DAYS[w]} ${d} ${MONTHS[m]}`],
-  [/^(\d+):(\d+) (AM|PM)$/, (h, m, p) => `${h}:${m} ${p === 'AM' ? 'قبل دوپہر' : 'بعد دوپہر'}`],
+  [/^(\d+):(\d+) (AM|PM)$/, (h, m, p) => `${h}:${m} ${partOfDay(Number(h) % 12 + (p === 'PM' ? 12 : 0))}`],
+  [/^(\d+) visits?$/, (n) => `${n} معائنے`],
+  [/^(\d+) years old$/, (n) => `عمر ${n} سال`],
+  [/^(\d+) yrs$/, (n) => `${n} سال`],
+  [/^BMI ([\d.]+) · (.+)$/, (b, label) => `بی ایم آئی ${b} · ${tr(label)}`],
+  [/^(Monday|Tuesday|Wednesday|Thursday|Friday|Saturday|Sunday),? (\d+) (January|February|March|April|May|June|July|August|September|October|November|December)( \d{4})?$/, (w, d, m, y) => `${tr(w)} ${d} ${LONG_MONTHS[m]}${y || ''}`],
+  [/^(Monday|Tuesday|Wednesday|Thursday|Friday|Saturday|Sunday) · (.+)$/, (w, rest) => `${tr(w)} · ${lookupTime(rest)}`],
+  [/^(Mon|Tue|Wed|Thu|Fri|Sat|Sun) (\d+) (Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Sept|Oct|Nov|Dec)$/, (w, d, m) => `${DAYS[w]} ${d} ${MONTHS[m.slice(0, 3)]}`],
+  [/^(\d+) (Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Sept|Oct|Nov|Dec) (\d{4}), (\d+:\d+)$/, (d, m, y, t) => `${d} ${MONTHS[m.slice(0, 3)]} ${y}، ${t}`],
+  [/^Checked (\d+ \w+ \d{4}, \d+:\d+)$/, (d) => `جانچ: ${d}`],
 ];
