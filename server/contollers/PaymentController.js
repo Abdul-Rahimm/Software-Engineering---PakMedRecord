@@ -56,7 +56,8 @@ const checkout = expressAsyncHandler(async (req, res) => {
 
   const { account } = await accountForDoctor(a.doctorCNIC);
   if (!account) return res.status(400).json({ error: 'This clinic does not take online payments yet. Pay at the clinic.' });
-  const tracker = await safepay.createTracker(account, fee);
+  const secret = decrypt(account.secretKeyEnc);
+  const [tracker, tbt] = await Promise.all([safepay.createTracker(account, secret, fee), safepay.passportToken(account, secret)]);
   const payment = await Payment.create({
     appointmentId: a._id, patientCNIC: a.patientCNIC, doctorCNIC: a.doctorCNIC, amount: fee, provider: 'safepay',
     txnRef: newTxnRef(), accountId: account._id, environment: account.environment, tracker,
@@ -64,28 +65,18 @@ const checkout = expressAsyncHandler(async (req, res) => {
   const api = API_URL(req);
   const url = safepay.checkoutUrl(account, {
     tracker,
-    orderId: payment.txnRef,
+    tbt,
     redirectUrl: `${api}/payments/safepay/return/${payment.txnRef}`,
     cancelUrl: `${api}/payments/safepay/cancel/${payment.txnRef}`,
   });
   res.status(201).json({ payment, checkout: { url } });
 });
 
-// Safepay sends the browser back here (query string or form post) with tracker + sig
+// Safepay sends the browser back here. Whatever the query says, we confirm the order's state with
+// Safepay directly (server to server, with the merchant secret) before marking it paid.
 const safepayReturn = expressAsyncHandler(async (req, res) => {
-  const p = { ...req.query, ...(req.body || {}) };
   const payment = await Payment.findOne({ txnRef: req.params.txnRef, provider: 'safepay' });
-  if (payment && payment.status === 'initiated') {
-    const account = await PaymentAccount.findById(payment.accountId);
-    const tracker = p.tracker || p.token || payment.tracker;
-    if (account && tracker === payment.tracker && safepay.verifyRedirect(decrypt(account.secretKeyEnc), tracker, p.sig)) {
-      await markPaid(payment, p.reference || tracker, 'Paid with Safepay');
-    } else {
-      // unsigned or mismatched: leave it pending; the webhook or status check will settle it
-      payment.message = 'Waiting for confirmation from Safepay';
-      await payment.save();
-    }
-  }
+  if (payment && payment.status === 'initiated') await settlePending({ _id: payment._id }, 0);
   res.redirect(303, `${APP_URL()}/payments/result?ref=${encodeURIComponent(req.params.txnRef)}`);
 });
 
@@ -268,12 +259,14 @@ const saveAccount = expressAsyncHandler(async (req, res) => {
   let acc = await PaymentAccount.findOne(owner);
   if (!acc && !String(secretKey || '').trim()) return res.status(400).json({ error: 'Enter your Safepay secret key' });
 
-  // check the public key really works by creating a Rs 1 test order (never charged)
+  // check both keys really work together by opening a test order (never charged)
   const candidate = { environment, publicKey: String(publicKey).trim() };
+  const secretToCheck = String(secretKey || '').trim() || decrypt(acc?.secretKeyEnc);
   try {
-    await safepay.createTracker(candidate, 1);
+    await safepay.createTracker(candidate, secretToCheck, 500);
   } catch (err) {
-    return res.status(400).json({ error: `Safepay did not accept this public key for ${environment}. ${err.message}` });
+    const which = err.status === 401 || err.status === 403 ? 'secret key' : 'keys';
+    return res.status(400).json({ error: `Safepay did not accept these ${which} for ${environment === 'production' ? 'live' : 'sandbox'} mode (${err.message}). Check you copied them from the right Safepay environment.` });
   }
   if (!acc) acc = new PaymentAccount({ ...owner });
   acc.environment = environment;
