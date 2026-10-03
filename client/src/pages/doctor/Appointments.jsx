@@ -155,7 +155,7 @@ const Appointments = () => {
                   {items.map((a) => {
                     const p = data.patientsById[a.patientCNIC];
                     return (
-                      <motion.div key={a._id} layout initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 40 }} className="glass feed-item" style={{ borderRadius: 18 }}>
+                      <motion.div key={a._id} layout initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 40 }} className="glass feed-item appt-item" style={{ borderRadius: 18 }}>
                         <div className="date-tile" style={{ width: 76 }}>
                           <FiClock size={13} style={{ color: 'var(--cyan)' }} />
                           <span className="d" style={{ fontSize: 15, marginTop: 4 }}>{formatTime(a.time)}</span>

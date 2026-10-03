@@ -61,7 +61,7 @@ const Landing = () => {
           <ThemeToggle />
           <Link to="/find-doctors" className="btn btn-ghost hide-sm">Find a doctor</Link>
           <Link to="/doctor/signin" className="btn btn-ghost hide-sm">Doctor sign in</Link>
-          <Link to="/patient/signin" className="btn btn-primary">Patient sign in</Link>
+          <Link to="/patient/signin" className="btn btn-primary"><span className="hide-sm">Patient sign in</span><span className="show-sm">Sign in</span></Link>
         </div>
       </motion.nav>
 

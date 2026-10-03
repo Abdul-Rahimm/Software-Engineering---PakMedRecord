@@ -205,3 +205,63 @@
   .hours-day { width: 100%; padding-top: 0; }
   .hours-row input[type='time'] { width: auto !important; flex: 1 1 110px; min-width: 0; }
 }
+
+/* ---------- phone polish ---------- */
+.show-sm { display: none; }
+@media (max-width: 560px) {
+  .show-sm { display: inline; }
+  .land-nav .btn { padding: 0 12px; }
+
+  /* overview stat tiles: compact row instead of one giant card each */
+  .grid:has(> * > .stat), .grid:has(> .stat) { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+  .grid-3:has(> * > .stat) { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
+  .stat.card-pad { padding: 14px; gap: 6px; }
+  .stat .stat-icon { width: 34px; height: 34px; border-radius: 11px; }
+  .stat .stat-icon svg { width: 16px; height: 16px; }
+  .stat .stat-arrow { display: none; }
+  .stat .stat-value { font-size: 28px; margin-top: 2px; }
+  .stat .stat-label { font-size: 12.5px; line-height: 1.3; }
+
+  /* the 3D health card in the overview hero */
+  .dash-hero { padding: 22px 18px; gap: 18px; }
+  .dash-hero-card { transform: scale(.86); transform-origin: center; margin: -14px 0; }
+
+  /* AI button: smaller, out of the way of content */
+  .asst-launcher { width: 48px; height: 48px; border-radius: 16px; right: 12px; bottom: calc(12px + env(safe-area-inset-bottom)); }
+  .asst-launcher svg { width: 20px; height: 20px; }
+  .content { padding-bottom: 96px; }
+
+  /* sign-in page: drop the 3D orb behind the logo on phones */
+  .auth .auth-visual .scene-fill { display: none; }
+  .auth .auth-visual { min-height: 0; }
+  .auth .auth-visual-top { padding: 20px 20px 0; }
+  .auth .auth-visual-copy { padding: 16px 20px 22px; gap: 10px; }
+  .auth .auth-visual-copy h2 { font-size: 26px; }
+
+  .search, .search.input-wrap { width: 100%; }
+
+  /* patient file header actions in a row */
+  .history-count { flex-direction: row; flex-wrap: wrap; }
+  .history-hero .avatar { --size: 56px !important; }
+
+  /* doctor appointment cards: time + patient on top, actions below */
+  .appt-item { display: grid !important; grid-template-columns: auto minmax(0, 1fr); gap: 10px 12px; align-items: center; }
+  .appt-item > .avatar { display: none; }
+  .appt-item > .date-tile { width: 76px; grid-row: span 2; align-self: start; }
+  .appt-item > .badge { justify-self: start; grid-column: 2; }
+  .appt-item > .row { grid-column: 1 / -1; justify-content: flex-start !important; flex-wrap: nowrap !important; }
+  .appt-item > .row .btn-icon { width: 34px; flex-shrink: 0; }
+  .appt-item .mono { white-space: nowrap; }
+  .appt-item .truncate { white-space: normal; }
+
+  .page-actions, header .row.gap-12.wrap { width: 100%; }
+  h1 { word-break: break-word; }
+}
+@media (max-width: 560px) {
+  .landing .land-nav { padding: 0 6px 0 12px; gap: 4px; left: 10px; right: 10px; }
+  .landing .land-nav > .row { gap: 0 !important; flex-shrink: 0; }
+  .landing .land-nav > a.row { gap: 8px !important; flex-shrink: 1; min-width: 0; }
+  .landing .land-nav > a.row span { font-size: 17px; }
+  .landing .land-nav .btn-primary { padding: 0 12px; height: 40px; }
+  .landing .land-nav .lang-toggle { padding: 0 6px; }
+}
