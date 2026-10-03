@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
-  FiActivity, FiAlertOctagon, FiCheck, FiCopy, FiDollarSign, FiFlag, FiKey, FiLogOut, FiSearch, FiShield, FiUserCheck, FiUsers, FiX,
+  FiActivity, FiAlertOctagon, FiCheck, FiLock, FiCopy, FiDollarSign, FiFlag, FiKey, FiLogOut, FiSearch, FiShield, FiUserCheck, FiUsers, FiX,
 } from 'react-icons/fi';
 import api from '../../api';
 import { clearSession, getSession } from '../../session';
@@ -15,6 +15,7 @@ import { LangToggle } from '../../lib/i18n';
 import { useFetch } from '../../lib/data';
 import { apiError, formatCNIC, formatDate, formatDateTime } from '../../lib/format';
 import BillingTab from './BillingTab';
+import { PasswordCard, TwoFactorCard } from '../shared/Security';
 import '../dashboard.css';
 
 const TABS = [
@@ -25,6 +26,7 @@ const TABS = [
   { id: 'reports', label: 'Reports', icon: FiFlag },
   { id: 'partners', label: 'Partners', icon: FiKey },
   { id: 'errors', label: 'Errors', icon: FiAlertOctagon },
+  { id: 'account', label: 'My account', icon: FiLock },
 ];
 
 const Stat = ({ label, value, tone }) => (
@@ -329,6 +331,17 @@ const ErrorsTab = () => {
   );
 };
 
+const AccountTab = () => {
+  const { data } = useFetch(async () => (await api.get('/admin/me')).data, []);
+  return (
+    <div className="stack gap-20" style={{ maxWidth: 820 }}>
+      {data && <p className="muted">Signed in as <strong>{data.name}</strong> · {data.email}</p>}
+      <TwoFactorCard />
+      <PasswordCard minLength={12} />
+    </div>
+  );
+};
+
 const AdminApp = () => {
   const navigate = useNavigate();
   const session = getSession();
@@ -337,7 +350,7 @@ const AdminApp = () => {
     if (session?.role !== 'admin') navigate('/admin/signin', { replace: true });
   }, [session, navigate]);
   if (session?.role !== 'admin') return null;
-  const Tab = { overview: Overview, doctors: VerificationTab, users: UsersTab, payments: BillingTab, reports: ReportsTab, partners: PartnersTab, errors: ErrorsTab }[tab];
+  const Tab = { overview: Overview, doctors: VerificationTab, users: UsersTab, payments: BillingTab, account: AccountTab, reports: ReportsTab, partners: PartnersTab, errors: ErrorsTab }[tab];
   return (
     <div className="admin">
       <header className="public-head">

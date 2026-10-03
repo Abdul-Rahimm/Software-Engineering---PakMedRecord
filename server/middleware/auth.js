@@ -34,7 +34,7 @@ const accountStatus = async (role, subject) => {
     ? {
         exists: true,
         disabled: Boolean(doc.disabled),
-        changedAt: doc.passwordChangedAt ? Math.floor(new Date(doc.passwordChangedAt).getTime() / 1000) : 0,
+        changedAtMs: doc.passwordChangedAt ? new Date(doc.passwordChangedAt).getTime() : 0,
         verified: role !== 'doctor' || !doc.verification?.status || doc.verification.status === 'verified',
         clinicId: doc.clinicId ? String(doc.clinicId) : undefined,
       }
@@ -60,7 +60,8 @@ const requireAuth = async (req, res, next) => {
   const { role, cnic, id, guardian, iat } = claims;
   try {
     const status = await accountStatus(role, cnic ?? id);
-    if (!status.exists || status.changedAt > iat) {
+    // tokens are timestamped in whole seconds; anything issued before the password change is refused
+    if (!status.exists || status.changedAtMs > iat * 1000) {
       return res.status(401).json({ error: 'Session expired, please sign in again' });
     }
     if (status.disabled) {

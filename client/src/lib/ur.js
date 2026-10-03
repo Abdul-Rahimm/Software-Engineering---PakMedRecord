@@ -1,6 +1,9 @@
 // English -> Urdu interface strings, used by the DOM translator in i18n.jsx.
 // Keys are the English text exactly as rendered (whitespace collapsed).
 export const UR = {
+  "My account": "میرا اکاؤنٹ",
+  "Changing it signs you out on every other device.": "اسے تبدیل کرنے سے آپ باقی تمام آلات پر سائن آؤٹ ہو جائیں گے۔",
+  "Current password": "موجودہ پاس ورڈ",
   "Payments": "ادائیگیاں",
   "Platform revenue": "پلیٹ فارم کی آمدنی",
   "Online fees processed": "آن لائن فیسیں",

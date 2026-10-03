@@ -159,7 +159,7 @@ const resetPassword = expressAsyncHandler(async (req, res) => {
   user.password = await bcrypt.hash(String(password), 10);
   user.passwordResetTokenHash = undefined;
   user.passwordResetExpires = undefined;
-  user.passwordChangedAt = new Date(Date.now() - 1000);
+  user.passwordChangedAt = new Date();
   // they proved they own the email
   if (user.emailVerified === false) user.emailVerified = true;
   await user.save();

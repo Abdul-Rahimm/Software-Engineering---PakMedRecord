@@ -5,7 +5,7 @@ const bcrypt = require('bcrypt');
 const expressAsyncHandler = require('express-async-handler');
 const { MODELS, findBySubject, newRecoveryCodes } = require('../lib/session');
 const { generateSecret, verifyTotp, otpauthUrl } = require('../lib/totp');
-const { forgetAccountStatus } = require('../middleware/auth');
+const { forgetAccountStatus, signToken } = require('../middleware/auth');
 const { deleteFile } = require('../lib/files');
 const MedicalRecord = require('../models/RecordModel');
 const TempRecord = require('../models/tempRecordModel');
@@ -73,6 +73,30 @@ const twoFactorDisable = expressAsyncHandler(async (req, res) => {
   user.twoFactor = { enabled: false, secret: undefined, pendingSecret: undefined, recoveryHashes: [] };
   await user.save();
   res.status(200).json({ message: 'Two-step sign-in is off' });
+});
+
+// ---------- password ----------
+
+// POST /account/password { currentPassword, newPassword } (any signed-in account with a password).
+// Signs out every other session; the caller gets a fresh token to stay signed in here.
+const changePassword = expressAsyncHandler(async (req, res) => {
+  const { currentPassword, newPassword } = req.body || {};
+  const user = await me(req);
+  if (!user) return res.status(404).json({ error: 'Account not found' });
+  if (!user.password) return res.status(400).json({ error: 'This account signs in with Google and has no password to change.' });
+  if (!(await bcrypt.compare(String(currentPassword || ''), user.password))) return res.status(401).json({ error: 'Your current password is not correct' });
+  const next = String(newPassword || '');
+  const min = ['admin', 'staff'].includes(req.user.role) ? 12 : 8;
+  if (next.length < min) return res.status(400).json({ error: `Use at least ${min} characters` });
+  if (await bcrypt.compare(next, user.password)) return res.status(400).json({ error: 'Choose a password different from your current one' });
+  user.password = await bcrypt.hash(next, 10);
+  user.passwordChangedAt = new Date();
+  await user.save();
+  forgetAccountStatus(req.user.role, subject(req.user));
+  // timestamp the new session just after the change so it stays valid
+  const iat = Math.ceil((user.passwordChangedAt.getTime() + 1) / 1000);
+  const token = signToken(req.user.role, subject(req.user), { iat, ...(req.user.guardian && { guardian: req.user.guardian }) });
+  res.status(200).json({ message: 'Password changed. You have been signed out on other devices.', token });
 });
 
 // ---------- export ----------
@@ -201,5 +225,5 @@ const deleteAccount = expressAsyncHandler(async (req, res) => {
 });
 
 module.exports = {
-  accessLog, noDependents, twoFactorStatus, twoFactorSetup, twoFactorEnable, twoFactorDisable, exportData, deleteAccount, purgePatient, patientBundle,
+  changePassword, accessLog, noDependents, twoFactorStatus, twoFactorSetup, twoFactorEnable, twoFactorDisable, exportData, deleteAccount, purgePatient, patientBundle,
 };

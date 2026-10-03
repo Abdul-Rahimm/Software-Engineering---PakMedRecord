@@ -1,10 +1,10 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
-  FiAlertTriangle, FiBell, FiCopy, FiDownload, FiEye, FiLock, FiMail, FiMessageCircle, FiShield, FiSmartphone, FiTrash2,
+  FiAlertTriangle, FiBell, FiCopy, FiKey, FiDownload, FiEye, FiLock, FiMail, FiMessageCircle, FiShield, FiSmartphone, FiTrash2,
 } from 'react-icons/fi';
 import api from '../../api';
-import { clearSession } from '../../session';
+import { clearSession, getSession, saveSession } from '../../session';
 import { useShell } from '../../layout/ShellContext';
 import { useFetch, useServerOptions } from '../../lib/data';
 import { apiError, formatDateTime } from '../../lib/format';
@@ -15,7 +15,7 @@ import QRCode from '../../ui/QRCode';
 import { useFeedback } from '../../ui/Feedback';
 import '../dashboard.css';
 
-const TwoFactorCard = () => {
+export const TwoFactorCard = () => {
   const { toast } = useFeedback();
   const { data, reload } = useFetch(async () => (await api.get('/account/2fa')).data, []);
   const [setup, setSetup] = useState(null);
@@ -100,6 +100,47 @@ const TwoFactorCard = () => {
           <Button className="btn btn-danger btn-block" disabled={code.length !== 6} loading={busy} onClick={disable}>Turn off</Button>
         </div>
       </Modal>
+    </section>
+  );
+};
+
+// Change password with the current one; other devices are signed out and this one keeps a fresh session
+export const PasswordCard = ({ minLength = 8 }) => {
+  const { toast } = useFeedback();
+  const [form, setForm] = useState({ current: '', next: '', confirm: '' });
+  const [busy, setBusy] = useState(false);
+  const mismatch = form.confirm && form.next !== form.confirm;
+  const save = async (e) => {
+    e.preventDefault();
+    setBusy(true);
+    try {
+      const { data } = await api.post('/account/password', { currentPassword: form.current, newPassword: form.next });
+      saveSession({ ...getSession(), token: data.token });
+      setForm({ current: '', next: '', confirm: '' });
+      toast(data.message);
+    } catch (err) {
+      toast(apiError(err), 'error');
+    } finally {
+      setBusy(false);
+    }
+  };
+  return (
+    <section className="glass card-pad-lg stack gap-16">
+      <div className="row gap-12">
+        <span className="empty-orb" style={{ width: 44, height: 44 }}><FiKey size={20} /></span>
+        <div>
+          <h2 className="section-title">Password</h2>
+          <p className="subtle" style={{ fontSize: 13.5 }}>Changing it signs you out on every other device.</p>
+        </div>
+      </div>
+      <form className="stack gap-12" onSubmit={save}>
+        <Field label="Current password" type="password" autoComplete="current-password" value={form.current} onChange={(e) => setForm({ ...form, current: e.target.value })} />
+        <div className="grid grid-2" style={{ gap: 12 }}>
+          <Field label="New password" type="password" autoComplete="new-password" value={form.next} onChange={(e) => setForm({ ...form, next: e.target.value })} hint={`At least ${minLength} characters`} />
+          <Field label="Confirm new password" type="password" autoComplete="new-password" value={form.confirm} onChange={(e) => setForm({ ...form, confirm: e.target.value })} error={mismatch ? 'Passwords don’t match' : undefined} />
+        </div>
+        <Button className="btn btn-primary" style={{ alignSelf: 'flex-start' }} loading={busy} disabled={!form.current || form.next.length < minLength || form.next !== form.confirm}>Change password</Button>
+      </form>
     </section>
   );
 };
@@ -247,6 +288,7 @@ const Security = () => {
       <PageHeader eyebrow="Account" title="Security & privacy" subtitle="Control how you sign in, who can see your information and what we send you." />
       <div className="stack gap-20" style={{ maxWidth: 880 }}>
         {!dependent && <TwoFactorCard />}
+        {!dependent && profile?.hasPassword !== false && <PasswordCard />}
         {role === 'patient' && <NotificationsCard />}
         {role === 'patient' && <AccessLogCard />}
         {!dependent && <DataCard role={role} />}
