@@ -178,3 +178,30 @@
 .hbar > div { height: 10px; border-radius: 6px; background: var(--tint-2); overflow: hidden; }
 .hbar i { display: block; height: 100%; border-radius: 6px; background: #12a877; }
 .hbar b { font-weight: 600; text-align: right; }
+
+/* ---------- responsive fixes ---------- */
+.grid > *, .chart-card, .chart-box { min-width: 0; }
+.chart-box canvas { max-width: 100%; }
+.segmented { max-width: 100%; overflow-x: auto; scrollbar-width: none; }
+.segmented::-webkit-scrollbar { display: none; }
+.segmented button { flex-shrink: 0; }
+.drawer-prefs { display: none; align-items: center; justify-content: space-between; gap: 8px; padding: 6px 10px; }
+.public-head { flex-wrap: wrap; }
+.head-brand { min-width: 0; }
+.head-brand .badge { max-width: 46vw; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; display: inline-block; line-height: 24px; }
+@media (max-width: 960px) { .drawer .drawer-prefs { display: flex; } }
+@media (max-width: 480px) {
+  .topbar-extra { display: none !important; }
+  .topbar { gap: 4px; padding-left: 8px; padding-right: 8px; }
+  .public-head { padding: 10px 12px; gap: 8px; }
+  .public-head .btn-sm { padding: 0 8px; }
+  .lang-toggle { min-width: 0; }
+}
+@media (max-width: 400px) {
+  .head-brand .badge { display: none; }
+}
+@media (max-width: 560px) {
+  .hours-row { gap: 10px; }
+  .hours-day { width: 100%; padding-top: 0; }
+  .hours-row input[type='time'] { width: auto !important; flex: 1 1 110px; min-width: 0; }
+}

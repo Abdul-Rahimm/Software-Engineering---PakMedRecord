@@ -164,6 +164,11 @@ const AppShell = ({ role }) => {
         ])}
       </nav>
 
+      <div className="drawer-prefs">
+        <span className="subtle" style={{ fontSize: 13 }}>Language &amp; theme</span>
+        <div className="row gap-4"><LangToggle /><ThemeToggle /></div>
+      </div>
+
       <div className="user-card">
         <Avatar first={profile?.firstName} last={profile?.lastName} seed={cnic} size={40} />
         <div className="grow" style={{ minWidth: 0 }}>
@@ -214,8 +219,7 @@ const AppShell = ({ role }) => {
             <button className="btn btn-ghost btn-icon" onClick={() => setPalette(true)} aria-label="Search">
               <FiSearch size={18} />
             </button>
-            <LangToggle />
-            <ThemeToggle />
+            <span className="topbar-extra row gap-4"><LangToggle /><ThemeToggle /></span>
             <NotificationBell />
           </div>
         </header>

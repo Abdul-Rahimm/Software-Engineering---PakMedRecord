@@ -339,12 +339,12 @@ const AdminApp = () => {
   return (
     <div className="admin">
       <header className="public-head">
-        <div className="row gap-12"><Logo to="/admin" /><span className="badge badge-cyan">Admin</span></div>
+        <div className="row gap-12 head-brand"><Logo to="/admin" /><span className="badge badge-cyan">Admin</span></div>
         <div className="row gap-8">
           <span className="subtle hide-sm" style={{ fontSize: 13 }}>{session.name}</span>
           <LangToggle />
           <ThemeToggle />
-          <button className="btn btn-ghost btn-sm" onClick={() => { clearSession(); navigate('/admin/signin'); }}><FiLogOut /> Sign out</button>
+          <button className="btn btn-ghost btn-sm" onClick={() => { clearSession(); navigate('/admin/signin'); }}><FiLogOut /> <span className="hide-sm">Sign out</span></button>
         </div>
       </header>
       <main className="public-main wide">
