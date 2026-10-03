@@ -32,8 +32,8 @@ const appointmentSchema = new mongoose.Schema({
     checkedInAt: { type: Date },
     fee: { type: Number, min: 0 },
     payment: {
-        status: { type: String, enum: ['unpaid', 'paid', 'refunded'], default: 'unpaid' },
-        method: { type: String, enum: ['clinic', 'jazzcash', 'test', ''], default: '' },
+        status: { type: String, enum: ['unpaid', 'paid', 'refund_due', 'refunded'], default: 'unpaid' },
+        method: { type: String, enum: ['clinic', 'safepay', 'jazzcash', 'test', ''], default: '' },
         paidAt: { type: Date },
         paymentId: { type: mongoose.Schema.Types.ObjectId, ref: 'Payment' },
     },

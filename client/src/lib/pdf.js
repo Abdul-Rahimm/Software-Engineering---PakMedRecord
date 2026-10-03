@@ -358,7 +358,8 @@ export const downloadReceiptPDF = async ({ payment, appointment, doctor, patient
     ['Doctor', doctor ? `Dr. ${doctor.firstName} ${doctor.lastName}` : '—'],
     ['Clinic', doctor?.clinicAddress || doctor?.hospital || '—'],
     ['Appointment', appointment ? `${new Date(appointment.date).toLocaleDateString('en-GB', { timeZone: 'UTC' })} at ${appointment.time}` : '—'],
-    ['Method', { jazzcash: 'JazzCash', test: 'Test payment (no money moved)', clinic: 'Paid at clinic' }[payment.provider] || payment.provider],
+    ['Method', { safepay: 'Online (Safepay)', jazzcash: 'JazzCash', test: 'Test payment (no money moved)', clinic: 'Paid at clinic' }[payment.provider] || payment.provider],
+    ...(payment.status === 'refunded' ? [['Status', `Refunded${payment.refundedAt ? ` ${formatDateTime(payment.refundedAt)}` : ''}`]] : payment.status === 'refund_due' ? [['Status', 'Refund due']] : []),
     ['Reference', payment.providerRef || '—'],
   ];
   let y = 130;

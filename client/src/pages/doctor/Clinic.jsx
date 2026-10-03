@@ -8,6 +8,7 @@ import { Avatar, Button, EmptyState, PageHeader, Skeleton } from '../../ui/Bits'
 import Field from '../../ui/Field';
 import Modal from '../../ui/Modal';
 import PracticeStats from '../../ui/PracticeStats';
+import PaymentAccountCard from '../../ui/PaymentAccountCard';
 import { useFeedback } from '../../ui/Feedback';
 import '../dashboard.css';
 
@@ -123,6 +124,7 @@ const Clinic = () => {
           </section>
         )}
       </div>
+      {admin && <div style={{ marginBottom: 24 }}><PaymentAccountCard path={`/payments/account/clinic/${clinic._id}`} owner="the clinic's Safepay account" /></div>}
       {admin && <PracticeStats path={`/analytics/clinic/${clinic._id}`} title="Clinic performance" extra={(d) => d.perDoctor?.length > 0 && (
         <div className="table-wrap">
           <table className="table">

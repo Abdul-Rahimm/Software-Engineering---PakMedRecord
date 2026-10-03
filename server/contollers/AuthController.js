@@ -9,7 +9,7 @@ const { ROLES, TERMS_VERSION, hashToken, emailQuery, startEmailVerification, sta
 const { completeSignIn, verifySecondFactor } = require('../lib/session');
 const { forgetAccountStatus } = require('../middleware/auth');
 const { channels } = require('../lib/messaging');
-const { providers: paymentProviders } = require('../lib/payments');
+const { testModeEnabled } = require('../lib/payments');
 const { mailEnabled } = require('../lib/mailer');
 const { googleEnabled, verifyGoogleIdToken } = require('../lib/firebase');
 const { isCNIC } = require('../lib/validate');
@@ -23,7 +23,8 @@ const options = (req, res) => res.status(200).json({
   passwordReset: mailEnabled(),
   google: googleEnabled(),
   channels: channels(),
-  payments: paymentProviders(),
+  // online payment depends on each clinic's own Safepay account; this only says whether demo payments are on
+  payments: testModeEnabled() ? ['test'] : [],
   termsVersion: TERMS_VERSION,
 });
 

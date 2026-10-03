@@ -12,6 +12,7 @@ import { ThemeToggle } from '../../ui/Theme';
 import { LangToggle } from '../../lib/i18n';
 import { useFetch } from '../../lib/data';
 import { apiError, formatCNIC, formatTime, maskCNIC, parseCNIC } from '../../lib/format';
+import RefundButton from '../../ui/RefundButton';
 import '../dashboard.css';
 
 const todayKey = () => new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Karachi' });
@@ -191,8 +192,9 @@ const DeskApp = () => {
                 </div>
                 <div className="row between wrap gap-8 subtle" style={{ fontSize: 13.5 }}>
                   <span>{doctorName(a.doctorCNIC)}</span>
-                  <span>{a.payment?.status === 'paid' ? <span className="badge badge-green">Paid</span> : a.fee ? `Rs ${a.fee}` : ''}</span>
+                  <span>{a.payment?.status === 'paid' ? <span className="badge badge-green">Paid</span> : a.payment?.status === 'refund_due' ? <span className="badge badge-amber">Refund due</span> : a.payment?.status === 'refunded' ? <span className="badge">Refunded</span> : a.fee ? `Rs ${a.fee}` : ''}</span>
                 </div>
+                <RefundButton appointment={a} onDone={() => reload(true)} className="btn btn-sm btn-block" />
                 {a.reason && <div className="subtle" style={{ fontSize: 13 }}>{a.reason}</div>}
                 {a.status === 'pending' && (
                   <div className="desk-card-actions">
@@ -215,7 +217,7 @@ const DeskApp = () => {
                     <td><strong>{a.patient ? `${a.patient.firstName} ${a.patient.lastName}` : '—'}</strong><div className="subtle mono" style={{ fontSize: 12 }}>{formatCNIC(a.patientCNIC)}{a.patient?.phone ? ` · ${a.patient.phone}` : ''}</div>{a.reason && <div className="subtle" style={{ fontSize: 12.5 }}>{a.reason}</div>}</td>
                     <td>{doctorName(a.doctorCNIC)}</td>
                     <td>{a.status === 'pending' && a.checkedInAt ? <span className="badge badge-cyan">Waiting</span> : <StatusBadge status={a.status} />}</td>
-                    <td>{a.payment?.status === 'paid' ? <span className="badge badge-green">Paid</span> : a.fee ? `Rs ${a.fee}` : '—'}</td>
+                    <td>{a.payment?.status === 'paid' ? <span className="badge badge-green">Paid</span> : a.payment?.status === 'refund_due' ? <div className="stack gap-4"><span className="badge badge-amber">Refund due</span><RefundButton appointment={a} onDone={() => reload(true)} /></div> : a.payment?.status === 'refunded' ? <span className="badge">Refunded</span> : a.fee ? `Rs ${a.fee}` : '—'}</td>
                     <td>
                       {a.status === 'pending' && (
                         <div className="row gap-4 wrap" style={{ justifyContent: 'flex-end' }}>

@@ -4,7 +4,7 @@ import { AnimatePresence, motion } from 'framer-motion';
 import { FiCalendar, FiClock, FiCreditCard, FiDownload, FiHome, FiPlus, FiVideo, FiX } from 'react-icons/fi';
 import api from '../../api';
 import { useShell } from '../../layout/ShellContext';
-import { useFetch, fetchAllDoctors, indexBy, useServerOptions } from '../../lib/data';
+import { useFetch, fetchAllDoctors, indexBy } from '../../lib/data';
 import { downloadReceiptPDF } from '../../lib/pdf';
 import { apiError, apptDay, doctorName, formatTime } from '../../lib/format';
 import { Avatar, Button, EmptyState, PageHeader, Skeleton, StatusBadge } from '../../ui/Bits';
@@ -19,6 +19,8 @@ const startOfToday = () => {
   return d;
 };
 
+const PAY_LABEL = { paid: 'paid', refund_due: 'refund on its way', refunded: 'refunded', unpaid: 'unpaid' };
+
 // Video visits open 15 minutes before the slot and stay open for 2 hours
 const videoOpen = (a) => {
   const d = apptDay(a.date);
@@ -31,7 +33,6 @@ const videoOpen = (a) => {
 const MyAppointments = () => {
   const { cnic, profile } = useShell();
   const { toast } = useFeedback();
-  const options = useServerOptions();
   const [paying, setPaying] = useState(null);
   const [tab, setTab] = useState('upcoming');
   const [cancelling, setCancelling] = useState(null);
@@ -43,7 +44,10 @@ const MyAppointments = () => {
       api.get(`/appointments/mine/${cnic}`).then((r) => r.data.appointments),
       fetchAllDoctors(),
     ]);
-    return { appts, doctorsById: indexBy(doctors, 'doctorCNIC') };
+    // which online payment methods each unpaid upcoming appointment's clinic accepts
+    const unpaid = appts.filter((a) => a.status === 'pending' && a.fee > 0 && a.payment?.status !== 'paid').map((a) => a._id);
+    const payOptions = unpaid.length ? (await api.get('/payments/options', { params: { ids: unpaid.join(',') } }).catch(() => ({ data: {} }))).data : {};
+    return { appts, doctorsById: indexBy(doctors, 'doctorCNIC'), payOptions };
   }, [cnic]);
 
   const isUpcoming = (a) => a.status === 'pending' && apptDay(a.date) >= startOfToday();
@@ -71,27 +75,12 @@ const MyAppointments = () => {
 
   const upcomingCount = data?.appts.filter(isUpcoming).length ?? 0;
 
-  // Online payment: JazzCash posts a form to its hosted page; test mode opens our simulated checkout
+  // Online payment: Safepay's hosted checkout, or our simulated one in test mode
   const pay = async (a, provider) => {
     setPaying(a._id);
     try {
       const { data: res } = await api.post('/payments/checkout', { appointmentId: a._id, provider });
-      if (res.checkout.redirect) {
-        window.location.assign(res.checkout.redirect);
-        return;
-      }
-      const form = document.createElement('form');
-      form.method = res.checkout.method;
-      form.action = res.checkout.action;
-      Object.entries(res.checkout.fields).forEach(([k, v]) => {
-        const input = document.createElement('input');
-        input.type = 'hidden';
-        input.name = k;
-        input.value = v;
-        form.appendChild(input);
-      });
-      document.body.appendChild(form);
-      form.submit();
+      window.location.assign(res.checkout.url || res.checkout.redirect);
     } catch (err) {
       toast(apiError(err), 'error');
       setPaying(null);
@@ -154,7 +143,7 @@ const MyAppointments = () => {
                     <div className="tl-meta">
                       <span><FiClock /> {formatTime(a.time)}</span>
                       {a.mode === 'video' ? <span><FiVideo /> Video visit</span> : doc?.hospital && <span><FiHome /> {doc.clinicAddress || doc.hospital}</span>}
-                      {a.fee ? <span><FiCreditCard /> Rs {a.fee.toLocaleString('en-PK')} · {a.payment?.status === 'paid' ? 'paid' : 'unpaid'}</span> : null}
+                      {a.fee ? <span><FiCreditCard /> Rs {a.fee.toLocaleString('en-PK')} · {PAY_LABEL[a.payment?.status] || 'unpaid'}</span> : null}
                     </div>
                     {a.reason && <p className="muted" style={{ fontSize: 13.5 }}>“{a.reason}”</p>}
                     {a.status === 'cancelled' && (
@@ -168,12 +157,12 @@ const MyAppointments = () => {
                         ? <Link to={`/visit/${a._id}`} className="btn btn-primary btn-sm"><FiVideo /> Join video</Link>
                         : <span className="subtle" style={{ fontSize: 12 }}>Join opens 15 min before</span>
                     )}
-                    {isUpcoming(a) && a.fee > 0 && a.payment?.status !== 'paid' && (options?.payments || []).map((p) => (
-                      <Button key={p} className="btn btn-sm" loading={paying === a._id} onClick={() => pay(a, p)}>
-                        <FiCreditCard /> {p === 'jazzcash' ? 'Pay with JazzCash' : 'Pay online (test)'}
+                    {isUpcoming(a) && a.fee > 0 && a.payment?.status !== 'paid' && (data.payOptions[a._id] || []).map((p) => (
+                      <Button key={p} className={`btn btn-sm ${p === 'safepay' ? 'btn-primary' : ''}`} loading={paying === a._id} onClick={() => pay(a, p)}>
+                        <FiCreditCard /> {p === 'safepay' ? 'Pay online' : 'Pay online (test)'}
                       </Button>
                     ))}
-                    {a.payment?.status === 'paid' && a.payment.paymentId && <button className="btn btn-ghost btn-sm" onClick={() => receipt(a)}><FiDownload /> Receipt</button>}
+                    {['paid', 'refund_due', 'refunded'].includes(a.payment?.status) && a.payment.paymentId && <button className="btn btn-ghost btn-sm" onClick={() => receipt(a)}><FiDownload /> Receipt</button>}
                     {isUpcoming(a) && <button className="btn btn-danger btn-sm" onClick={() => setCancelling(a)}><FiX /> Cancel</button>}
                   </div>
                 </motion.div>

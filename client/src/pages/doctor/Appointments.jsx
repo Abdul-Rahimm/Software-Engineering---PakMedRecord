@@ -10,6 +10,7 @@ import { apiError, apptDay, formatCNIC, formatTime, fullName } from '../../lib/f
 import { Avatar, Button, EmptyState, PageHeader, Skeleton, StatusBadge } from '../../ui/Bits';
 import Segmented from '../../ui/Segmented';
 import { useFeedback } from '../../ui/Feedback';
+import RefundButton from '../../ui/RefundButton';
 import '../dashboard.css';
 
 const Appointments = () => {
@@ -172,7 +173,8 @@ const Appointments = () => {
                           <div className="row gap-8 wrap" style={{ marginTop: 4 }}>
                             {a.mode === 'video' && <span className="badge badge-cyan badge-plain"><FiVideo size={11} /> Video</span>}
                             {a.checkedInAt && a.status === 'pending' && <span className="badge badge-green badge-plain"><FiUserCheck size={11} /> Checked in</span>}
-                            {a.fee ? <span className={`badge badge-plain ${a.payment?.status === 'paid' ? 'badge-green' : ''}`}><FiDollarSign size={11} /> Rs {a.fee}{a.payment?.status === 'paid' ? ' paid' : ''}</span> : null}
+                            {a.fee ? <span className={`badge badge-plain ${a.payment?.status === 'paid' ? 'badge-green' : a.payment?.status === 'refund_due' ? 'badge-amber' : ''}`}><FiDollarSign size={11} /> Rs {a.fee}{{ paid: ' paid', refund_due: ' · refund due', refunded: ' · refunded' }[a.payment?.status] || ''}</span> : null}
+                            <RefundButton appointment={a} onDone={() => setData((d) => ({ ...d, appts: d.appts.map((x) => (x._id === a._id ? { ...x, payment: { ...x.payment, status: 'refunded' } } : x)) }))} />
                           </div>
                           {a.status === 'cancelled' && <div className="subtle" style={{ fontSize: 12.5, marginTop: 2 }}>Cancelled by {a.cancelledBy === 'doctor' ? 'you' : 'patient'}{a.cancelReason ? `: ${a.cancelReason}` : ''}</div>}
                         </div>

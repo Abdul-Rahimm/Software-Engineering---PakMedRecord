@@ -28,6 +28,7 @@ const PaymentRoutes = require('./routes/PaymentRoute');
 const PartnerRoutes = require('./routes/PartnerRoute');
 const { analyticsRouter, reportsRouter, cronRouter } = require('./routes/MiscRoute');
 const { errorHandler, recordError } = require('./lib/errors');
+const { safepayWebhook } = require('./contollers/PaymentController');
 
 // One shared connection per process; serverless instances reuse it across requests
 let dbReady;
@@ -70,6 +71,8 @@ app.use(async (req, res, next) => {
 });
 // partner API accepts larger JSON bodies (lab reports), so it parses its own
 app.use('/partners', PartnerRoutes);
+// Safepay webhooks are verified against the exact raw body, so they skip the JSON parser
+app.post('/payments/safepay/webhook/:accountId', express.raw({ type: () => true, limit: '100kb' }), safepayWebhook);
 app.use(express.json({ limit: '200kb' }));
 app.use('/doctor', DoctorRoutes);
 app.use('/patient', PatientRoutes);

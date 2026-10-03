@@ -4,6 +4,7 @@ const Doctor = require('../models/DoctorModel');
 const Payment = require('../models/PaymentModel');
 const Clinic = require('../models/ClinicModel');
 const { ACTIVE, createAppointment, describe } = require('../lib/appointments');
+const { flagRefund } = require('./PaymentController');
 const { slotsFor, scheduleOf } = require('../lib/availability');
 
 // Book an appointment with a doctor in the patient's care team
@@ -136,6 +137,7 @@ const cancelAppointment = async (req, res) => {
         appointment.status = 'cancelled';
         appointment.cancelledBy = role;
         appointment.cancelReason = req.body?.reason ? String(req.body.reason).trim().slice(0, 300) : undefined;
+        await flagRefund(appointment);
         await appointment.save();
 
         const other = role === 'doctor'

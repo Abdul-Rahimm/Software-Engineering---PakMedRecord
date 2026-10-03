@@ -45,7 +45,7 @@ export const TestCheckout = () => {
       <div className="stack gap-8">
         <span className="badge badge-amber" style={{ alignSelf: 'flex-start' }}><FiAlertTriangle /> Test mode: no real payment</span>
         <h1 style={{ fontSize: 26 }}>Pay consultation fee</h1>
-        <p className="muted">This is a simulated checkout for trying out PakMedRecord. In production, JazzCash opens here instead.</p>
+        <p className="muted">This is a simulated checkout for trying out PakMedRecord. Clinics that connect Safepay send patients to Safepay's secure checkout instead.</p>
       </div>
       {error ? <p className="field-error">{error}</p> : !data ? <Spinner /> : (
         <>
@@ -58,22 +58,55 @@ export const TestCheckout = () => {
   );
 };
 
-// Where JazzCash (or the test checkout) sends the patient back
+// Where Safepay (or the test checkout) sends the patient back. If the confirmation hasn't
+// arrived yet, ask the server to check with Safepay for a few seconds before giving up.
 export const PaymentResult = () => {
   const [params] = useSearchParams();
   const ref = params.get('ref');
-  const [{ data, error }] = usePayment(ref);
+  const [state, setState] = useState({ data: null, error: null });
   const cnic = getSession()?.cnic;
-  const paid = data?.payment?.status === 'paid';
+
+  useEffect(() => {
+    if (!ref) {
+      setState({ data: null, error: 'Missing payment reference' });
+      return undefined;
+    }
+    let tries = 0;
+    let timer;
+    let live = true;
+    const load = async () => {
+      try {
+        const { data } = await api.get(`/payments/${ref}`, { params: { check: 1 } });
+        if (!live) return;
+        setState({ data, error: null });
+        if (data.payment.status === 'initiated' && ++tries < 6) timer = setTimeout(load, 2500);
+      } catch (err) {
+        if (live) setState({ data: null, error: apiError(err) });
+      }
+    };
+    load();
+    return () => { live = false; clearTimeout(timer); };
+  }, [ref]);
+
+  const { data, error } = state;
+  const status = data?.payment?.status;
+  const view = {
+    paid: { icon: FiCheckCircle, ok: true, title: 'Payment received', text: 'Your doctor has been notified. You can download a receipt any time from My appointments.' },
+    initiated: { icon: FiAlertTriangle, ok: false, title: 'Confirming your payment…', text: 'Safepay hasn\'t confirmed it yet. If money was taken it will show as paid within a few minutes; you don\'t need to pay again.' },
+    cancelled: { icon: FiXCircle, ok: false, title: 'Payment cancelled', text: 'No money was taken. You can try again, or pay at the clinic.' },
+    failed: { icon: FiXCircle, ok: false, title: 'Payment not completed', text: 'No money was taken. You can try again, or pay at the clinic.' },
+    refund_due: { icon: FiAlertTriangle, ok: false, title: 'Refund on its way', text: 'This appointment was cancelled, so the clinic will refund you.' },
+    refunded: { icon: FiCheckCircle, ok: true, title: 'Refunded', text: 'The clinic has refunded this payment.' },
+  }[status] || {};
   return (
     <CenterCard>
       {error ? <p className="field-error">{error}</p> : !data ? <Spinner /> : (
         <div className="stack gap-16" style={{ textAlign: 'center' }}>
-          <div className="inbox-orb" style={paid ? undefined : { color: 'var(--rose-text)' }}>{paid ? <FiCheckCircle size={30} /> : <FiXCircle size={30} />}</div>
-          <h1 style={{ fontSize: 26 }}>{paid ? 'Payment received' : data.payment.status === 'initiated' ? 'Payment pending' : 'Payment not completed'}</h1>
-          <p className="muted">{paid ? 'Your doctor has been notified.' : data.payment.message || 'No money was taken. You can try again or pay at the clinic.'}</p>
+          <div className="inbox-orb" style={view.ok ? undefined : { color: status === 'initiated' ? 'var(--amber)' : 'var(--rose-text)' }}>{status === 'initiated' ? <Spinner size={26} /> : view.icon && <view.icon size={30} />}</div>
+          <h1 style={{ fontSize: 26 }}>{view.title}</h1>
+          <p className="muted">{view.text}</p>
           <Summary data={data} />
-          {paid && <button className="btn" onClick={() => downloadReceiptPDF(data)}>Download receipt</button>}
+          {['paid', 'refund_due', 'refunded'].includes(status) && <button className="btn" onClick={() => downloadReceiptPDF(data)}>Download receipt</button>}
           <Link to={cnic ? `/appointments/mine/${cnic}` : '/'} className="btn btn-primary btn-block">Back to my appointments</Link>
         </div>
       )}

@@ -13,6 +13,7 @@ const { scheduleFor } = require('../lib/epi');
 const { pktDate, addDays } = require('../lib/dates');
 const { formatTime } = require('../lib/time');
 const { deleteFile } = require('../lib/files');
+const { settlePending } = require('./PaymentController');
 
 const requireCron = (req, res, next) => {
   const secret = process.env.CRON_SECRET;
@@ -36,7 +37,7 @@ const withGuardian = async (patient) => (patient.guardianCNIC ? Patient.findOne(
 const run = expressAsyncHandler(async (req, res) => {
   const today = pktDate();
   const tomorrow = addDays(today, 1);
-  const summary = { appointments: 0, refills: 0, vaccines: 0, cleanedFiles: 0, expiredLinks: 0 };
+  const summary = { appointments: 0, refills: 0, vaccines: 0, cleanedFiles: 0, expiredLinks: 0, paymentsSettled: 0 };
 
   // 1. Appointments tomorrow
   const appts = await Appointment.find({ date: new Date(`${tomorrow}T00:00:00Z`), status: 'pending' }).lean();
@@ -75,6 +76,9 @@ const run = expressAsyncHandler(async (req, res) => {
       summary.vaccines += 1;
     }
   }
+
+  // Online payments whose confirmation never arrived (browser closed mid-checkout)
+  summary.paymentsSettled = await settlePending();
 
   // Housekeeping: uploads never attached to a record, and long-expired share links
   const stale = await Attachment.find({ linked: false, createdAt: { $lt: new Date(Date.now() - 2 * 86400000) } }).select('gridId').lean();

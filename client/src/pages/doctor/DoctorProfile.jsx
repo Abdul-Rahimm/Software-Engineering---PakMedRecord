@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { FiAward, FiClock, FiDollarSign, FiExternalLink, FiGlobe, FiHome, FiLock, FiMail, FiMapPin, FiPhone, FiSave, FiUser } from 'react-icons/fi';
 import VerificationCard from '../../ui/VerificationCard';
+import PaymentAccountCard from '../../ui/PaymentAccountCard';
 import api from '../../api';
 import { useShell } from '../../layout/ShellContext';
 import { apiError, formatCNIC } from '../../lib/format';
@@ -76,6 +77,7 @@ const DoctorProfile = () => {
         }
       />
       {profile && <div style={{ marginBottom: 20 }}><VerificationCard doctor={profile} onChange={reloadProfile} /></div>}
+      {profile?.isVerified && <div style={{ marginBottom: 20 }}><PaymentAccountCard path="/payments/account/doctor" owner="your own Safepay account" /></div>}
       <div className="grid profile-grid">
         <div className="stack gap-20">
           <HealthCard person={profile} cnic={cnic} role="doctor" />

@@ -15,6 +15,7 @@ const { completeSignIn } = require('../lib/session');
 const { createAppointment, describe } = require('../lib/appointments');
 const { slotsFor } = require('../lib/availability');
 const { forgetAccountStatus } = require('../middleware/auth');
+const { flagRefund } = require('./PaymentController');
 
 const doctorFields = 'doctorCNIC firstName lastName specialization hospital fee availability verification';
 
@@ -236,6 +237,7 @@ const deskUpdate = expressAsyncHandler(async (req, res) => {
     a.status = 'cancelled';
     a.cancelledBy = 'doctor';
     a.cancelReason = String(req.body?.reason || 'Cancelled by the clinic').slice(0, 300);
+    await flagRefund(a);
     notify('patient', a.patientCNIC, { type: 'cancelled', title: 'Appointment cancelled', body: `The clinic cancelled your appointment on ${describe(a)}: ${a.cancelReason}`, link: `/appointments/mine/${a.patientCNIC}` });
   } else return res.status(400).json({ error: 'Unknown action' });
   await a.save();
