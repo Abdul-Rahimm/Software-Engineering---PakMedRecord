@@ -66,6 +66,7 @@ const checkout = expressAsyncHandler(async (req, res) => {
   const url = safepay.checkoutUrl(account, {
     tracker,
     tbt,
+    orderId: payment.txnRef,
     redirectUrl: `${api}/payments/safepay/return/${payment.txnRef}`,
     cancelUrl: `${api}/payments/safepay/cancel/${payment.txnRef}`,
   });

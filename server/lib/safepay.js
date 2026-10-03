@@ -1,7 +1,7 @@
 // Safepay (getsafepay.com) hosted checkout, following Safepay's current SDK (sfpy-php / v3 API):
 //   1. POST {api}/order/payments/v3/            -> tracker   (X-SFPY-MERCHANT-SECRET, amount in paisa)
 //   2. POST {api}/client/passport/v1/token       -> time-based token ("tbt") for the checkout page
-//   3. send the customer to {checkout}/embedded?environment&tracker&tbt&redirect_url&cancel_url
+//   3. send the customer to {checkout}/embedded?environment&tracker&tbt&source=hosted&order_id&redirect_url&cancel_url
 //   4. confirm with GET {api}/reporter/api/v1/payments/{tracker} (state TRACKER_ENDED = paid);
 //      webhooks are signed HMAC-SHA512(webhook secret, body) in X-SFPY-SIGNATURE
 // SAFEPAY_BASE_URL overrides every host (used for local tests against a stand-in server).
@@ -51,8 +51,9 @@ const passportToken = async ({ environment }, secretKey) => {
   return token;
 };
 
-const checkoutUrl = ({ environment }, { tracker, tbt, redirectUrl, cancelUrl }) => {
-  const qs = new URLSearchParams({ environment, tracker, source: 'custom', tbt, redirect_url: redirectUrl, cancel_url: cancelUrl });
+// source=hosted makes Safepay send the customer back to redirect_url?order_id=…&tracker=… when paid
+const checkoutUrl = ({ environment }, { tracker, tbt, orderId, redirectUrl, cancelUrl }) => {
+  const qs = new URLSearchParams({ environment, tracker, source: 'hosted', tbt, order_id: orderId, redirect_url: redirectUrl, cancel_url: cancelUrl });
   return `${checkoutBase(environment)}/embedded?${qs}`;
 };
 
@@ -74,6 +75,9 @@ const verifyWebhook = (webhookSecret, rawBody, parsedBody, signature) => {
 
 // Does a status / webhook body say the payment completed?
 const isPaidState = (body) => {
+  // status lookup: the order's own state is authoritative
+  const state = body?.data?.state ?? body?.state;
+  if (typeof state === 'string' && /^TRACKER_/.test(state)) return state === 'TRACKER_ENDED';
   const text = JSON.stringify(body?.data ?? body ?? {}).toUpperCase();
   return /"(STATE|STATUS)":"(PAID|TRACKER_ENDED|CAPTURED|COMPLETED|SUCCESS)"/.test(text) || /PAYMENT[:._]?(SUCCEEDED|COMPLETED|CAPTURED)/.test(text);
 };
