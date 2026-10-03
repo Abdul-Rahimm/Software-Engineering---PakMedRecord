@@ -43,6 +43,7 @@ PakMedRecord gives every patient in Pakistan one verified medical record that fo
 - Doctor clinic hours (several blocks a day, slot length, days off); booking only offers open slots
 - Video visits (peer-to-peer WebRTC, with a Jitsi backup link) with consultation notes saved to the record
 - Consultation fees: pay online with Safepay (cards, JazzCash, Easypaisa, bank) straight into the clinic's or doctor's own merchant account, or at the clinic; PDF receipts, refund tracking, and a simulated test checkout for demos
+- Platform revenue: a 5% commission is recorded on every online fee; admins see all payments, commission per clinic, and send and track monthly invoices (Admin → Payments)
 - E-prescriptions with a QR code pharmacies can verify at `/rx/<code>`; the patient's medicine list updates automatically
 - Medicine tracker: daily dose checklist, adherence history (visible to doctors), refill reminders
 - Family profiles: manage children's and parents' records under one login, switch profiles, hand over a login later

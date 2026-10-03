@@ -8,12 +8,14 @@ const PaymentAccount = require('../models/PaymentAccountModel');
 const Appointment = require('../models/AppointmentModel');
 const Doctor = require('../models/DoctorModel');
 const Clinic = require('../models/ClinicModel');
+const Invoice = require('../models/InvoiceModel');
 const { notify } = require('../lib/notify');
 const { describe } = require('../lib/appointments');
 const { APP_URL } = require('../lib/accounts');
 const { encrypt, decrypt, mask } = require('../lib/secrets');
 const safepay = require('../lib/safepay');
 const { testModeEnabled, newTxnRef, accountForDoctor, onlineOptions } = require('../lib/payments');
+const { applyCommission, commissionRate } = require('../lib/commission');
 
 const API_URL = (req) => (process.env.API_URL || `${req.protocol}://${req.get('host')}`).replace(/\/$/, '');
 
@@ -23,6 +25,7 @@ const markPaid = async (payment, providerRef, message) => {
   payment.providerRef = providerRef;
   payment.message = message;
   payment.paidAt = new Date();
+  await applyCommission(payment);
   await payment.save();
   const a = await Appointment.findById(payment.appointmentId);
   if (a) {
@@ -208,6 +211,7 @@ const markRefunded = expressAsyncHandler(async (req, res) => {
   if (payment.status !== 'refund_due') return res.status(409).json({ error: 'No refund is due for this payment' });
   payment.status = 'refunded';
   payment.refundedAt = new Date();
+  payment.commissionAmount = 0; // no platform fee on refunded consultations
   payment.refundNote = String(req.body?.note || '').slice(0, 200);
   await payment.save();
   await Appointment.updateOne({ _id: payment.appointmentId }, { 'payment.status': 'refunded' });
@@ -247,7 +251,8 @@ const getAccount = expressAsyncHandler(async (req, res) => {
     const via = await accountForDoctor(req.user.cnic);
     if (via.account && via.account.ownerType === 'clinic') clinicAccount = { payee: via.payee };
   }
-  res.status(200).json({ account: accountView(acc, req), clinicAccount });
+  const invoices = acc ? await Invoice.find({ 'payee.type': owner.ownerType, 'payee.id': owner.ownerId, status: { $ne: 'void' } }).sort({ period: -1 }).limit(24).select('-payments').lean() : [];
+  res.status(200).json({ account: accountView(acc, req), clinicAccount, commissionRate: commissionRate(), invoices });
 });
 
 // PUT { environment, publicKey, secretKey?, webhookSecret?, enabled }

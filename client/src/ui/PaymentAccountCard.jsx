@@ -74,6 +74,10 @@ const PaymentAccountCard = ({ path, owner = 'your Safepay account' }) => {
         )}
       </div>
 
+      <div className="auth-notice" style={{ borderColor: 'var(--border)', background: 'var(--tint-1)' }}>
+        <FiInfo /> <span>PakMedRecord charges a <strong>{data.commissionRate ?? 5}% platform fee</strong> on fees patients pay online. Fees reach your Safepay account in full; we email an invoice for the platform fee each month. No fee on cash payments or refunded visits.</span>
+      </div>
+
       {data.clinicAccount && (
         <div className="auth-notice" style={{ borderColor: 'rgba(34,211,238,.35)', background: 'rgba(34,211,238,.07)' }}>
           <FiInfo /> <span>Your fees are paid into <strong>{data.clinicAccount.payee}</strong>&apos;s Safepay account. You only need your own if you also see patients outside the clinic.</span>
@@ -111,6 +115,28 @@ const PaymentAccountCard = ({ path, owner = 'your Safepay account' }) => {
           </div>
           <p className="subtle" style={{ fontSize: 12.5 }}>We check the keys with Safepay before saving. In sandbox mode no real money moves.</p>
         </form>
+      )}
+
+      {data.invoices?.length > 0 && (
+        <div className="stack gap-8">
+          <span className="field-label">Platform fee invoices</span>
+          <div className="table-wrap">
+            <table className="table">
+              <thead><tr><th>Invoice</th><th>Month</th><th>Online fees</th><th>Platform fee</th><th>Status</th></tr></thead>
+              <tbody>
+                {data.invoices.map((i) => (
+                  <tr key={i._id}>
+                    <td className="mono">{i.number}</td>
+                    <td>{new Date(`${i.period}-01T00:00:00Z`).toLocaleDateString('en-GB', { month: 'short', year: 'numeric', timeZone: 'UTC' })}</td>
+                    <td>Rs {i.grossAmount.toLocaleString('en-PK')}</td>
+                    <td><strong>Rs {i.commissionAmount.toLocaleString('en-PK')}</strong></td>
+                    <td>{i.status === 'paid' ? <span className="badge badge-green">Paid</span> : <span className="badge badge-amber">Due {new Date(i.dueAt).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })}</span>}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
       )}
 
       {acc && (

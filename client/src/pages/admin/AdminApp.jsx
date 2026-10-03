@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
-  FiActivity, FiAlertOctagon, FiCheck, FiCopy, FiFlag, FiKey, FiLogOut, FiSearch, FiShield, FiUserCheck, FiUsers, FiX,
+  FiActivity, FiAlertOctagon, FiCheck, FiCopy, FiDollarSign, FiFlag, FiKey, FiLogOut, FiSearch, FiShield, FiUserCheck, FiUsers, FiX,
 } from 'react-icons/fi';
 import api from '../../api';
 import { clearSession, getSession } from '../../session';
@@ -14,12 +14,14 @@ import { ThemeToggle } from '../../ui/Theme';
 import { LangToggle } from '../../lib/i18n';
 import { useFetch } from '../../lib/data';
 import { apiError, formatCNIC, formatDate, formatDateTime } from '../../lib/format';
+import BillingTab from './BillingTab';
 import '../dashboard.css';
 
 const TABS = [
   { id: 'overview', label: 'Overview', icon: FiActivity },
   { id: 'doctors', label: 'Doctor verification', icon: FiUserCheck },
   { id: 'users', label: 'Accounts', icon: FiUsers },
+  { id: 'payments', label: 'Payments', icon: FiDollarSign },
   { id: 'reports', label: 'Reports', icon: FiFlag },
   { id: 'partners', label: 'Partners', icon: FiKey },
   { id: 'errors', label: 'Errors', icon: FiAlertOctagon },
@@ -335,7 +337,7 @@ const AdminApp = () => {
     if (session?.role !== 'admin') navigate('/admin/signin', { replace: true });
   }, [session, navigate]);
   if (session?.role !== 'admin') return null;
-  const Tab = { overview: Overview, doctors: VerificationTab, users: UsersTab, reports: ReportsTab, partners: PartnersTab, errors: ErrorsTab }[tab];
+  const Tab = { overview: Overview, doctors: VerificationTab, users: UsersTab, payments: BillingTab, reports: ReportsTab, partners: PartnersTab, errors: ErrorsTab }[tab];
   return (
     <div className="admin">
       <header className="public-head">

@@ -45,7 +45,7 @@ export const TestCheckout = () => {
       <div className="stack gap-8">
         <span className="badge badge-amber" style={{ alignSelf: 'flex-start' }}><FiAlertTriangle /> Test mode: no real payment</span>
         <h1 style={{ fontSize: 26 }}>Pay consultation fee</h1>
-        <p className="muted">This is a simulated checkout for trying out PakMedRecord. Clinics that connect Safepay send patients to Safepay's secure checkout instead.</p>
+        <p className="muted">This is a simulated checkout for trying out PakMedRecord. Clinics that connect Safepay send patients to Safepay&apos;s secure checkout instead.</p>
       </div>
       {error ? <p className="field-error">{error}</p> : !data ? <Spinner /> : (
         <>

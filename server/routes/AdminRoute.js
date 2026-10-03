@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const a = require('../contollers/AdminController');
+const billing = require('../contollers/BillingController');
 const { requireAuth, requireRole } = require('../middleware/auth');
 const { signinLimiter } = require('../middleware/rateLimit');
 
@@ -20,5 +21,10 @@ router.get('/errors', a.errors);
 router.get('/partners', a.listPartners);
 router.post('/partners', a.createPartner);
 router.patch('/partners/:id', a.updatePartner);
+router.get('/billing/summary', billing.summary);
+router.get('/billing/payments', billing.payments);
+router.get('/billing/invoices', billing.listInvoices);
+router.post('/billing/invoices', billing.createInvoice);
+router.post('/billing/invoices/:id', billing.updateInvoice);
 
 module.exports = router;

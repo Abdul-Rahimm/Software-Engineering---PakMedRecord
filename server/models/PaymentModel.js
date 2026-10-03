@@ -16,10 +16,17 @@ const paymentSchema = new mongoose.Schema({
   refundedAt: Date,
   refundNote: String,
   lastCheckedAt: Date,
+  // Platform commission (online payments only). Rate is snapshotted at payment time.
+  payee: { type: { type: String, enum: ['clinic', 'doctor'] }, id: String, name: String },
+  commissionRate: Number, // percent
+  commissionAmount: Number, // rupees
+  invoiceId: { type: mongoose.Schema.Types.ObjectId, ref: 'Invoice' },
   txnRef: { type: String, required: true, unique: true },
   providerRef: String,
   message: String,
   paidAt: Date,
 }, { timestamps: true });
+
+paymentSchema.index({ provider: 1, status: 1, paidAt: -1 });
 
 module.exports = mongoose.model('Payment', paymentSchema);

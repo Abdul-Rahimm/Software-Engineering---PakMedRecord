@@ -1,6 +1,21 @@
 // English -> Urdu interface strings, used by the DOM translator in i18n.jsx.
 // Keys are the English text exactly as rendered (whitespace collapsed).
 export const UR = {
+  "Payments": "ادائیگیاں",
+  "Platform revenue": "پلیٹ فارم کی آمدنی",
+  "Online fees processed": "آن لائن فیسیں",
+  "Commission earned": "کمیشن",
+  "Outstanding invoices": "واجب الادا انوائسز",
+  "Collected": "وصول شدہ",
+  "Refunded fees": "واپس کی گئی فیسیں",
+  "Create invoice": "انوائس بنائیں",
+  "Invoices": "انوائسز",
+  "Mark paid": "ادا شدہ کریں",
+  "Reopen": "دوبارہ کھولیں",
+  "Platform fee invoices": "پلیٹ فارم فیس کی انوائسز",
+  "Platform fee": "پلیٹ فارم فیس",
+  "Online fees": "آن لائن فیسیں",
+  "Any status": "کوئی بھی حیثیت",
   "Online payments": "آن لائن ادائیگیاں",
   "Pay online": "آن لائن ادائیگی کریں",
   "Mark refunded": "رقم واپس کر دی",
