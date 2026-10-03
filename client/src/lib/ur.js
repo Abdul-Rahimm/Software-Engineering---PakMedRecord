@@ -1,6 +1,7 @@
 // English -> Urdu interface strings, used by the DOM translator in i18n.jsx.
 // Keys are the English text exactly as rendered (whitespace collapsed).
 export const UR = {
+  "Language & theme": "زبان اور تھیم",
   "A 30-minute brisk walk five days a week cuts heart-disease risk significantly.": "ہفتے میں پانچ دن 30 منٹ کی تیز چہل قدمی دل کی بیماری کا خطرہ نمایاں طور پر کم کرتی ہے۔",
   "A read-only link to your history for a one-off visit or a second opinion. No account needed, and it expires on its own.": "ایک بار کے معائنے یا دوسری رائے کے لیے آپ کی ہسٹری کا صرف دیکھنے والا لنک۔ اکاؤنٹ کی ضرورت نہیں، اور یہ خود بخود ختم ہو جاتا ہے۔",
   "AI assistant": "اے آئی اسسٹنٹ",

@@ -21,7 +21,24 @@
 .lang-toggle { font-family: 'Noto Naskh Arabic Variable', var(--font); min-width: 52px; }
 
 /* ---------- shell additions ---------- */
-.nav-scroll { flex: 1; min-height: 0; }
+.nav-scroll {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  margin: 0 -6px;
+  padding: 0 6px 8px;
+  scrollbar-width: thin;
+  /* soft fade where the list scrolls under the pinned bottom section */
+  -webkit-mask-image: linear-gradient(to bottom, #000 calc(100% - 24px), transparent);
+  mask-image: linear-gradient(to bottom, #000 calc(100% - 24px), transparent);
+}
+.sidebar .user-card, .sidebar .drawer-prefs, .sidebar .palette-trigger, .sidebar > .row { flex-shrink: 0; }
+.drawer .sidebar { overflow: hidden; }
+@media (max-width: 960px) {
+  .drawer .nav-item { padding-top: 9px; padding-bottom: 9px; }
+  .drawer .nav-heading:not(:first-child) { margin-top: 10px; }
+}
 .nav-scroll .nav-heading:not(:first-child) { margin-top: 14px; }
 .shell-banner {
   width: calc(100% - 80px);
@@ -271,3 +288,4 @@
 /* values like "B+", "500mg", "10:00" keep their own direction inside Urdu text */
 :root[dir='rtl'] strong, :root[dir='rtl'] b, :root[dir='rtl'] td, :root[dir='rtl'] .tag, :root[dir='rtl'] .chip, :root[dir='rtl'] .summary-row span { unicode-bidi: plaintext; }
 :root[dir='rtl'] .select, :root[dir='rtl'] .input { unicode-bidi: plaintext; }
+.drawer-prefs > span { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
