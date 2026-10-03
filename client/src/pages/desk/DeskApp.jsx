@@ -151,7 +151,7 @@ const DeskApp = () => {
         </div>
       </header>
       <main className="public-main wide stack gap-20">
-        <div className="row between wrap gap-12">
+        <div className="row between wrap gap-12 desk-toolbar">
           <div className="row gap-8">
             <button className="btn btn-icon" onClick={() => setDate(shift(date, -1))} aria-label="Previous day"><FiChevronLeft /></button>
             <div className="stack" style={{ minWidth: 200, textAlign: 'center' }}>
@@ -168,7 +168,7 @@ const DeskApp = () => {
             <button className="btn btn-primary" onClick={() => setBooking(true)} disabled={!data}><FiPlus /> New booking</button>
           </div>
         </div>
-        <div className="grid grid-3">
+        <div className="grid grid-3 desk-stats">
           <div className="glass card-pad"><span className="subtle">Booked</span><div style={{ fontSize: 28, fontWeight: 700 }}>{counts.total}</div></div>
           <div className="glass card-pad"><span className="subtle">Waiting (checked in)</span><div style={{ fontSize: 28, fontWeight: 700 }}>{counts.waiting}</div></div>
           <div className="glass card-pad"><span className="subtle">Seen</span><div style={{ fontSize: 28, fontWeight: 700 }}>{counts.done}</div></div>
@@ -176,7 +176,36 @@ const DeskApp = () => {
         {loading && !data ? <Skeleton height={300} /> : !list.length ? (
           <div className="glass"><EmptyState icon={FiCalendar} title="No appointments" action={<button className="btn btn-primary" onClick={() => setBooking(true)}><FiPlus /> New booking</button>}>Nothing booked for this day yet.</EmptyState></div>
         ) : (
-          <div className="glass table-wrap">
+          <>
+          <div className="desk-cards stack gap-12">
+            {list.map((a) => (
+              <div key={a._id} className={`glass desk-card ${a.status}`}>
+                <div className="row between gap-8">
+                  <strong className="mono" style={{ fontSize: 17 }}>{formatTime(a.time)}{a.mode === 'video' && <FiVideo title="Video visit" style={{ marginInlineStart: 6 }} />}</strong>
+                  {a.status === 'pending' && a.checkedInAt ? <span className="badge badge-cyan">Waiting</span> : <StatusBadge status={a.status} />}
+                </div>
+                <div>
+                  <strong>{a.patient ? `${a.patient.firstName} ${a.patient.lastName}` : '—'}</strong>
+                  <div className="subtle mono" style={{ fontSize: 12.5 }}>{formatCNIC(a.patientCNIC)}</div>
+                  {a.patient?.phone && <a className="subtle" style={{ fontSize: 13 }} href={`tel:${a.patient.phone}`}>{a.patient.phone}</a>}
+                </div>
+                <div className="row between wrap gap-8 subtle" style={{ fontSize: 13.5 }}>
+                  <span>{doctorName(a.doctorCNIC)}</span>
+                  <span>{a.payment?.status === 'paid' ? <span className="badge badge-green">Paid</span> : a.fee ? `Rs ${a.fee}` : ''}</span>
+                </div>
+                {a.reason && <div className="subtle" style={{ fontSize: 13 }}>{a.reason}</div>}
+                {a.status === 'pending' && (
+                  <div className="desk-card-actions">
+                    {!a.checkedInAt ? <button className="btn btn-sm btn-primary" onClick={() => act(a, 'check-in')}><FiCheck /> Check in</button> : <button className="btn btn-sm" onClick={() => act(a, 'undo-check-in')}>Undo</button>}
+                    {a.payment?.status !== 'paid' && <button className="btn btn-sm" onClick={() => paid(a)}><FiDollarSign /> Paid</button>}
+                    <button className="btn btn-sm btn-ghost" onClick={() => act(a, 'no-show')} aria-label="Mark no-show"><FiUserX /> No-show</button>
+                    <button className="btn btn-sm btn-ghost" onClick={() => act(a, 'cancel')} aria-label="Cancel"><FiX /> Cancel</button>
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+          <div className="glass table-wrap desk-table">
             <table className="table">
               <thead><tr><th>Time</th><th>Patient</th><th>Doctor</th><th>Status</th><th>Fee</th><th /></tr></thead>
               <tbody>
@@ -202,6 +231,7 @@ const DeskApp = () => {
               </tbody>
             </table>
           </div>
+          </>
         )}
         <p className="subtle" style={{ fontSize: 12.5 }}>Front-desk accounts manage the schedule only. Medical records stay private to the patient and their doctors.</p>
       </main>

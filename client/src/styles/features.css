@@ -289,3 +289,27 @@
 :root[dir='rtl'] strong, :root[dir='rtl'] b, :root[dir='rtl'] td, :root[dir='rtl'] .tag, :root[dir='rtl'] .chip, :root[dir='rtl'] .summary-row span { unicode-bidi: plaintext; }
 :root[dir='rtl'] .select, :root[dir='rtl'] .input { unicode-bidi: plaintext; }
 .drawer-prefs > span { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
+
+/* ---------- front desk on phones: cards instead of the table ---------- */
+.desk-cards { display: none; }
+.desk-card { padding: 16px; display: flex; flex-direction: column; gap: 10px; }
+.desk-card.cancelled { opacity: .55; }
+.desk-card-actions { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; padding-top: 4px; border-top: 1px solid var(--border); }
+.desk-card-actions .btn { width: 100%; justify-content: center; }
+@media (max-width: 760px) {
+  .desk-cards { display: flex; }
+  .desk-table { display: none; }
+  .desk-stats { grid-template-columns: repeat(3, minmax(0, 1fr)) !important; gap: 10px; }
+  .desk-stats > .glass { padding: 12px; }
+  .desk-stats > .glass > span { font-size: 12px; line-height: 1.3; display: block; }
+  .desk-stats > .glass > div { font-size: 24px !important; }
+  .desk-toolbar > .row:first-child { width: 100%; justify-content: space-between; }
+  .desk-toolbar > .row:first-child > .stack { min-width: 0 !important; flex: 1; }
+  .desk-toolbar > .row:first-child strong { font-size: 16px !important; }
+  .desk-toolbar > .row:last-child { width: 100%; display: grid !important; grid-template-columns: 1fr auto; }
+  .desk-toolbar > .row:last-child .select { width: 100% !important; }
+}
+@media (max-width: 400px) {
+  .admin .public-head .head-brand span[style] { font-size: 16px !important; }
+}
+:root[dir='rtl'] .desk-card .mono { text-align: right; }
