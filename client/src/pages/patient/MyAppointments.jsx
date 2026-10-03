@@ -150,7 +150,7 @@ const MyAppointments = () => {
                       <p className="subtle" style={{ fontSize: 12.5 }}>Cancelled by {a.cancelledBy === 'patient' ? 'you' : 'the doctor'}{a.cancelReason ? `: ${a.cancelReason}` : ''}</p>
                     )}
                   </div>
-                  <div className="stack gap-8" style={{ alignItems: 'flex-end' }}>
+                  <div className="stack gap-8 appt-actions" style={{ alignItems: 'flex-end' }}>
                     {isUpcoming(a) ? <span className="badge badge-cyan">Scheduled</span> : <StatusBadge status={a.status === 'pending' ? 'missed' : a.status} />}
                     {isUpcoming(a) && a.mode === 'video' && (
                       videoOpen(a)

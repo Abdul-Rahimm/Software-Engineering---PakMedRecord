@@ -317,3 +317,13 @@
 .setup-steps { margin: 0; padding-inline-start: 20px; display: grid; gap: 6px; color: var(--text-2); font-size: 14px; line-height: 1.55; }
 .pay-account .summary-row .k { width: 140px; }
 @media (max-width: 560px) { .pay-account .summary-row { flex-wrap: wrap; } .pay-account .summary-row .mono { word-break: break-all; } }
+/* patient appointment card on phones: details full width, status + actions underneath */
+@media (max-width: 560px) {
+  .appt-card { display: grid !important; grid-template-columns: auto minmax(0, 1fr); gap: 14px; }
+  .appt-card > .appt-actions { grid-column: 1 / -1; display: grid !important; grid-template-columns: repeat(2, minmax(0, 1fr)); align-items: stretch !important; gap: 8px; padding-top: 12px; border-top: 1px solid var(--border); }
+  .appt-card > .appt-actions > .badge { grid-column: 1 / -1; justify-self: start; }
+  .appt-card > .appt-actions > .btn { width: 100%; justify-content: center; }
+  .appt-card > .appt-actions > .btn-primary { grid-column: 1 / -1; height: 44px; }
+  .appt-card > .appt-actions > span.subtle { grid-column: 1 / -1; }
+  .appt-card .tl-meta { gap: 6px 14px; }
+}
