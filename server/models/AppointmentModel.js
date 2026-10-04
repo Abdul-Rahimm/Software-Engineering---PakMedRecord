@@ -39,11 +39,16 @@ const appointmentSchema = new mongoose.Schema({
     },
     // who made the booking: the patient, or clinic front-desk staff
     bookedBy: { role: { type: String, enum: ['patient', 'staff', 'assistant'] }, id: String },
-    clinicId: { type: mongoose.Schema.Types.ObjectId, ref: 'Clinic' },
+    // where the visit happens: an organization's branch, or (both empty) the doctor's private practice
+    orgId: { type: mongoose.Schema.Types.ObjectId, ref: 'Organization' },
+    facilityId: { type: mongoose.Schema.Types.ObjectId, ref: 'Facility' },
+    departmentId: { type: mongoose.Schema.Types.ObjectId, ref: 'Department' },
+    clinicId: { type: mongoose.Schema.Types.ObjectId }, // legacy, migrated to orgId
 }, { timestamps: true });
 
 appointmentSchema.index({ doctorCNIC: 1, date: 1 });
 appointmentSchema.index({ patientCNIC: 1, date: 1 });
+appointmentSchema.index({ orgId: 1, date: 1, facilityId: 1 });
 
 const Appointment = mongoose.model('Appointment', appointmentSchema);
 

@@ -4,8 +4,7 @@ const mongoose = require('mongoose');
 const expressAsyncHandler = require('express-async-handler');
 const Appointment = require('../models/AppointmentModel');
 const Doctor = require('../models/DoctorModel');
-const Clinic = require('../models/ClinicModel');
-const { activeDoctors } = require('./ClinicController');
+const Facility = require('../models/FacilityModel');
 
 const ymd = (d) => new Date(d).toISOString().slice(0, 10);
 
@@ -68,25 +67,26 @@ const doctor = expressAsyncHandler(async (req, res) => {
   res.status(200).json(summarize(list, days));
 });
 
-// GET /analytics/clinic/:id?days=90 (clinic admins)
+// GET /analytics/clinic/:orgId?days=90 (organization admins): the organization's own appointments only
 const clinic = expressAsyncHandler(async (req, res) => {
-  if (!mongoose.isValidObjectId(req.params.id)) return res.status(404).json({ error: 'Clinic not found' });
-  const c = await Clinic.findById(req.params.id);
-  const me = c?.doctors.find((d) => d.doctorCNIC === req.user.cnic && d.status === 'active');
-  if (!me) return res.status(404).json({ error: 'Clinic not found' });
-  if (me.role !== 'admin') return res.status(403).json({ error: 'Only clinic admins can see clinic analytics' });
+  const { org } = req.tenant;
   const days = Math.min(365, Math.max(7, Number(req.query.days) || 90));
-  const cnics = activeDoctors(c);
-  const [list, doctors] = await Promise.all([
-    Appointment.find({ doctorCNIC: { $in: cnics }, ...windowFilter(days) }).lean(),
-    Doctor.find({ doctorCNIC: { $in: cnics } }).select('doctorCNIC firstName lastName specialization').lean(),
+  const list = await Appointment.find({ orgId: org._id, ...windowFilter(days) }).lean();
+  const [doctors, facilities] = await Promise.all([
+    Doctor.find({ doctorCNIC: { $in: [...new Set(list.map((a) => a.doctorCNIC))] } }).select('doctorCNIC firstName lastName specialization').lean(),
+    Facility.find({ orgId: org._id }).select('name').lean(),
   ]);
+  const pick = (filter) => summarize(list.filter(filter), days);
   res.status(200).json({
-    clinic: { _id: c._id, name: c.name },
+    clinic: { _id: org._id, name: org.name },
     ...summarize(list, days),
     perDoctor: doctors.map((d) => {
-      const s = summarize(list.filter((a) => a.doctorCNIC === d.doctorCNIC), days);
+      const s = pick((a) => a.doctorCNIC === d.doctorCNIC);
       return { doctorCNIC: d.doctorCNIC, name: `Dr. ${d.firstName} ${d.lastName}`, specialization: d.specialization, completed: s.completed, noShowRate: s.noShowRate, revenue: s.revenue, patients: s.patients };
+    }),
+    perFacility: facilities.map((f) => {
+      const s = pick((a) => String(a.facilityId) === String(f._id));
+      return { facilityId: f._id, name: f.name, completed: s.completed, noShowRate: s.noShowRate, revenue: s.revenue, patients: s.patients };
     }),
   });
 });

@@ -1,35 +1,34 @@
-// Who gets paid, and how. Option B: fees go straight to the clinic's (or solo doctor's) own
-// Safepay merchant account. PAYMENTS_TEST_MODE=1 adds a simulated checkout for demos.
+// Who gets paid, and how. Option B: fees go straight to the merchant account of whoever provides
+// the visit: the hospital (organization) for visits at its branches, the doctor for their private
+// practice. PAYMENTS_TEST_MODE=1 adds a simulated checkout for demos.
 
 const crypto = require('crypto');
 const PaymentAccount = require('../models/PaymentAccountModel');
-const Clinic = require('../models/ClinicModel');
+const Organization = require('../models/OrganizationModel');
 
 const testModeEnabled = () => process.env.PAYMENTS_TEST_MODE === '1';
 
 const newTxnRef = () => `PMR${Date.now()}${crypto.randomBytes(2).toString('hex').toUpperCase()}`;
 
-// The account that receives a doctor's fees: their clinic's, if the clinic has connected one, else their own
-const accountForDoctor = async (doctorCNIC) => {
-  const clinic = await Clinic.findOne({ doctors: { $elemMatch: { doctorCNIC: Number(doctorCNIC), status: 'active' } } }).select('_id name').lean();
-  if (clinic) {
-    const clinicAccount = await PaymentAccount.findOne({ ownerType: 'clinic', ownerId: String(clinic._id), enabled: true });
-    if (clinicAccount) return { account: clinicAccount, payee: clinic.name };
+// The account that receives an appointment's fee
+const accountForAppointment = async (appointment) => {
+  if (appointment.orgId) {
+    const org = await Organization.findById(appointment.orgId).select('name').lean();
+    const account = await PaymentAccount.findOne({ ownerType: 'clinic', ownerId: String(appointment.orgId), enabled: true });
+    return { account: account || null, payee: org?.name || null };
   }
-  const own = await PaymentAccount.findOne({ ownerType: 'doctor', ownerId: String(doctorCNIC), enabled: true });
-  return own ? { account: own, payee: null } : { account: null, payee: null };
+  const own = await PaymentAccount.findOne({ ownerType: 'doctor', ownerId: String(appointment.doctorCNIC), enabled: true });
+  return { account: own || null, payee: null };
 };
 
 // Ways the patient can pay online for these appointments: { [appointmentId]: ['safepay', 'test'] }
 const onlineOptions = async (appointments) => {
-  const byDoctor = {};
-  for (const cnic of [...new Set(appointments.map((a) => a.doctorCNIC))]) {
-    byDoctor[cnic] = Boolean((await accountForDoctor(cnic)).account);
+  const out = {};
+  for (const a of appointments) {
+    const { account } = await accountForAppointment(a);
+    out[String(a._id)] = [...(account ? ['safepay'] : []), ...(testModeEnabled() ? ['test'] : [])];
   }
-  return Object.fromEntries(appointments.map((a) => [String(a._id), [
-    ...(byDoctor[a.doctorCNIC] ? ['safepay'] : []),
-    ...(testModeEnabled() ? ['test'] : []),
-  ]]));
+  return out;
 };
 
-module.exports = { testModeEnabled, newTxnRef, accountForDoctor, onlineOptions };
+module.exports = { testModeEnabled, newTxnRef, accountForAppointment, onlineOptions };

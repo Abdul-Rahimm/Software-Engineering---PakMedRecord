@@ -60,6 +60,7 @@ const Landing = () => {
           <LangToggle />
           <ThemeToggle />
           <Link to="/find-doctors" className="btn btn-ghost hide-sm">Find a doctor</Link>
+          <Link to="/hospitals" className="btn btn-ghost hide-sm">Hospitals</Link>
           <Link to="/doctor/signin" className="btn btn-ghost hide-sm">Doctor sign in</Link>
           <Link to="/patient/signin" className="btn btn-primary"><span className="hide-sm">Patient sign in</span><span className="show-sm">Sign in</span></Link>
         </div>
@@ -191,10 +192,12 @@ const Landing = () => {
         <span className="subtle">© {new Date().getFullYear()} PakMedRecord · A 6th-semester Software Engineering project</span>
         <span className="row gap-16 wrap">
           <Link to="/find-doctors" className="muted">Find a doctor</Link>
+          <Link to="/hospitals" className="muted">Hospitals</Link>
+          <Link to="/hospitals/register" className="muted">Register a hospital</Link>
           <Link to="/terms" className="muted">Terms</Link>
           <Link to="/privacy" className="muted">Privacy</Link>
           <Link to="/developers" className="muted">Labs &amp; pharmacies</Link>
-          <Link to="/desk/signin" className="muted">Clinic front desk</Link>
+          <Link to="/desk/signin" className="muted">Hospital staff sign-in</Link>
         </span>
       </footer>
     </div>

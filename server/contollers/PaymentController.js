@@ -9,12 +9,15 @@ const Appointment = require('../models/AppointmentModel');
 const Doctor = require('../models/DoctorModel');
 const Clinic = require('../models/ClinicModel');
 const Invoice = require('../models/InvoiceModel');
+const { orgAccess } = require('../lib/tenancy');
 const { notify } = require('../lib/notify');
 const { describe } = require('../lib/appointments');
 const { APP_URL } = require('../lib/accounts');
 const { encrypt, decrypt, mask } = require('../lib/secrets');
 const safepay = require('../lib/safepay');
-const { testModeEnabled, newTxnRef, accountForDoctor, onlineOptions } = require('../lib/payments');
+const { testModeEnabled, newTxnRef, accountForAppointment, onlineOptions } = require('../lib/payments');
+const Membership = require('../models/MembershipModel');
+const Staff = require('../models/StaffModel');
 const { applyCommission, commissionRate } = require('../lib/commission');
 
 const API_URL = (req) => (process.env.API_URL || `${req.protocol}://${req.get('host')}`).replace(/\/$/, '');
@@ -57,8 +60,8 @@ const checkout = expressAsyncHandler(async (req, res) => {
   }
   if (provider !== 'safepay') return res.status(400).json({ error: 'That payment method is not available' });
 
-  const { account } = await accountForDoctor(a.doctorCNIC);
-  if (!account) return res.status(400).json({ error: 'This clinic does not take online payments yet. Pay at the clinic.' });
+  const { account } = await accountForAppointment(a);
+  if (!account) return res.status(400).json({ error: 'This hospital or clinic does not take online payments yet. Pay at the reception.' });
   const secret = decrypt(account.secretKeyEnc);
   const [tracker, tbt] = await Promise.all([safepay.createTracker(account, secret, fee), safepay.passportToken(account, secret)]);
   const payment = await Payment.create({
@@ -159,8 +162,8 @@ const canSee = async (user, payment) => {
   if (user.role === 'patient') return payment.patientCNIC === user.cnic;
   if (user.role === 'doctor') return payment.doctorCNIC === user.cnic;
   if (user.role === 'staff' && user.clinicId) {
-    const clinic = await Clinic.findById(user.clinicId).lean();
-    return Boolean(clinic?.doctors.some((d) => d.status === 'active' && d.doctorCNIC === payment.doctorCNIC));
+    const a = await Appointment.findById(payment.appointmentId).select('orgId').lean();
+    return Boolean(a?.orgId && String(a.orgId) === String(user.clinicId));
   }
   return false;
 };
@@ -188,7 +191,7 @@ const mine = expressAsyncHandler(async (req, res) => {
 // GET /payments/options?ids=a,b -> { [appointmentId]: ['safepay', 'test'] } for the patient's own appointments
 const options = expressAsyncHandler(async (req, res) => {
   const ids = String(req.query.ids || '').split(',').filter((id) => mongoose.isValidObjectId(id)).slice(0, 100);
-  const appts = await Appointment.find({ _id: { $in: ids }, patientCNIC: req.user.cnic }).select('doctorCNIC').lean();
+  const appts = await Appointment.find({ _id: { $in: ids }, patientCNIC: req.user.cnic }).select('doctorCNIC orgId').lean();
   res.status(200).json(await onlineOptions(appts));
 });
 
@@ -225,11 +228,11 @@ const markRefunded = expressAsyncHandler(async (req, res) => {
 const resolveOwner = async (req, res) => {
   if (req.params.scope === 'doctor') return { ownerType: 'doctor', ownerId: String(req.user.cnic) };
   if (req.params.scope === 'clinic' && mongoose.isValidObjectId(req.params.id)) {
-    const clinic = await Clinic.findById(req.params.id);
-    const me = clinic?.doctors.find((d) => d.doctorCNIC === req.user.cnic && d.status === 'active');
-    if (me?.role === 'admin') return { ownerType: 'clinic', ownerId: String(clinic._id) };
+    const access = await orgAccess(req.user, req.params.id);
+    const canManage = access?.isAdmin || (req.method === 'GET' && access?.roles.includes('billing'));
+    if (canManage) return { ownerType: 'clinic', ownerId: String(access.org._id) };
   }
-  res.status(403).json({ error: 'Only clinic admins can manage the clinic payment account' });
+  res.status(403).json({ error: 'Only the organization\'s administrators can manage its payment account' });
   return null;
 };
 
@@ -247,9 +250,10 @@ const getAccount = expressAsyncHandler(async (req, res) => {
   const acc = await PaymentAccount.findOne(owner);
   let clinicAccount = null;
   if (owner.ownerType === 'doctor') {
-    // a doctor in a clinic with its own account is paid through the clinic
-    const via = await accountForDoctor(req.user.cnic);
-    if (via.account && via.account.ownerType === 'clinic') clinicAccount = { payee: via.payee };
+    // fees for visits at hospitals go to the hospital; this account is only for private practice
+    const ms = await Membership.find({ doctorCNIC: req.user.cnic, status: 'active' }).select('orgId').lean();
+    const orgs = await Clinic.find({ _id: { $in: ms.map((m) => m.orgId) } }).select('name').lean();
+    if (orgs.length) clinicAccount = { payee: orgs.map((o) => o.name).join(', ') };
   }
   const invoices = acc ? await Invoice.find({ 'payee.type': owner.ownerType, 'payee.id': owner.ownerId, status: { $ne: 'void' } }).sort({ period: -1 }).limit(24).select('-payments').lean() : [];
   res.status(200).json({ account: accountView(acc, req), clinicAccount, commissionRate: commissionRate(), invoices });

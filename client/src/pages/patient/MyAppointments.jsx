@@ -142,7 +142,7 @@ const MyAppointments = () => {
                     </div>
                     <div className="tl-meta">
                       <span><FiClock /> {formatTime(a.time)}</span>
-                      {a.mode === 'video' ? <span><FiVideo /> Video visit</span> : doc?.hospital && <span><FiHome /> {doc.clinicAddress || doc.hospital}</span>}
+                      {a.mode === 'video' ? <span><FiVideo /> Video visit{a.place ? ` · ${a.place.orgName}` : ''}</span> : a.place ? <span><FiHome /> {a.place.orgName}, {a.place.facilityName}</span> : doc?.hospital && <span><FiHome /> {doc.clinicAddress || doc.hospital}</span>}
                       {a.fee ? <span><FiCreditCard /> Rs {a.fee.toLocaleString('en-PK')} · {PAY_LABEL[a.payment?.status] || 'unpaid'}</span> : null}
                     </div>
                     {a.reason && <p className="muted" style={{ fontSize: 13.5 }}>“{a.reason}”</p>}

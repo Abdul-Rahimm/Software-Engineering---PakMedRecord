@@ -4,7 +4,7 @@ This repo is made for our 6th semester SE project
 **Live demo: https://pakmedrecord.vercel.app**
 
 Demo accounts (password `demo1234`): patient CNIC `42101-9999999-1`, doctor CNIC `42101-1234567-1`.
-Clinic front desk (`/desk/signin`): `frontdesk@pakmedrecord.demo` / `desk-demo-1234`.
+Hospital front desk (`/desk/signin`): `frontdesk@pakmedrecord.demo` / `desk-demo-1234`. Hospitals register themselves at `/hospitals/register`.
 
 PakMedRecord gives every patient in Pakistan one verified medical record that follows them across hospitals.
 
@@ -52,8 +52,13 @@ PakMedRecord gives every patient in Pakistan one verified medical record that fo
 - Reminders by in-app notification, email, WhatsApp or SMS (daily job via Vercel Cron)
 - Urdu interface with right-to-left layout; installable as an app (PWA) with offline access to recent records
 
-**Clinics and partners**
-- Clinics: doctors share front-desk staff and a schedule; staff (`/desk`) book walk-ins, check patients in, mark no-shows and record payments, without access to records
+**Hospitals (multi-tenant) and partners**
+- Hospitals, clinics and labs register themselves (`/hospitals/register`), upload their healthcare-commission registration, and appear to patients once a PakMedRecord admin verifies them (Admin → Hospitals)
+- Each organization has branches across Pakistan, departments, staff accounts with roles (administrator, branch manager, receptionist, billing) limited to chosen branches, its own Safepay account and analytics per branch and doctor
+- Doctors work at many hospitals (many-to-many memberships), with a separate fee and weekly hours per branch, plus optional private practice; a doctor can also set up and run their own clinic
+- Patients browse city → hospital → branch → doctor (`/hospitals`) and book at a specific branch; a doctor can never be double-booked across hospitals
+- Tenant isolation: every hospital route resolves the caller's organization and role from their own account and filters by it; other organizations' data returns 404. Patients' medical records are not hospital data: they stay with the patient and the doctors they choose
+- Front desk (`/desk`): book walk-ins, check patients in, mark no-shows and record payments, without access to records
 - Practice and clinic analytics: no-show and cancellation rates, returning patients, fees collected, busiest hours and days
 - Public doctor directory (`/find-doctors`) with fees, timings and verified badges, searchable by city and specialty
 - Partner API for labs (push results into a patient's record) and pharmacies (verify and dispense prescriptions); docs at `/developers`

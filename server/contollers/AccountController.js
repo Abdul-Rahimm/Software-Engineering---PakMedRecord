@@ -22,7 +22,7 @@ const DoseLog = require('../models/DoseLogModel');
 const ShareLink = require('../models/ShareLinkModel');
 const Payment = require('../models/PaymentModel');
 const Patient = require('../models/PatientModel');
-const Clinic = require('../models/ClinicModel');
+const Membership = require('../models/MembershipModel');
 
 const subject = (user) => user.cnic ?? user.id;
 const me = (req) => findBySubject(req.user.role, subject(req.user));
@@ -143,9 +143,9 @@ const exportData = expressAsyncHandler(async (req, res) => {
       Appointment.find({ doctorCNIC: cnic }).lean(),
       MedicalRecord.find({ doctorCNIC: cnic }).select('patientCNIC title category createdAt').lean(),
       Prescription.find({ doctorCNIC: cnic }).lean(),
-      Clinic.findOne({ 'doctors.doctorCNIC': cnic }).lean(),
+      Membership.find({ doctorCNIC: cnic }).lean(),
     ]);
-    data = { profile: user, appointments, recordsWritten, prescriptions, clinic };
+    data = { profile: user, appointments, recordsWritten, prescriptions, hospitalMemberships: clinic };
   } else {
     return res.status(400).json({ error: 'Export is available for doctor and patient accounts' });
   }
@@ -214,7 +214,7 @@ const deleteAccount = expressAsyncHandler(async (req, res) => {
       Appointment.updateMany({ doctorCNIC: cnic, status: 'pending' }, { status: 'cancelled', cancelledBy: 'doctor', cancelReason: 'Doctor account closed' }),
       Notification.deleteMany({ role: 'doctor', cnic }),
       ChatThread.deleteMany({ role: 'doctor', cnic }),
-      Clinic.updateMany({}, { $pull: { doctors: { doctorCNIC: cnic } } }),
+      Membership.updateMany({ doctorCNIC: cnic }, { status: 'removed' }),
     ]);
     if (user.verification?.document?.gridId) await deleteFile(user.verification.document.gridId);
     await MODELS.doctor.Model.deleteOne({ doctorCNIC: cnic });

@@ -18,9 +18,9 @@ router.get('/options', requireRole('patient'), p.options);
 router.get('/account/:scope(doctor)', requireRole('doctor'), p.getAccount);
 router.put('/account/:scope(doctor)', requireRole('doctor'), p.saveAccount);
 router.delete('/account/:scope(doctor)', requireRole('doctor'), p.removeAccount);
-router.get('/account/:scope(clinic)/:id', requireRole('doctor'), p.getAccount);
-router.put('/account/:scope(clinic)/:id', requireRole('doctor'), p.saveAccount);
-router.delete('/account/:scope(clinic)/:id', requireRole('doctor'), p.removeAccount);
+router.get('/account/:scope(clinic)/:id', requireRole('doctor', 'staff'), p.getAccount);
+router.put('/account/:scope(clinic)/:id', requireRole('doctor', 'staff'), p.saveAccount);
+router.delete('/account/:scope(clinic)/:id', requireRole('doctor', 'staff'), p.removeAccount);
 router.post('/:id/refunded', requireRole('doctor', 'staff'), p.markRefunded);
 router.get('/:txnRef', p.byRef);
 

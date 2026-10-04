@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
-  FiActivity, FiAlertOctagon, FiCheck, FiLock, FiCopy, FiDollarSign, FiFlag, FiKey, FiLogOut, FiSearch, FiShield, FiUserCheck, FiUsers, FiX,
+  FiActivity, FiHome, FiAlertOctagon, FiCheck, FiLock, FiCopy, FiDollarSign, FiFlag, FiKey, FiLogOut, FiSearch, FiShield, FiUserCheck, FiUsers, FiX,
 } from 'react-icons/fi';
 import api from '../../api';
 import { clearSession, getSession } from '../../session';
@@ -21,6 +21,7 @@ import '../dashboard.css';
 const TABS = [
   { id: 'overview', label: 'Overview', icon: FiActivity },
   { id: 'doctors', label: 'Doctor verification', icon: FiUserCheck },
+  { id: 'orgs', label: 'Hospitals', icon: FiHome },
   { id: 'users', label: 'Accounts', icon: FiUsers },
   { id: 'payments', label: 'Payments', icon: FiDollarSign },
   { id: 'reports', label: 'Reports', icon: FiFlag },
@@ -41,8 +42,9 @@ const Overview = ({ go }) => {
   if (!data) return <Skeleton height={300} />;
   return (
     <div className="stack gap-20">
-      {(data.pendingDoctors > 0 || data.openReports > 0) && (
+      {(data.pendingDoctors > 0 || data.openReports > 0 || data.pendingOrgs > 0) && (
         <div className="row gap-12 wrap">
+          {data.pendingOrgs > 0 && <button className="btn btn-primary" onClick={() => go('orgs')}><FiHome /> {data.pendingOrgs} hospital{data.pendingOrgs > 1 ? 's' : ''} waiting for verification</button>}
           {data.pendingDoctors > 0 && <button className="btn btn-primary" onClick={() => go('doctors')}><FiUserCheck /> {data.pendingDoctors} doctor{data.pendingDoctors > 1 ? 's' : ''} waiting for verification</button>}
           {data.openReports > 0 && <button className="btn" onClick={() => go('reports')}><FiFlag /> {data.openReports} open report{data.openReports > 1 ? 's' : ''}</button>}
         </div>
@@ -148,6 +150,98 @@ const VerificationTab = () => {
                   <Button className="btn btn-primary" loading={busy} onClick={() => decide('verified')}><FiCheck /> Verify</Button>
                   <Button className="btn btn-danger" loading={busy} disabled={!note.trim()} onClick={() => decide('rejected')}><FiX /> Reject</Button>
                 </div>
+              </div>
+            </div>
+          </div>
+        )}
+      </Modal>
+    </div>
+  );
+};
+
+// Hospitals and clinics: verify their healthcare-commission registration, or suspend them
+const OrgsTab = () => {
+  const { toast, confirm } = useFeedback();
+  const [status, setStatus] = useState('pending');
+  const [q, setQ] = useState('');
+  const { data, loading, reload } = useFetch(async () => (await api.get('/admin/orgs', { params: { status, q: q || undefined } })).data, [status, q]);
+  const [doc, setDoc] = useState(null); // { org, url, mime }
+  const [note, setNote] = useState('');
+  const [busy, setBusy] = useState(false);
+
+  const open = async (org) => {
+    setNote('');
+    setDoc({ org, url: null });
+    if (!org.verification?.document?.name) return;
+    try {
+      const res = await api.get(`/admin/orgs/${org._id}/document`, { responseType: 'blob' });
+      setDoc({ org, url: URL.createObjectURL(res.data), mime: res.data.type });
+    } catch {
+      toast('Could not load the document', 'error');
+    }
+  };
+  const decide = async (body) => {
+    setBusy(true);
+    try {
+      const { data: r } = await api.post(`/admin/orgs/${doc.org._id}/review`, body);
+      toast(r.message);
+      setDoc(null);
+      reload(true);
+    } catch (err) {
+      toast(apiError(err), 'error');
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <div className="stack gap-16">
+      <div className="row between wrap gap-12">
+        <div className="chips">
+          {['pending', 'unverified', 'rejected', 'verified', 'all'].map((s) => <button key={s} className="chip" aria-pressed={status === s} onClick={() => setStatus(s)}>{s[0].toUpperCase() + s.slice(1)}</button>)}
+        </div>
+        <div className="search input-wrap"><FiSearch size={16} /><input className="input" placeholder="Name, city, registration no. or email" value={q} onChange={(e) => setQ(e.target.value)} /></div>
+      </div>
+      {loading ? <Skeleton height={200} /> : !data.length ? (
+        <div className="glass"><EmptyState icon={FiHome} title="Nothing here">No hospitals or clinics with this status.</EmptyState></div>
+      ) : (
+        <div className="glass table-wrap">
+          <table className="table">
+            <thead><tr><th>Organization</th><th>Registration</th><th>Size</th><th>Submitted</th><th>Status</th><th /></tr></thead>
+            <tbody>
+              {data.map((o) => (
+                <tr key={o._id}>
+                  <td><strong>{o.name}</strong>{o.suspended && <span className="badge badge-rose" style={{ marginInlineStart: 6 }}>Suspended</span>}<div className="subtle" style={{ fontSize: 12 }}>{o.type} · {[o.city, o.province].filter(Boolean).join(', ')}</div><div className="subtle" style={{ fontSize: 12 }}>{o.admins.map((a) => a.email).join(', ') || o.email}</div></td>
+                  <td className="mono">{o.registrationNo || '—'}<div className="subtle" style={{ fontSize: 12, fontFamily: 'inherit' }}>{o.regulator}</div></td>
+                  <td>{o.branches} branch{o.branches === 1 ? '' : 'es'} · {o.doctors} doctor{o.doctors === 1 ? '' : 's'}</td>
+                  <td>{formatDate(o.verification?.submittedAt || o.createdAt)}</td>
+                  <td><span className={`badge ${{ verified: 'badge-green', pending: 'badge-amber', rejected: 'badge-rose' }[o.verification?.status] || ''}`}>{o.verification?.status || 'unverified'}</span></td>
+                  <td><button className="btn btn-sm" onClick={() => open(o)}>Review</button></td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+
+      <Modal open={Boolean(doc)} onClose={() => setDoc(null)} title={doc?.org.name} subtitle={doc && `${doc.org.type} · registration ${doc.org.registrationNo || 'not given'}${doc.org.regulator ? ` (${doc.org.regulator})` : ''}`} width={980}>
+        {doc && (
+          <div className="viewer" style={{ minHeight: 380 }}>
+            <div className="viewer-doc">
+              {!doc.org.verification?.document?.name ? <p className="subtle">No registration certificate uploaded yet.</p>
+                : !doc.url ? <Spinner size={24} />
+                  : doc.mime === 'application/pdf' ? <PdfPreview url={doc.url} /> : <img src={doc.url} alt="Registration certificate" />}
+            </div>
+            <div className="viewer-text stack gap-12">
+              <p className="muted" style={{ fontSize: 13.5 }}>Check the name and registration number against the provincial healthcare commission register (PHC Punjab, SHCC Sindh, KP HCC, IHRA Islamabad, BHCC Balochistan).</p>
+              <div className="subtle" style={{ fontSize: 13 }}>{[doc.org.address, doc.org.city, doc.org.phone, doc.org.website].filter(Boolean).join(' · ')}</div>
+              {doc.org.verification?.note && <p className="subtle">Previous note: {doc.org.verification.note}</p>}
+              <label className="field-label" htmlFor="org-note">Note (required to reject)</label>
+              <textarea id="org-note" className="textarea" style={{ minHeight: 100 }} value={note} onChange={(e) => setNote(e.target.value)} placeholder="e.g. The registration number doesn't match the certificate." />
+              <div className="row gap-8 wrap">
+                <Button className="btn btn-primary" loading={busy} onClick={() => decide({ decision: 'verified', note })}><FiCheck /> Verify</Button>
+                <Button className="btn btn-danger" loading={busy} disabled={!note.trim()} onClick={() => decide({ decision: 'rejected', note })}><FiX /> Reject</Button>
+                <Button className="btn btn-ghost" loading={busy} onClick={async () => { if (doc.org.suspended || await confirm({ title: `Suspend ${doc.org.name}?`, message: 'It disappears from search and patients can no longer book there. Its staff keep read access.', confirmLabel: 'Suspend', danger: true })) decide({ suspended: !doc.org.suspended }); }}>{doc.org.suspended ? 'Restore' : 'Suspend'}</Button>
               </div>
             </div>
           </div>
@@ -350,7 +444,7 @@ const AdminApp = () => {
     if (session?.role !== 'admin') navigate('/admin/signin', { replace: true });
   }, [session, navigate]);
   if (session?.role !== 'admin') return null;
-  const Tab = { overview: Overview, doctors: VerificationTab, users: UsersTab, payments: BillingTab, account: AccountTab, reports: ReportsTab, partners: PartnersTab, errors: ErrorsTab }[tab];
+  const Tab = { overview: Overview, doctors: VerificationTab, orgs: OrgsTab, users: UsersTab, payments: BillingTab, account: AccountTab, reports: ReportsTab, partners: PartnersTab, errors: ErrorsTab }[tab];
   return (
     <div className="admin">
       <header className="public-head">

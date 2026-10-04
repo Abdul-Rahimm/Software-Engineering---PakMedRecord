@@ -45,6 +45,9 @@ const ForgotPassword = lazyNamed(reset, 'ForgotPassword');
 const ResetPassword = lazyNamed(reset, 'ResetPassword');
 const directory = () => import('./pages/public/Directory');
 const DoctorDirectory = lazyNamed(directory, 'DoctorDirectory');
+const HospitalDirectory = lazyNamed(directory, 'HospitalDirectory');
+const HospitalProfile = lazyNamed(directory, 'HospitalProfile');
+const HospitalRegister = lazy(() => import('./pages/public/HospitalRegister'));
 const DoctorPublicProfile = lazyNamed(directory, 'DoctorPublicProfile');
 const publicRecords = () => import('./pages/public/PublicRecords');
 const EmergencyPage = lazyNamed(publicRecords, 'EmergencyPage');
@@ -79,6 +82,9 @@ const Routes = () => (
     <Route path="/privacy" element={<Privacy />} />
     <Route path="/developers" element={<Developers />} />
     <Route path="/find-doctors" element={<DoctorDirectory />} />
+    <Route path="/hospitals" element={<HospitalDirectory />} />
+    <Route path="/hospitals/register" element={<HospitalRegister />} />
+    <Route path="/hospitals/:id" element={<HospitalProfile />} />
     <Route path="/find-doctors/:id" element={<DoctorPublicProfile />} />
     <Route path="/e/:token" element={<EmergencyPage />} />
     <Route path="/s/:token" element={<SharedRecordPage />} />

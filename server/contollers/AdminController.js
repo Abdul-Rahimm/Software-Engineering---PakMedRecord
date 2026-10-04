@@ -15,6 +15,9 @@ const Partner = require('../models/PartnerModel');
 const ErrorLog = require('../models/ErrorLogModel');
 const Prescription = require('../models/PrescriptionModel');
 const Clinic = require('../models/ClinicModel');
+const Facility = require('../models/FacilityModel');
+const Membership = require('../models/MembershipModel');
+const Staff = require('../models/StaffModel');
 const { completeSignIn } = require('../lib/session');
 const { openFileStream } = require('../lib/files');
 const { notify } = require('../lib/notify');
@@ -47,7 +50,7 @@ const me = expressAsyncHandler(async (req, res) => {
 
 const stats = expressAsyncHandler(async (req, res) => {
   const since = new Date(Date.now() - 30 * 86400000);
-  const [patients, doctors, pendingDoctors, records, appointments, openReports, newPatients, newDoctors, errors, files, prescriptions, clinics, storage] = await Promise.all([
+  const [patients, doctors, pendingDoctors, records, appointments, openReports, newPatients, newDoctors, errors, files, prescriptions, clinics, pendingOrgs, storage] = await Promise.all([
     Patient.countDocuments(),
     Doctor.countDocuments(),
     Doctor.countDocuments({ 'verification.status': 'pending' }),
@@ -60,10 +63,11 @@ const stats = expressAsyncHandler(async (req, res) => {
     Attachment.countDocuments(),
     Prescription.countDocuments(),
     Clinic.countDocuments(),
+    Clinic.countDocuments({ 'verification.status': 'pending' }),
     mongoose.connection.db.stats().catch(() => null),
   ]);
   res.status(200).json({
-    patients, doctors, pendingDoctors, records, appointments, openReports, newPatients, newDoctors, errorsToday: errors, files, prescriptions, clinics,
+    patients, doctors, pendingDoctors, records, appointments, openReports, newPatients, newDoctors, errorsToday: errors, files, prescriptions, clinics, pendingOrgs,
     storageMB: storage ? Math.round(((storage.dataSize || 0) + (storage.indexSize || 0)) / 1048576) : null,
   });
 });
@@ -208,7 +212,82 @@ const updatePartner = expressAsyncHandler(async (req, res) => {
   res.status(200).json({ partner });
 });
 
+// ---------- hospitals / clinics (organizations) ----------
+
+// GET /admin/orgs?status=pending|unverified|verified|rejected|all&q=
+const listOrgs = expressAsyncHandler(async (req, res) => {
+  const status = String(req.query.status || 'pending');
+  const filter = status === 'all' ? {} : { 'verification.status': status };
+  const q = String(req.query.q || '').trim();
+  if (q) {
+    const rx = new RegExp(q.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'i');
+    filter.$or = [{ name: rx }, { city: rx }, { registrationNo: rx }, { email: rx }];
+  }
+  const orgs = await Clinic.find(filter).sort({ 'verification.submittedAt': -1, createdAt: -1 }).limit(200);
+  const ids = orgs.map((o) => o._id);
+  const [branches, doctors, admins] = await Promise.all([
+    Facility.aggregate([{ $match: { orgId: { $in: ids } } }, { $group: { _id: '$orgId', n: { $sum: 1 } } }]),
+    Membership.aggregate([{ $match: { orgId: { $in: ids }, status: 'active' } }, { $group: { _id: '$orgId', n: { $sum: 1 } } }]),
+    Staff.find({ clinicId: { $in: ids }, role: 'org_admin' }).select('clinicId name email').lean(),
+  ]);
+  const count = (arr, id) => arr.find((x) => String(x._id) === String(id))?.n || 0;
+  res.status(200).json(orgs.map((o) => ({
+    ...o.toJSON(), branches: count(branches, o._id), doctors: count(doctors, o._id),
+    admins: admins.filter((a) => String(a.clinicId) === String(o._id)).map((a) => ({ name: a.name, email: a.email })),
+  })));
+});
+
+const orgDocument = expressAsyncHandler(async (req, res) => {
+  if (!mongoose.isValidObjectId(req.params.orgId)) return res.status(404).json({ error: 'Not found' });
+  const org = await Clinic.findById(req.params.orgId);
+  const doc = org?.verification?.document;
+  if (!doc?.gridId) return res.status(404).json({ error: 'No document uploaded' });
+  res.set({ 'Content-Type': doc.mime, 'Content-Disposition': `inline; filename*=UTF-8''${encodeURIComponent(doc.name)}`, 'Cache-Control': 'private, no-store' });
+  openFileStream(doc.gridId).on('error', () => !res.headersSent && res.status(404).end()).pipe(res);
+});
+
+// POST /admin/orgs/:orgId/review { decision: 'verified'|'rejected', note } or { suspended: true|false }
+const reviewOrg = expressAsyncHandler(async (req, res) => {
+  if (!mongoose.isValidObjectId(req.params.orgId)) return res.status(404).json({ error: 'Not found' });
+  const org = await Clinic.findById(req.params.orgId);
+  if (!org) return res.status(404).json({ error: 'Not found' });
+  const { decision, note, suspended } = req.body || {};
+  if (typeof suspended === 'boolean') {
+    org.suspended = suspended;
+    await org.save();
+    return res.status(200).json({ message: suspended ? 'Organization suspended' : 'Organization restored', org });
+  }
+  if (!['verified', 'rejected'].includes(decision)) return res.status(400).json({ error: 'Choose verify or reject' });
+  if (decision === 'rejected' && !String(note || '').trim()) return res.status(400).json({ error: 'Tell them why, so they can fix it' });
+  org.verification = { ...(org.verification?.toObject?.() || {}), status: decision, note: String(note || '').trim(), reviewedAt: new Date() };
+  await org.save();
+  const verified = decision === 'verified';
+  const recipients = [org.email, ...(await Staff.find({ clinicId: org._id, role: 'org_admin' }).select('email').lean()).map((s) => s.email)].filter(Boolean);
+  const adminDoctors = await Membership.find({ orgId: org._id, status: 'active', roles: 'org_admin' }).select('doctorCNIC').lean();
+  adminDoctors.forEach((m) => notify('doctor', m.doctorCNIC, {
+    type: 'verification', title: verified ? `${org.name} is verified` : `${org.name}: verification needs attention`,
+    body: verified ? 'Patients can now find it and book its doctors.' : `Reason: ${org.verification.note}`, link: `/clinic/${m.doctorCNIC}`,
+  }));
+  if (mailEnabled()) {
+    for (const to of [...new Set(recipients)]) {
+      sendMail({
+        to,
+        ...brandedEmail({
+          subject: verified ? `${org.name} is verified on PakMedRecord` : `Action needed: ${org.name} verification`,
+          name: org.name,
+          paragraphs: verified
+            ? ['Your registration has been verified. Your hospital, its branches and its doctors are now visible to patients, who can book appointments with them.']
+            : ['We could not verify your registration yet.', `Reason: ${org.verification.note}`, 'Sign in and upload a clearer certificate from Settings.'],
+          button: { label: 'Open PakMedRecord', link: `${APP_URL()}/desk/signin` },
+        }),
+      }).catch((err) => console.error('Org verification email failed:', err.message));
+    }
+  }
+  res.status(200).json({ message: verified ? 'Organization verified' : 'Organization rejected', org });
+});
+
 module.exports = {
+  listOrgs, orgDocument, reviewOrg,
   signin, me, stats, listDoctors, doctorDocument, reviewDoctor, users, setDisabled, listReports, resolveReport, errors,
   listPartners, createPartner, updatePartner,
 };

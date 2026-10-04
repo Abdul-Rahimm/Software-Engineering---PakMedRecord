@@ -1,13 +1,15 @@
 const mongoose = require('mongoose');
 const { accountFields } = require('./accountFields');
 
-// Clinic front-desk staff: manage the clinic's schedule, check patients in, take walk-in bookings
+// Hospital/clinic staff accounts (email + password). clinicId is the organization they belong to.
 const staffSchema = new mongoose.Schema({
-  clinicId: { type: mongoose.Schema.Types.ObjectId, ref: 'Clinic', required: true, index: true },
+  clinicId: { type: mongoose.Schema.Types.ObjectId, ref: 'Organization', required: true, index: true },
   name: { type: String, required: true, trim: true, maxlength: 80 },
   email: { type: String, required: true, unique: true, lowercase: true, trim: true },
   password: { type: String, required: true },
-  role: { type: String, enum: ['reception'], default: 'reception' },
+  // hospital accounts: org_admin runs the organization; facility_admin/reception/billing work at given branches
+  role: { type: String, enum: ['org_admin', 'facility_admin', 'reception', 'billing'], default: 'reception' },
+  facilityIds: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Facility' }], // empty = all branches
   ...accountFields,
 }, { timestamps: true });
 

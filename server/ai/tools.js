@@ -11,8 +11,8 @@ const Affiliation = require('../models/AffiliationModel');
 const Note = require('../models/NotesModel');
 const Vital = require('../models/VitalModel');
 const { RECORD_CATEGORIES, SPECIALIZATIONS, VITAL_TYPES } = require('../models/constants');
-const { createAppointment } = require('../lib/appointments');
-const { slotsFor, scheduleOf } = require('../lib/availability');
+const { createAppointment, resolveLocation } = require('../lib/appointments');
+const { doctorLocations } = require('../lib/tenancy');
 
 const day = (d) => (d ? new Date(d).toISOString().slice(0, 10) : null);
 
@@ -162,29 +162,39 @@ const patientTools = [
     },
   },
   {
+    name: 'get_doctor_locations',
+    description: 'List where a doctor can be booked: each hospital branch (orgId + facilityId) and/or their private practice (orgId null). Call this before checking free slots.',
+    schema: z.object({ doctorCNIC: z.number().int() }),
+    handler: async ({ doctorCNIC }) => doctorLocations(doctorCNIC),
+  },
+  {
     name: 'get_booked_times',
-    description: 'Get the free appointment slots for a doctor on a given date (YYYY-MM-DD), based on the doctor\'s clinic hours and existing bookings. Only offer times from freeSlots.',
-    schema: z.object({ doctorCNIC: z.number().int(), date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/) }),
-    handler: async ({ doctorCNIC, date }) => {
+    description: 'Get the free appointment slots for a doctor on a given date (YYYY-MM-DD) at one location from get_doctor_locations (pass its orgId and facilityId; omit both for private practice). Only offer times from freeSlots.',
+    schema: z.object({ doctorCNIC: z.number().int(), date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/), orgId: z.string().nullable().optional(), facilityId: z.string().nullable().optional() }),
+    handler: async ({ doctorCNIC, date, orgId, facilityId }) => {
       const doctor = await Doctor.findOne({ doctorCNIC });
       if (!doctor) return { error: 'Doctor not found' };
+      const place = await resolveLocation(doctor, { orgId: orgId || undefined, facilityId: facilityId || undefined }, date);
+      if (place.error) return { error: place.error };
       const taken = (await Appointment.find({ doctorCNIC, date, status: { $ne: 'cancelled' } })).map((a) => a.time);
-      const freeSlots = slotsFor(doctor, date).filter((t) => !taken.includes(t));
-      return { date, freeSlots, closed: freeSlots.length === 0 && taken.length === 0, videoConsults: scheduleOf(doctor).videoConsults, fee: doctor.fee ?? null };
+      const freeSlots = place.slots.filter((t) => !taken.includes(t));
+      return { date, place: place.label, freeSlots, closed: freeSlots.length === 0 && taken.length === 0, videoConsults: place.videoConsults, fee: place.fee ?? null };
     },
   },
   {
     name: 'book_appointment',
-    description: 'Book an appointment with a doctor in the patient\'s care team. ONLY call this after the patient has explicitly confirmed the doctor, date and time you proposed. date is YYYY-MM-DD, time is HH:MM (24-hour) and must be one of the doctor\'s free slots. mode is "video" only if the doctor offers video consultations and the patient asked for one.',
+    description: 'Book an appointment with a doctor in the patient\'s care team. ONLY call this after the patient has explicitly confirmed the doctor, place, date and time you proposed. Pass the orgId and facilityId of the location (omit for private practice). date is YYYY-MM-DD, time is HH:MM (24-hour) and must be one of the doctor\'s free slots. mode is "video" only if the doctor offers video consultations and the patient asked for one.',
     schema: z.object({
       doctorCNIC: z.number().int(),
       date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
       time: z.string().regex(/^\d{2}:\d{2}$/),
       reason: z.string().max(300).optional(),
       mode: z.enum(['in-person', 'video']).optional(),
+      orgId: z.string().nullable().optional(),
+      facilityId: z.string().nullable().optional(),
     }),
     handler: async (input, user) => {
-      const { status, body } = await createAppointment({ ...input, patientCNIC: user.cnic, bookedBy: { role: 'assistant' } });
+      const { status, body } = await createAppointment({ ...input, orgId: input.orgId || undefined, facilityId: input.facilityId || undefined, patientCNIC: user.cnic, bookedBy: { role: 'assistant' } });
       return status === 201
         ? { booked: { date: input.date, time: input.time, doctorCNIC: input.doctorCNIC, reason: input.reason || null } }
         : { error: body.error };
@@ -292,6 +302,7 @@ const TOOL_LABELS = {
   log_vital: 'Saving your reading',
   list_care_team: 'Checking your care team',
   search_doctors: 'Searching doctors',
+  get_doctor_locations: 'Checking where the doctor practises',
   get_booked_times: 'Checking availability',
   book_appointment: 'Booking the appointment',
   add_note: 'Saving a note',

@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { FiArrowRight, FiLock, FiMail } from 'react-icons/fi';
 import api from '../../api';
 import { saveSession } from '../../session';
@@ -44,9 +44,9 @@ const StaffSignin = ({ kind }) => {
   return (
     <CenterCard>
       <div className="stack gap-8">
-        <span className="eyebrow">{kind === 'admin' ? 'PakMedRecord admin' : 'Clinic front desk'}</span>
+        <span className="eyebrow">{kind === 'admin' ? 'PakMedRecord admin' : 'Hospital & clinic staff'}</span>
         <h1 style={{ fontSize: 28 }}>{challenge ? 'Two-step sign-in' : 'Sign in'}</h1>
-        {!challenge && <p className="muted">{kind === 'admin' ? 'Doctor verification, reports and partners.' : 'Today’s schedule, check-ins and walk-in bookings. Your clinic admin creates your account.'}</p>}
+        {!challenge && <p className="muted">{kind === 'admin' ? 'Doctor verification, reports and partners.' : 'Front desk, doctors, branches and payments. Your hospital administrator creates your account.'}</p>}
       </div>
       {challenge ? (
         <TwoFactorStep challenge={challenge} onDone={finish} onCancel={() => setChallenge(null)} />
@@ -57,6 +57,7 @@ const StaffSignin = ({ kind }) => {
           <Button type="submit" className="btn btn-primary btn-lg btn-block" loading={loading} disabled={!email || !password}>Sign in {!loading && <FiArrowRight />}</Button>
         </form>
       )}
+      {kind !== 'admin' && !challenge && <p className="subtle" style={{ fontSize: 13, textAlign: 'center' }}>New hospital or clinic? <Link to="/hospitals/register">Register it here</Link></p>}
     </CenterCard>
   );
 };

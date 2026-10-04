@@ -169,6 +169,7 @@ const Appointments = () => {
                             <span style={{ fontWeight: 600 }}>Former patient</span>
                           )}
                           <div className="mono subtle" style={{ fontSize: 12 }}>{formatCNIC(a.patientCNIC)}</div>
+                          {a.place && <div className="subtle truncate" style={{ fontSize: 12.5, marginTop: 2 }}>{a.place.orgName}, {a.place.facilityName}</div>}
                           {a.reason && <div className="muted truncate" style={{ fontSize: 13, marginTop: 2 }}>“{a.reason}”</div>}
                           <div className="row gap-8 wrap" style={{ marginTop: 4 }}>
                             {a.mode === 'video' && <span className="badge badge-cyan badge-plain"><FiVideo size={11} /> Video</span>}

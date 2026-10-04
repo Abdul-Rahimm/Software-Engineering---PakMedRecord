@@ -22,19 +22,24 @@ const PrescriptionRoutes = require('./routes/PrescriptionRoute');
 const ShareRoutes = require('./routes/ShareRoute');
 const PublicRoutes = require('./routes/PublicRoute');
 const HealthTools = require('./routes/HealthToolsRoute');
-const ClinicRoutes = require('./routes/ClinicRoute');
+const OrgRoutes = require('./routes/OrgRoute');
+const { staffSignin } = require('./contollers/ClinicController');
+const { signinLimiter } = require('./middleware/rateLimit');
 const CallRoutes = require('./routes/CallRoute');
 const PaymentRoutes = require('./routes/PaymentRoute');
 const PartnerRoutes = require('./routes/PartnerRoute');
 const { analyticsRouter, reportsRouter, cronRouter } = require('./routes/MiscRoute');
 const { errorHandler, recordError } = require('./lib/errors');
+const { runMigrations } = require('./lib/migrations');
 const { safepayWebhook } = require('./contollers/PaymentController');
 
 // One shared connection per process; serverless instances reuse it across requests
 let dbReady;
 const connectDB = () => {
     if (!dbReady) {
-        dbReady = mongoose.connect(connection_string).then(() => console.log('PakMedRecord is connected to database!'));
+        dbReady = mongoose.connect(connection_string)
+            .then(() => console.log('PakMedRecord is connected to database!'))
+            .then(() => runMigrations());
         dbReady.catch(() => { dbReady = undefined; }); // retry on the next request
     }
     return dbReady;
@@ -95,8 +100,8 @@ app.use('/meds', HealthTools.meds);
 app.use('/vaccines', HealthTools.vaccines);
 app.use('/labs', HealthTools.labs);
 app.use('/followups', HealthTools.followups);
-app.use('/clinics', ClinicRoutes.clinics);
-app.use('/desk', ClinicRoutes.desk);
+app.use('/orgs', OrgRoutes);
+app.post('/desk/signin', signinLimiter, staffSignin); // hospital staff sign-in
 app.use('/calls', CallRoutes);
 app.use('/payments', PaymentRoutes);
 app.use('/analytics', analyticsRouter);

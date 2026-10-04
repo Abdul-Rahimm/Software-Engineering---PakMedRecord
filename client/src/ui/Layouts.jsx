@@ -29,6 +29,7 @@ export const PublicPage = ({ children, wide = false, nav = true }) => (
       <Logo />
       <div className="row gap-8 wrap" style={{ justifyContent: 'flex-end' }}>
         {nav && <Link to="/find-doctors" className="btn btn-ghost btn-sm hide-sm">Find a doctor</Link>}
+        {nav && <Link to="/hospitals" className="btn btn-ghost btn-sm hide-sm">Hospitals</Link>}
         {nav && <Link to="/patient/signin" className="btn btn-ghost btn-sm hide-sm">Sign in</Link>}
         <LangToggle />
         <ThemeToggle />

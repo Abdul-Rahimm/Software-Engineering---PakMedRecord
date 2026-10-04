@@ -65,7 +65,7 @@ const doctorSchema = mongoose.Schema (
             holidays: [{ type: String }],
             videoConsults: { type: Boolean },
         },
-        clinicId: { type: mongoose.Schema.Types.ObjectId, ref: 'Clinic' },
+        clinicId: { type: mongoose.Schema.Types.ObjectId }, // legacy (pre-hospitals); see Membership
     },
     { timestamps: true }
 );

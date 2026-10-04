@@ -396,7 +396,7 @@ const Auth = ({ role, mode }) => {
           </p>
           {!isSignup && role === 'doctor' && (
             <p className="subtle" style={{ textAlign: 'center', fontSize: 13 }}>
-              Clinic front desk? <Link to="/desk/signin">Staff sign-in</Link>
+              Hospital or clinic staff? <Link to="/desk/signin">Staff sign-in</Link>
             </p>
           )}
           </>

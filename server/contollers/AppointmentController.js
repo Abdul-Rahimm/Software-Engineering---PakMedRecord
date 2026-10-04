@@ -2,10 +2,12 @@ const Appointment = require('../models/AppointmentModel');
 const { notify } = require('../lib/notify');
 const Doctor = require('../models/DoctorModel');
 const Payment = require('../models/PaymentModel');
-const Clinic = require('../models/ClinicModel');
-const { ACTIVE, createAppointment, describe } = require('../lib/appointments');
+const { orgAccess, canUseFacility, doctorLocations } = require('../lib/tenancy');
+const Organization = require('../models/OrganizationModel');
+const Facility = require('../models/FacilityModel');
+const { ACTIVE, createAppointment, describe, resolveLocation } = require('../lib/appointments');
 const { flagRefund } = require('./PaymentController');
-const { slotsFor, scheduleOf } = require('../lib/availability');
+const { scheduleOf } = require('../lib/availability');
 
 // Book an appointment with a doctor in the patient's care team
 const book = async (req, res) => {
@@ -39,27 +41,58 @@ const availability = async (req, res) => {
         if (!/^\d{4}-\d{2}-\d{2}$/.test(String(date || ''))) return res.status(400).json({ error: 'date=YYYY-MM-DD is required' });
         const doctor = await Doctor.findOne({ doctorCNIC: Number(req.params.doctorCNIC) });
         if (!doctor) return res.status(404).json({ error: 'Doctor not found' });
+        // ?orgId=&facilityId= for a hospital branch; neither for private practice
+        const place = await resolveLocation(doctor, { orgId: req.query.orgId, facilityId: req.query.facilityId }, date);
+        if (place.error) return res.status(400).json({ error: place.error });
         const taken = await Appointment.find({ doctorCNIC: doctor.doctorCNIC, date, status: ACTIVE }).select('time -_id');
-        const s = scheduleOf(doctor);
-        res.status(200).json({
-            slots: slotsFor(doctor, date),
-            taken: taken.map((a) => a.time),
-            slotMinutes: s.slotMinutes,
-            videoConsults: s.videoConsults,
-            fee: doctor.fee ?? null,
-            workingDays: [...new Set(s.days.map((d) => d.day))],
-            holidays: s.holidays,
-        });
+        let workingDays;
+        let holidays;
+        let slotMinutes;
+        if (place.membership) {
+            const a = place.membership.availability || {};
+            workingDays = [...new Set((a.blocks || []).filter((b) => String(b.facilityId) === String(place.facility._id)).map((b) => b.day))];
+            holidays = a.holidays || [];
+            slotMinutes = a.slotMinutes || 30;
+        } else {
+            const s = scheduleOf(doctor);
+            workingDays = [...new Set(s.days.map((d) => d.day))];
+            holidays = s.holidays;
+            slotMinutes = s.slotMinutes;
+        }
+        res.status(200).json({ slots: place.slots, taken: taken.map((a) => a.time), slotMinutes, videoConsults: place.videoConsults, fee: place.fee ?? null, workingDays, holidays, place: place.label });
     } catch (error) {
         console.error('Error fetching availability:', error);
         res.status(500).json({ error: 'Internal server error.' });
     }
 };
 
+// GET /appointments/locations/:doctorCNIC - every hospital branch (and private practice) where the doctor can be booked
+const locations = async (req, res) => {
+    try {
+        res.status(200).json(await doctorLocations(Number(req.params.doctorCNIC)));
+    } catch (error) {
+        console.error('Error fetching locations:', error);
+        res.status(500).json({ error: 'Internal server error.' });
+    }
+};
+
+// Adds place: { orgName, facilityName, address } to appointments at a hospital branch
+const withPlaces = async (appointments) => {
+    const [orgs, facilities] = await Promise.all([
+        Organization.find({ _id: { $in: [...new Set(appointments.map((a) => a.orgId).filter(Boolean))] } }).select('name').lean(),
+        Facility.find({ _id: { $in: [...new Set(appointments.map((a) => a.facilityId).filter(Boolean))] } }).select('name address city').lean(),
+    ]);
+    return appointments.map((a) => {
+        const o = a.orgId && orgs.find((x) => String(x._id) === String(a.orgId));
+        const f = a.facilityId && facilities.find((x) => String(x._id) === String(a.facilityId));
+        return o ? { ...a, place: { orgName: o.name, facilityName: f?.name, address: [f?.address, f?.city].filter(Boolean).join(', ') } } : a;
+    });
+};
+
 const getAppointments = async (req, res) => {
     try {
-        const appointments = await Appointment.find({ doctorCNIC: req.params.doctorCNIC }).sort({ date: 1, time: 1 });
-        res.status(200).json({ appointments });
+        const appointments = await Appointment.find({ doctorCNIC: req.params.doctorCNIC }).sort({ date: 1, time: 1 }).lean();
+        res.status(200).json({ appointments: await withPlaces(appointments) });
     } catch (error) {
         console.error('Error fetching appointments:', error);
         res.status(500).json({ error: 'Internal server error.' });
@@ -69,8 +102,8 @@ const getAppointments = async (req, res) => {
 // A patient's own appointments
 const getPatientAppointments = async (req, res) => {
     try {
-        const appointments = await Appointment.find({ patientCNIC: req.params.patientCNIC }).sort({ date: 1, time: 1 });
-        res.status(200).json({ appointments });
+        const appointments = await Appointment.find({ patientCNIC: req.params.patientCNIC }).sort({ date: 1, time: 1 }).lean();
+        res.status(200).json({ appointments: await withPlaces(appointments) });
     } catch (error) {
         console.error('Error fetching patient appointments:', error);
         res.status(500).json({ error: 'Internal server error.' });
@@ -164,8 +197,11 @@ const markPaid = async (req, res) => {
         if (!appointment) return res.status(404).json({ error: 'Appointment not found' });
         let allowed = req.user.role === 'doctor' && appointment.doctorCNIC === req.user.cnic;
         if (req.user.role === 'staff' && req.user.clinicId) {
-            const clinic = await Clinic.findById(req.user.clinicId);
-            allowed = Boolean(clinic?.doctors.some((d) => d.status === 'active' && d.doctorCNIC === appointment.doctorCNIC));
+            // front desk / billing of the organization where the visit happens
+            const access = await orgAccess(req.user, req.user.clinicId);
+            allowed = Boolean(access && appointment.orgId && String(appointment.orgId) === access.orgId
+                && (access.isAdmin || access.roles.some((r) => ['reception', 'billing', 'facility_admin'].includes(r)))
+                && canUseFacility(access, appointment.facilityId));
         }
         if (!allowed) return res.status(403).json({ error: 'Not allowed' });
         if (appointment.payment?.status === 'paid') return res.status(409).json({ error: 'Already paid' });
@@ -186,6 +222,6 @@ const markPaid = async (req, res) => {
 };
 
 module.exports = {
-    availability, markPaid,
+    availability, markPaid, locations,
     book, bookedSlots, getAppointments, getPatientAppointments, completeAppointment, cancelAppointment, getAppointmentTimes,
 };

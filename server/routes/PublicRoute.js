@@ -10,6 +10,8 @@ const rx = require('../contollers/PrescriptionController');
 router.use(rateLimit({ windowMs: 60 * 1000, limit: Number(process.env.PUBLIC_RATE_LIMIT) || 60, standardHeaders: 'draft-8', legacyHeaders: false, message: { error: 'Too many requests, please slow down.' } }));
 router.get('/doctors', directory.search);
 router.get('/doctors/:id', directory.profile);
+router.get('/hospitals', directory.hospitals);
+router.get('/hospitals/:id', directory.hospital);
 router.get('/emergency/:token', share.viewEmergency);
 router.get('/share/:token', share.viewShare);
 router.get('/share/:token/files/:fileId', share.shareFile);

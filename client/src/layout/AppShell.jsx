@@ -30,7 +30,7 @@ export const navFor = (role, cnic) =>
         { to: `/tempRecords/pending/${cnic}`, label: 'Review queue', icon: FiClipboard, badge: 'pending' },
         { to: `/appointments/fetchByTime/${cnic}`, label: 'Insights', icon: FiBarChart2 },
         { to: `/doctor/hours/${cnic}`, label: 'Clinic hours', icon: FiClock, group: 'Practice' },
-        { to: `/clinic/${cnic}`, label: 'My clinic', icon: FiHome },
+        { to: `/clinic/${cnic}`, label: 'My hospitals', icon: FiHome },
         { to: `/doctor/profile/${cnic}`, label: 'Profile', icon: FiSettings, group: 'Account' },
         { to: `/doctor/security/${cnic}`, label: 'Security & privacy', icon: FiLock },
       ]

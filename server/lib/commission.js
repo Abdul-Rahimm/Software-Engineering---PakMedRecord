@@ -3,6 +3,8 @@
 const PaymentAccount = require('../models/PaymentAccountModel');
 const Clinic = require('../models/ClinicModel');
 const Doctor = require('../models/DoctorModel');
+const Staff = require('../models/StaffModel');
+const Membership = require('../models/MembershipModel');
 
 // percent of each online fee; PLATFORM_COMMISSION_PERCENT overrides
 const commissionRate = () => {
@@ -17,9 +19,14 @@ const payeeOf = async (payment) => {
   const account = payment.accountId && (await PaymentAccount.findById(payment.accountId).lean());
   if (account?.ownerType === 'clinic') {
     const clinic = await Clinic.findById(account.ownerId).lean();
-    const admin = clinic?.doctors.find((d) => d.role === 'admin' && d.status === 'active');
-    const adminDoc = admin && (await Doctor.findOne({ doctorCNIC: admin.doctorCNIC }).select('email').lean());
-    return { type: 'clinic', id: String(account.ownerId), name: clinic?.name || 'Clinic', email: adminDoc?.email };
+    // invoices go to the organization's email, else an administrator's
+    let email = clinic?.email;
+    if (!email) email = (await Staff.findOne({ clinicId: account.ownerId, role: 'org_admin', disabled: { $ne: true } }).select('email').lean())?.email;
+    if (!email) {
+      const m = await Membership.findOne({ orgId: account.ownerId, status: 'active', roles: 'org_admin' }).select('doctorCNIC').lean();
+      email = m && (await Doctor.findOne({ doctorCNIC: m.doctorCNIC }).select('email').lean())?.email;
+    }
+    return { type: 'clinic', id: String(account.ownerId), name: clinic?.name || 'Clinic', email };
   }
   const cnic = account?.ownerId || payment.doctorCNIC;
   const d = await Doctor.findOne({ doctorCNIC: Number(cnic) }).select('firstName lastName email').lean();
