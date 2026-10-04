@@ -50,7 +50,7 @@ const HospitalRegister = () => {
               'Doctors can work at several hospitals, with separate hours and fees at each',
               'Medical records stay with the patient. Your staff never see them',
               'Free to list. 5% platform fee only on fees paid online',
-            ].map((t) => <li key={t} className="row gap-8"><FiCheckCircle style={{ color: 'var(--accent)', flexShrink: 0 }} /> {t}</li>)}
+            ].map((t) => <li key={t} className="row gap-8"><FiCheckCircle style={{ color: 'var(--emerald)', flexShrink: 0 }} /> {t}</li>)}
           </ul>
           <p className="subtle" style={{ fontSize: 13 }}>After signing up, upload your healthcare commission registration. Patients see you once we verify it.</p>
           <p className="subtle" style={{ fontSize: 13 }}>Already registered? <Link to="/desk/signin">Sign in</Link></p>

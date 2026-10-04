@@ -6,9 +6,10 @@ const { completeSignIn } = require('../lib/session');
 const { TERMS_VERSION } = require('../lib/accounts');
 const { saveFile, openFileStream, deleteFile } = require('../lib/files');
 const { cleanSchedule, scheduleOf } = require('../lib/availability');
+const { scheduleClash } = require('../lib/conflicts');
 const { forgetAccountStatus } = require('../middleware/auth');
 const { startEmailVerification } = require('../lib/accounts');
-const { isCNIC, isEmail, cleanList } = require('../lib/validate');
+const { cnicProblem, isCNIC, isEmail, cleanList } = require('../lib/validate');
 const { SPECIALIZATIONS } = require('../models/constants');
 
 const Signup = expressAsyncHandler(async (req, res) => {
@@ -17,21 +18,17 @@ const Signup = expressAsyncHandler(async (req, res) => {
   if (!doctorCNIC || !firstName || !lastName || !email || !password || !hospital) {
     return res.status(400).json({ error: 'All fields are required' });
   }
-  if (!isCNIC(doctorCNIC)) return res.status(400).json({ error: 'CNIC must be 13 digits' });
+  const cnicError = cnicProblem(doctorCNIC);
+  if (cnicError) return res.status(400).json({ error: cnicError });
   if (!isEmail(email)) return res.status(400).json({ error: 'Enter a valid email' });
   if (String(password).length < 6) return res.status(400).json({ error: 'Password must be at least 6 characters' });
   if (specialization && !SPECIALIZATIONS.includes(specialization)) return res.status(400).json({ error: 'Unknown specialization' });
   if (!acceptTerms) return res.status(400).json({ error: 'Please accept the Terms of Service and Privacy Policy' });
 
   try {
-    const patientWithSameCNIC = await Patient.findOne({ patientCNIC: doctorCNIC });
-      if (patientWithSameCNIC) {
-        return res.status(409).json({ error: 'CNIC already registered as a patient!' });
-    }
-
     const existingDoctor = await Doctor.findOne({ doctorCNIC });
     if (existingDoctor) {
-      return res.status(409).json({ error: 'Doctor already registered!' });
+      return res.status(409).json({ error: 'Doctor already registered!', code: 'CNIC_TAKEN' });
     }
 
     const hashedPassword = await bcrypt.hash(password, 10);
@@ -146,7 +143,7 @@ const updateDoctor = expressAsyncHandler(async (req, res) => {
     const doctor = await Doctor.findOne({ doctorCNIC: req.params.doctorCNIC });
     if (!doctor) return res.status(404).json({ error: 'Doctor not found' });
 
-    const { firstName, lastName, email, hospital, specialization, phone, bio, yearsExperience, password, city, clinicAddress, fee, languages, qualifications } = req.body;
+    const { firstName, lastName, email, hospital, specialization, phone, bio, yearsExperience, password, city, clinicAddress, fee, languages, qualifications, travelBufferMinutes } = req.body;
     if (email !== undefined && !isEmail(email)) return res.status(400).json({ error: 'Enter a valid email' });
     if (specialization !== undefined && !SPECIALIZATIONS.includes(specialization)) return res.status(400).json({ error: 'Unknown specialization' });
     if (password !== undefined && password !== '' && String(password).length < 6) return res.status(400).json({ error: 'Password must be at least 6 characters' });
@@ -164,6 +161,7 @@ const updateDoctor = expressAsyncHandler(async (req, res) => {
     if (clinicAddress !== undefined) doctor.clinicAddress = String(clinicAddress).trim();
     if (fee !== undefined) doctor.fee = fee === '' || fee === null ? undefined : Number(fee);
     if (languages !== undefined) doctor.languages = cleanList(languages, 8);
+    if (travelBufferMinutes !== undefined) doctor.travelBufferMinutes = Math.min(120, Math.max(0, Math.round(Number(travelBufferMinutes) || 0)));
     if (qualifications !== undefined) doctor.qualifications = String(qualifications).trim();
 
     await doctor.save();
@@ -226,6 +224,8 @@ const updateAvailability = expressAsyncHandler(async (req, res) => {
   } catch (err) {
     return res.status(400).json({ error: err.message });
   }
+  const clash = await scheduleClash(doctor, doctor.availability.days, 'private');
+  if (clash) return res.status(400).json({ error: `These hours clash with your hours elsewhere: ${clash}` });
   await doctor.save();
   res.status(200).json({ message: 'Clinic hours saved', availability: scheduleOf(doctor) });
 });

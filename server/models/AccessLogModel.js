@@ -4,7 +4,7 @@ const mongoose = require('mongoose');
 const accessLogSchema = new mongoose.Schema({
   patientCNIC: { type: Number, required: true },
   actor: {
-    role: { type: String, enum: ['doctor', 'admin', 'public', 'partner', 'share'], required: true },
+    role: { type: String, enum: ['doctor', 'admin', 'public', 'partner', 'share', 'hospital'], required: true },
     cnic: Number,
     id: String,
     name: String,
@@ -13,6 +13,7 @@ const accessLogSchema = new mongoose.Schema({
   bucket: { type: String, required: true, unique: true },
   count: { type: Number, default: 1 },
   ip: String,
+  orgId: String, // hospital lookups, for rate limiting
   lastAt: { type: Date, default: Date.now },
 }, { timestamps: true });
 

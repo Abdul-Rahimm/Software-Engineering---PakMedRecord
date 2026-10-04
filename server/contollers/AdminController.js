@@ -19,6 +19,7 @@ const Facility = require('../models/FacilityModel');
 const Membership = require('../models/MembershipModel');
 const Staff = require('../models/StaffModel');
 const { completeSignIn } = require('../lib/session');
+const { flagFutureAppointments, clearNotice } = require('../lib/appointments');
 const { openFileStream } = require('../lib/files');
 const { notify } = require('../lib/notify');
 const { mailEnabled, sendMail, brandedEmail } = require('../lib/mailer');
@@ -253,6 +254,8 @@ const reviewOrg = expressAsyncHandler(async (req, res) => {
   if (!org) return res.status(404).json({ error: 'Not found' });
   const { decision, note, suspended } = req.body || {};
   if (typeof suspended === 'boolean') {
+    if (suspended && !org.suspended) await flagFutureAppointments({ orgId: org._id }, 'org_suspended');
+    if (!suspended && org.suspended) await clearNotice({ orgId: org._id }, 'org_suspended');
     org.suspended = suspended;
     await org.save();
     return res.status(200).json({ message: suspended ? 'Organization suspended' : 'Organization restored', org });

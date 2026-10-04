@@ -58,7 +58,15 @@ PakMedRecord gives every patient in Pakistan one verified medical record that fo
 - Doctors work at many hospitals (many-to-many memberships), with a separate fee and weekly hours per branch, plus optional private practice; a doctor can also set up and run their own clinic
 - Patients browse city → hospital → branch → doctor (`/hospitals`) and book at a specific branch; a doctor can never be double-booked across hospitals
 - Tenant isolation: every hospital route resolves the caller's organization and role from their own account and filters by it; other organizations' data returns 404. Patients' medical records are not hospital data: they stay with the patient and the doctors they choose
-- Front desk (`/desk`): book walk-ins, check patients in, mark no-shows and record payments, without access to records
+- Front desk (`/desk`): book walk-ins, check patients in, mark no-shows and record payments, without access to records. Only verified hospitals can look patients up (masked name, logged in the patient's "who viewed my record", rate-limited) or invite doctors; a first booking for a new patient needs a 6-digit code the patient receives and reads out
+- No double-booking across hospitals: visits keep their real length, a doctor can set travel time between hospitals, and weekly hours can't overlap another hospital or their private practice
+- When a doctor leaves, a branch closes or a hospital is suspended, patients with upcoming visits are told on every channel; "Move" re-books with the same doctor at another hospital/time in one step (a paid fee moves with it when the same hospital is paid, otherwise it's refunded)
+- Prescriptions record and print the hospital branch where they were issued
+
+**Identity**
+- CNIC checks on every sign-up (NADRA layout: region digit, odd/even gender digit) to catch typos; one CNIC can hold both a doctor and a patient account
+- Identity check (`/verify-identity`): CNIC photo (number read by OCR) plus a live camera check with random head-turn and blink challenges, anti-spoof and liveness models, and face matching against the CNIC photo. It runs on the device (face models are served from this site); photos go to an admin for review (Admin → Identity)
+- "Claim my CNIC" (`/claim-cnic`): someone whose CNIC was used by another account proves it's theirs; an admin hands the account over (new email, everyone signed out, reset link) or freezes it
 - Practice and clinic analytics: no-show and cancellation rates, returning patients, fees collected, busiest hours and days
 - Public doctor directory (`/find-doctors`) with fees, timings and verified badges, searchable by city and specialty
 - Partner API for labs (push results into a patient's record) and pharmacies (verify and dispense prescriptions); docs at `/developers`

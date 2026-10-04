@@ -44,6 +44,10 @@ const appointmentSchema = new mongoose.Schema({
     facilityId: { type: mongoose.Schema.Types.ObjectId, ref: 'Facility' },
     departmentId: { type: mongoose.Schema.Types.ObjectId, ref: 'Department' },
     clinicId: { type: mongoose.Schema.Types.ObjectId }, // legacy, migrated to orgId
+    durationMinutes: { type: Number, min: 5, max: 240 }, // slot length where it was booked (legacy: 30)
+    // set when the doctor left, the branch closed or the hospital was suspended: the patient should move it
+    notice: { type: String, enum: ['doctor_left', 'branch_closed', 'org_suspended', ''], default: '' },
+    movedTo: { type: mongoose.Schema.Types.ObjectId, ref: 'Appointment' },
 }, { timestamps: true });
 
 appointmentSchema.index({ doctorCNIC: 1, date: 1 });

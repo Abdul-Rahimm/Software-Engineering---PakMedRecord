@@ -12,6 +12,7 @@ import { Button, EmptyState, PageHeader, Skeleton } from '../../ui/Bits';
 import Field from '../../ui/Field';
 import Modal from '../../ui/Modal';
 import QRCode from '../../ui/QRCode';
+import IdentityStatus from '../../ui/IdentityStatus';
 import { useFeedback } from '../../ui/Feedback';
 import '../dashboard.css';
 
@@ -287,6 +288,7 @@ const Security = () => {
     <>
       <PageHeader eyebrow="Account" title="Security & privacy" subtitle="Control how you sign in, who can see your information and what we send you." />
       <div className="stack gap-20" style={{ maxWidth: 880 }}>
+        {!dependent && <IdentityStatus />}
         {!dependent && <TwoFactorCard />}
         {!dependent && profile?.hasPassword !== false && <PasswordCard />}
         {role === 'patient' && <NotificationsCard />}

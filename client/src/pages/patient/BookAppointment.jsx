@@ -40,6 +40,8 @@ const BookAppointment = () => {
   const { toast } = useFeedback();
   const days = useMemo(() => nextDays(14), []);
 
+  // "Move" from My appointments: same doctor, new place/time, in one step
+  const moveFrom = location.state?.moveFrom || null;
   const [doctor, setDoctor] = useState(location.state?.doctorCNIC ?? null);
   // where: { orgId, facilityId } of a hospital branch, or { orgId: null } for private practice
   const [places, setPlaces] = useState(null);
@@ -116,10 +118,15 @@ const BookAppointment = () => {
   const book = async () => {
     setSaving(true);
     try {
-      await api.post(`/appointments/book/${cnic}`, { doctorCNIC: doctor, date, time, reason: reason.trim(), mode, ...where });
-      setBooked({ doctor: chosen, date, time, mode, place });
+      if (moveFrom) {
+        const { data } = await api.post(`/appointments/${moveFrom}/move`, { date, time, mode, ...where });
+        toast(data.message);
+      } else {
+        await api.post(`/appointments/book/${cnic}`, { doctorCNIC: doctor, date, time, reason: reason.trim(), mode, ...where });
+        toast('Appointment booked');
+      }
+      setBooked({ doctor: chosen, date, time, mode, place, moved: Boolean(moveFrom) });
       setReason('');
-      toast('Appointment booked');
     } catch (err) {
       toast(apiError(err), 'error');
     } finally {
@@ -153,13 +160,13 @@ const BookAppointment = () => {
 
   return (
     <>
-      <PageHeader eyebrow="Scheduling" title="Book an appointment" subtitle="Choose a doctor from your care team, where to see them, then a day and time." />
+      <PageHeader eyebrow="Scheduling" title={moveFrom ? 'Move appointment' : 'Book an appointment'} subtitle={moveFrom ? 'Same doctor: choose where and when instead. A paid fee moves with it if the same hospital receives it; otherwise it is refunded.' : 'Choose a doctor from your care team, where to see them, then a day and time.'} />
 
       <AnimatePresence mode="wait">
         {booked ? (
           <motion.div key="done" className="glass card-pad-lg stack gap-20" style={{ alignItems: 'center', textAlign: 'center', maxWidth: 520, margin: '0 auto' }} initial={{ opacity: 0, rotateY: -90 }} animate={{ opacity: 1, rotateY: 0 }} exit={{ opacity: 0 }} transition={{ type: 'spring', stiffness: 120, damping: 16 }}>
             <div className="empty-orb" style={{ width: 90, height: 90 }}><FiCheckCircle size={40} /></div>
-            <h2 style={{ fontSize: 28 }}>You&apos;re booked!</h2>
+            <h2 style={{ fontSize: 28 }}>{booked.moved ? 'Appointment moved' : <>You&apos;re booked!</>}</h2>
             <p className="muted">
               {booked.mode === 'video' ? 'Video visit with ' : ''}{doctorName(booked.doctor)}{booked.place?.orgId ? ` at ${booked.place.orgName}, ${booked.place.facilityName}` : ''} on{' '}
               <strong style={{ color: 'var(--text)' }}>{new Date(`${booked.date}T00:00:00`).toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long' })}</strong>{' '}
@@ -175,7 +182,7 @@ const BookAppointment = () => {
             <div className="stack gap-20">
               <Step n={1} title="Doctor" done={Boolean(doctor)}>
                 <div className="grid grid-2" style={{ gap: 12 }}>
-                  {team.map((d) => (
+                  {team.filter((d) => !moveFrom || d.doctorCNIC === doctor).map((d) => (
                     <button key={d.doctorCNIC} type="button" className={`feed-item ${doctor === d.doctorCNIC ? 'selected' : ''}`} style={doctor === d.doctorCNIC ? { borderColor: 'rgba(61,255,176,.55)', boxShadow: 'var(--glow)', font: 'inherit', cursor: 'pointer' } : { font: 'inherit', cursor: 'pointer' }} onClick={() => setDoctor(d.doctorCNIC)} aria-pressed={doctor === d.doctorCNIC}>
                       <Avatar first={d.firstName} last={d.lastName} seed={d.doctorCNIC} size={40} />
                       <div className="grow" style={{ textAlign: 'left', minWidth: 0 }}>
@@ -252,9 +259,9 @@ const BookAppointment = () => {
                 </Step>
               )}
 
-              <Step n={stepN(week?.videoConsults ? 5 : 4)} title="Reason for visit (optional)" done={Boolean(reason.trim())}>
+              {!moveFrom && <Step n={stepN(week?.videoConsults ? 5 : 4)} title="Reason for visit (optional)" done={Boolean(reason.trim())}>
                 <textarea className="textarea" style={{ minHeight: 80 }} maxLength={300} value={reason} onChange={(e) => setReason(e.target.value)} placeholder="e.g. Follow-up on blood test results, recurring headaches…" aria-label="Reason for visit" />
-              </Step>
+              </Step>}
             </div>
 
             <aside className="glass card-pad stack gap-8" style={{ position: 'sticky', top: 24 }}>

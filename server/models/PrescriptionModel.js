@@ -19,6 +19,16 @@ const prescriptionSchema = new mongoose.Schema({
   status: { type: String, enum: ['active', 'dispensed', 'cancelled'], default: 'active' },
   dispensed: { by: String, at: Date },
   recordId: { type: mongoose.Schema.Types.ObjectId, ref: 'MedicalRecord' },
+  // where it was issued (snapshot, printed on the prescription): a hospital branch or private practice
+  place: {
+    orgId: mongoose.Schema.Types.ObjectId,
+    facilityId: mongoose.Schema.Types.ObjectId,
+    name: String,
+    branch: String,
+    address: String,
+    phone: String,
+  },
+  appointmentId: { type: mongoose.Schema.Types.ObjectId, ref: 'Appointment' },
 }, { timestamps: true });
 
 module.exports = mongoose.model('Prescription', prescriptionSchema);

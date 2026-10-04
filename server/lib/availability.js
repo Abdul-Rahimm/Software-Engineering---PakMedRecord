@@ -54,7 +54,7 @@ const cleanSchedule = (input = {}) => {
   return { slotMinutes, days, holidays, videoConsults: Boolean(input.videoConsults) };
 };
 
-module.exports = { DEFAULT, scheduleOf, slotsFor, cleanSchedule };
+module.exports = { DEFAULT, scheduleOf, slotsFor, cleanSchedule, toMin, toTime };
 
 // ---------- hospital memberships: a schedule per branch ----------
 

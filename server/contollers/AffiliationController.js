@@ -21,6 +21,10 @@ const affiliate = async (req, res) => {
     if (doctorCNIC.length === 0) {
       return res.status(400).json({ error: 'Select at least one doctor' });
     }
+    // a doctor who is also a patient can't be their own treating doctor
+    if (doctorCNIC.includes(patientCNIC)) {
+      return res.status(400).json({ error: 'You can\'t add yourself as your own doctor' });
+    }
 
     // Check if the patient exists 
     const existingPatient = await Patient.findOne({ patientCNIC });

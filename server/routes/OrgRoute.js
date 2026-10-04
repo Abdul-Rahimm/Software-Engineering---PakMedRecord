@@ -34,6 +34,7 @@ router.post('/:orgId/staff', requireOrg('org_admin'), o.addStaff);
 router.patch('/:orgId/staff/:staffId', requireOrg('org_admin'), o.updateStaff);
 router.get('/:orgId/desk', requireOrg('org_admin', 'facility_admin', 'reception'), o.deskDay);
 router.get('/:orgId/desk/patient/:cnic', requireOrg('org_admin', 'facility_admin', 'reception'), o.deskPatient);
+router.post('/:orgId/desk/consent', requireOrg('org_admin', 'facility_admin', 'reception'), o.deskConsent);
 router.post('/:orgId/desk/book', requireOrg('org_admin', 'facility_admin', 'reception'), o.deskBook);
 router.post('/:orgId/desk/appointments/:id', requireOrg('org_admin', 'facility_admin', 'reception'), o.deskUpdate);
 

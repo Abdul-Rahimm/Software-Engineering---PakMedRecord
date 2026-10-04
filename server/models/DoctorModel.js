@@ -56,6 +56,8 @@ const doctorSchema = mongoose.Schema (
         city: { type: String, trim: true, maxlength: 60 },
         clinicAddress: { type: String, trim: true, maxlength: 200 },
         fee: { type: Number, min: 0, max: 100000 },
+        // minutes needed to get between different hospitals / clinics on the same day
+        travelBufferMinutes: { type: Number, min: 0, max: 120, default: 0 },
         languages: [{ type: String, trim: true }],
         qualifications: { type: String, trim: true, maxlength: 200 },
         // Weekly clinic hours; without them the doctor is open Mon-Sat 09:00-17:00 in 30-minute slots

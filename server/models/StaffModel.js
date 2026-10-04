@@ -10,6 +10,7 @@ const staffSchema = new mongoose.Schema({
   // hospital accounts: org_admin runs the organization; facility_admin/reception/billing work at given branches
   role: { type: String, enum: ['org_admin', 'facility_admin', 'reception', 'billing'], default: 'reception' },
   facilityIds: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Facility' }], // empty = all branches
+  cnic: { type: Number }, // given during the identity check (hospital administrators)
   ...accountFields,
 }, { timestamps: true });
 

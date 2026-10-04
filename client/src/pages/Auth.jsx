@@ -14,7 +14,7 @@ import { Button } from '../ui/Bits';
 import { useFeedback } from '../ui/Feedback';
 import Scene from '../three/Scene';
 import { ThemeToggle } from '../ui/Theme';
-import { apiError, isValidCNIC, maskCNIC, parseCNIC } from '../lib/format';
+import { apiError, cnicProblem, isValidCNIC, maskCNIC, parseCNIC } from '../lib/format';
 import { SPECIALIZATIONS } from '../lib/constants';
 import { googleConfigured, signInWithGoogle } from '../lib/firebase';
 import GoogleButton from '../ui/GoogleButton';
@@ -66,6 +66,7 @@ const Auth = ({ role, mode }) => {
   const [challenge, setChallenge] = useState(null); // two-step sign-in
   const [showPw, setShowPw] = useState(false);
   const [errors, setErrors] = useState({});
+  const [claimable, setClaimable] = useState(false);
   const [loading, setLoading] = useState(false);
   const [googleOn, setGoogleOn] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
@@ -132,7 +133,8 @@ const Auth = ({ role, mode }) => {
   const completeGoogle = async (e) => {
     e.preventDefault();
     const er = {};
-    if (!isValidCNIC(form.cnic)) er.cnic = 'CNIC must be 13 digits';
+    const cnicErr = cnicProblem(form.cnic, role === 'patient' ? form.gender : undefined);
+    if (cnicErr) er.cnic = cnicErr;
     if (!form.firstName.trim()) er.firstName = 'Required';
     if (!form.lastName.trim()) er.lastName = 'Required';
     if (!form.hospital.trim()) er.hospital = 'Required';
@@ -152,6 +154,11 @@ const Auth = ({ role, mode }) => {
       });
       finishSignIn(data, role);
     } catch (err) {
+      if (err?.response?.data?.code === 'CNIC_TAKEN') {
+        setErrors((er) => ({ ...er, cnic: 'Already registered. If this CNIC is yours and someone else used it, claim it below.' }));
+        setClaimable(true);
+        return;
+      }
       toast(apiError(err, 'Could not create your account'), 'error');
     } finally {
       setLoading(false);
@@ -171,6 +178,8 @@ const Auth = ({ role, mode }) => {
     if (!isValidCNIC(form.cnic)) er.cnic = 'CNIC must be 13 digits';
     if (!form.password) er.password = 'Enter your password';
     if (isSignup) {
+      const cnicErr = cnicProblem(form.cnic, role === 'patient' ? form.gender : undefined);
+      if (cnicErr) er.cnic = cnicErr;
       if (form.password && form.password.length < 6) er.password = 'Use at least 6 characters';
       if (!form.firstName.trim()) er.firstName = 'Required';
       if (!form.lastName.trim()) er.lastName = 'Required';
@@ -215,6 +224,11 @@ const Auth = ({ role, mode }) => {
     } catch (err) {
       if (err?.response?.data?.code === 'EMAIL_NOT_VERIFIED') {
         setUnverified(cnic);
+        return;
+      }
+      if (err?.response?.data?.code === 'CNIC_TAKEN') {
+        setErrors((er) => ({ ...er, cnic: 'Already registered. Sign in, or if this CNIC is yours and someone else used it, claim it below.' }));
+        setClaimable(true);
         return;
       }
       toast(apiError(err, isSignup ? 'Sign up failed' : 'Sign in failed'), 'error');
@@ -383,6 +397,7 @@ const Auth = ({ role, mode }) => {
               )}
             </div>
 
+            {claimable && <p className="subtle" style={{ fontSize: 13 }}>Is this CNIC yours? <Link to={`/claim-cnic?role=${role}&cnic=${parseCNIC(form.cnic)}`}>Claim it with your CNIC and a live photo</Link></p>}
             {isSignup && <Consent checked={form.acceptTerms} onChange={(v) => { setForm((f) => ({ ...f, acceptTerms: v })); setErrors((er) => ({ ...er, acceptTerms: undefined })); }} error={errors.acceptTerms} />}
 
             <Button type="submit" className="btn btn-primary btn-lg btn-block" loading={loading} style={{ marginTop: 6 }}>

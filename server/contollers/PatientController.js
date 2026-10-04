@@ -4,7 +4,7 @@ const Doctor = require('../models/DoctorModel');
 const expressAsyncHandler = require('express-async-handler');
 const { completeSignIn } = require('../lib/session');
 const { startEmailVerification, TERMS_VERSION } = require('../lib/accounts');
-const { isCNIC, isEmail, cleanList } = require('../lib/validate');
+const { cnicProblem, isCNIC, isEmail, cleanList } = require('../lib/validate');
 const { BLOOD_GROUPS } = require('../models/constants');
 const { timesFor } = require('./PrescriptionController');
 
@@ -18,17 +18,14 @@ const Signup = expressAsyncHandler(async (req, res) => {
   if (!isEmail(email)) return res.status(400).json({ error: 'Enter a valid email' });
   if (String(password).length < 6) return res.status(400).json({ error: 'Password must be at least 6 characters' });
   if (!['Male', 'Female', 'Other'].includes(gender)) return res.status(400).json({ error: 'Select a gender' });
+  const cnicError = cnicProblem(patientCNIC, gender);
+  if (cnicError) return res.status(400).json({ error: cnicError });
   if (!acceptTerms) return res.status(400).json({ error: 'Please accept the Terms of Service and Privacy Policy' });
 
   try {
-    const doctorWithSameCNIC = await Doctor.findOne({ doctorCNIC: patientCNIC });
-    if (doctorWithSameCNIC) {
-      return res.status(409).json({ error: 'CNIC already registered as a doctor!' });
-    }
-
     const existingPatient = await Patient.findOne({ patientCNIC });
     if (existingPatient) {
-      return res.status(409).json({ error: 'Patient already registered!' });
+      return res.status(409).json({ error: 'Patient already registered!', code: 'CNIC_TAKEN' });
     }
 
     const newPatient = new Patient({

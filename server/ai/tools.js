@@ -13,6 +13,7 @@ const Vital = require('../models/VitalModel');
 const { RECORD_CATEGORIES, SPECIALIZATIONS, VITAL_TYPES } = require('../models/constants');
 const { createAppointment, resolveLocation } = require('../lib/appointments');
 const { doctorLocations } = require('../lib/tenancy');
+const { blockedSlots } = require('../lib/conflicts');
 
 const day = (d) => (d ? new Date(d).toISOString().slice(0, 10) : null);
 
@@ -176,7 +177,7 @@ const patientTools = [
       if (!doctor) return { error: 'Doctor not found' };
       const place = await resolveLocation(doctor, { orgId: orgId || undefined, facilityId: facilityId || undefined }, date);
       if (place.error) return { error: place.error };
-      const taken = (await Appointment.find({ doctorCNIC, date, status: { $ne: 'cancelled' } })).map((a) => a.time);
+      const taken = await blockedSlots({ doctor, date, slots: place.slots, durationMinutes: place.slotMinutes, place: { facilityId: facilityId || null } });
       const freeSlots = place.slots.filter((t) => !taken.includes(t));
       return { date, place: place.label, freeSlots, closed: freeSlots.length === 0 && taken.length === 0, videoConsults: place.videoConsults, fee: place.fee ?? null };
     },

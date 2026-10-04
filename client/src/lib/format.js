@@ -12,6 +12,19 @@ export const parseCNIC = (value) => String(value ?? '').replace(/\D/g, '').slice
 
 export const isValidCNIC = (value) => parseCNIC(value).length === 13;
 
+// Same rules as the server (NADRA layout): region digit 1-8, gender digit odd = male, even = female.
+// Catches typos only; it can't prove the CNIC was issued.
+export const cnicProblem = (value, gender) => {
+  const s = parseCNIC(value);
+  if (s.length !== 13) return 'CNIC must be 13 digits';
+  if (s[0] === '0' || s[0] === '9') return 'NADRA numbers start with 1 to 8; please check it';
+  if (/^(\d)\1{12}$/.test(s)) return 'This CNIC number is not valid';
+  const odd = Number(s[12]) % 2 === 1;
+  if (gender === 'Male' && !odd) return 'For men the last digit is odd. Check the number or gender';
+  if (gender === 'Female' && odd) return 'For women the last digit is even. Check the number or gender';
+  return null;
+};
+
 // Live-format CNIC while typing
 export const maskCNIC = (value) => {
   const s = parseCNIC(value);

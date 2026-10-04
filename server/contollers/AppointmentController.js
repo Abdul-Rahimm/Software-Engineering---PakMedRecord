@@ -1,3 +1,4 @@
+const mongoose = require('mongoose');
 const Appointment = require('../models/AppointmentModel');
 const { notify } = require('../lib/notify');
 const Doctor = require('../models/DoctorModel');
@@ -6,6 +7,7 @@ const { orgAccess, canUseFacility, doctorLocations } = require('../lib/tenancy')
 const Organization = require('../models/OrganizationModel');
 const Facility = require('../models/FacilityModel');
 const { ACTIVE, createAppointment, describe, resolveLocation } = require('../lib/appointments');
+const { blockedSlots } = require('../lib/conflicts');
 const { flagRefund } = require('./PaymentController');
 const { scheduleOf } = require('../lib/availability');
 
@@ -44,7 +46,8 @@ const availability = async (req, res) => {
         // ?orgId=&facilityId= for a hospital branch; neither for private practice
         const place = await resolveLocation(doctor, { orgId: req.query.orgId, facilityId: req.query.facilityId }, date);
         if (place.error) return res.status(400).json({ error: place.error });
-        const taken = await Appointment.find({ doctorCNIC: doctor.doctorCNIC, date, status: ACTIVE }).select('time -_id');
+        // slots that clash with the doctor's visits anywhere (visit length + travel time)
+        const taken = await blockedSlots({ doctor, date, slots: place.slots, durationMinutes: place.slotMinutes, place: { facilityId: place.facility?._id || null } });
         let workingDays;
         let holidays;
         let slotMinutes;
@@ -59,9 +62,54 @@ const availability = async (req, res) => {
             holidays = s.holidays;
             slotMinutes = s.slotMinutes;
         }
-        res.status(200).json({ slots: place.slots, taken: taken.map((a) => a.time), slotMinutes, videoConsults: place.videoConsults, fee: place.fee ?? null, workingDays, holidays, place: place.label });
+        res.status(200).json({ slots: place.slots, taken, slotMinutes, videoConsults: place.videoConsults, fee: place.fee ?? null, workingDays, holidays, place: place.label });
     } catch (error) {
         console.error('Error fetching availability:', error);
+        res.status(500).json({ error: 'Internal server error.' });
+    }
+};
+
+// POST /appointments/:appointmentId/move { orgId?, facilityId?, date, time, mode }
+// The patient moves a booking to another time or place with the same doctor in one step. A paid
+// fee travels with it when the same hospital (or the doctor's private practice) gets the money;
+// otherwise the old payment is refunded and the new visit is paid separately.
+const moveAppointment = async (req, res) => {
+    try {
+        const old = mongoose.isValidObjectId(req.params.appointmentId) && await Appointment.findById(req.params.appointmentId);
+        if (!old || old.patientCNIC !== req.user.cnic) return res.status(404).json({ error: 'Appointment not found' });
+        if (old.status !== 'pending') return res.status(409).json({ error: `This appointment is ${old.status}` });
+        const sameSlot = String(old.facilityId || '') === String(req.body?.facilityId || '') && old.date.toISOString().slice(0, 10) === req.body?.date && old.time === req.body?.time;
+        if (sameSlot) return res.status(400).json({ error: 'That is already your appointment time and place' });
+        const { status, body } = await createAppointment({
+            patientCNIC: old.patientCNIC, doctorCNIC: old.doctorCNIC, date: req.body?.date, time: req.body?.time, mode: req.body?.mode || old.mode,
+            orgId: req.body?.orgId || undefined, facilityId: req.body?.facilityId || undefined, reason: old.reason, bookedBy: { role: 'patient' }, excludeId: old._id,
+        });
+        if (status !== 201) return res.status(status).json(body);
+        const fresh = body.appointment;
+        const samePayee = String(old.orgId || '') === String(fresh.orgId || '');
+        old.status = 'cancelled';
+        old.cancelledBy = 'patient';
+        old.cancelReason = 'Moved to a new time or place';
+        old.notice = '';
+        old.movedTo = fresh._id;
+        let paymentNote = '';
+        if (old.payment?.status === 'paid') {
+            if (samePayee) {
+                fresh.payment = old.payment.toObject();
+                await fresh.save();
+                if (old.payment.paymentId) await Payment.updateOne({ _id: old.payment.paymentId }, { appointmentId: fresh._id });
+                old.payment = { status: 'unpaid', method: '' };
+                paymentNote = ' Your payment was carried over.';
+            } else {
+                await flagRefund(old);
+                paymentNote = ' Your earlier payment will be refunded; pay the new visit separately.';
+            }
+        }
+        await old.save();
+        notify('doctor', old.doctorCNIC, { type: 'appointment', title: 'Appointment moved', body: `A patient moved their ${describe(old)} appointment to ${describe(fresh)}.`, link: `/appointments/fetch/${old.doctorCNIC}` });
+        res.status(201).json({ message: `Appointment moved.${paymentNote}`, appointment: fresh });
+    } catch (error) {
+        console.error('Error moving appointment:', error);
         res.status(500).json({ error: 'Internal server error.' });
     }
 };
@@ -222,6 +270,6 @@ const markPaid = async (req, res) => {
 };
 
 module.exports = {
-    availability, markPaid, locations,
+    availability, markPaid, locations, moveAppointment,
     book, bookedSlots, getAppointments, getPatientAppointments, completeAppointment, cancelAppointment, getAppointmentTimes,
 };

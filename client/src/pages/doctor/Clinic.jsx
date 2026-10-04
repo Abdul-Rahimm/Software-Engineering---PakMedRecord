@@ -70,6 +70,15 @@ const Clinic = () => {
         subtitle="Every hospital and clinic where you see patients. Each one has its own branches, hours and fee."
         actions={<button className="btn btn-primary" onClick={() => setCreating(true)} disabled={!profile?.isVerified}><FiPlus /> Set up my own clinic</button>}
       />
+      <div className="glass card-pad row between wrap gap-12" style={{ marginBottom: 20 }}>
+        <div style={{ minWidth: 0, flex: '1 1 260px' }}>
+          <strong>Travel time between hospitals</strong>
+          <div className="subtle" style={{ fontSize: 13 }}>Patients can&apos;t book you at one place too soon after a visit somewhere else on the same day.</div>
+        </div>
+        <select className="select" style={{ width: 150 }} value={profile?.travelBufferMinutes || 0} aria-label="Travel time" onChange={(e) => call(() => api.put(`/doctor/update/${profile.doctorCNIC}`, { travelBufferMinutes: Number(e.target.value) }), 'Travel time saved')}>
+          {[0, 15, 30, 45, 60, 90, 120].map((m) => <option key={m} value={m}>{m ? `${m} minutes` : 'None'}</option>)}
+        </select>
+      </div>
       {!profile?.isVerified && <p className="auth-notice" style={{ marginBottom: 20 }}>Get your PMDC registration verified on your Profile page before joining or creating a hospital.</p>}
 
       {invites.length > 0 && (

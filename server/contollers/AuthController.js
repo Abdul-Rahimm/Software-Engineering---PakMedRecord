@@ -12,7 +12,7 @@ const { channels } = require('../lib/messaging');
 const { testModeEnabled } = require('../lib/payments');
 const { mailEnabled } = require('../lib/mailer');
 const { googleEnabled, verifyGoogleIdToken } = require('../lib/firebase');
-const { isCNIC } = require('../lib/validate');
+const { cnicProblem, isCNIC } = require('../lib/validate');
 const { SPECIALIZATIONS } = require('../models/constants');
 
 const roleOf = (role) => ROLES[role] || null;
@@ -103,9 +103,12 @@ const googleComplete = expressAsyncHandler(async (req, res) => {
   if (claims.role === 'patient' && !['Male', 'Female', 'Other'].includes(gender)) return res.status(400).json({ error: 'Select a gender' });
   if (claims.role === 'doctor' && specialization && !SPECIALIZATIONS.includes(specialization)) return res.status(400).json({ error: 'Unknown specialization' });
 
+  const cnicError = cnicProblem(cnic, claims.role === 'patient' ? gender : undefined);
+  if (cnicError) return res.status(400).json({ error: cnicError });
   const n = Number(cnic);
-  if ((await Doctor.findOne({ doctorCNIC: n })) || (await Patient.findOne({ patientCNIC: n }))) {
-    return res.status(409).json({ error: 'This CNIC is already registered. Sign in with your password, then use Google next time.' });
+  // the same person may hold a doctor and a patient account; only the same role clashes
+  if (await r.Model.findOne({ [r.cnicKey]: n })) {
+    return res.status(409).json({ error: 'This CNIC is already registered. Sign in with your password, then use Google next time.', code: 'CNIC_TAKEN' });
   }
   if (await r.Model.findOne({ $or: [{ googleUid: claims.uid }, emailQuery(claims.email)] })) {
     return res.status(409).json({ error: 'An account with this Google email already exists. Continue with Google to sign in.' });

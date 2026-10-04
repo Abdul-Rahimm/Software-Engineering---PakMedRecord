@@ -23,6 +23,17 @@ const ShareLink = require('../models/ShareLinkModel');
 const Payment = require('../models/PaymentModel');
 const Patient = require('../models/PatientModel');
 const Membership = require('../models/MembershipModel');
+const IdentityCheck = require('../models/IdentityCheckModel');
+
+// Identity photos (CNIC, face) are deleted with the account
+const purgeIdentity = async (role, cnic) => {
+  const checks = await IdentityCheck.find({ purpose: 'account', role, subject: String(cnic) }).lean();
+  for (const c of checks) {
+    const f = c.files || {};
+    await Promise.all([f.cnicFront, f.cnicBack, f.selfie, ...(f.frames || [])].filter(Boolean).map((id) => deleteFile(id).catch(() => {})));
+  }
+  await IdentityCheck.deleteMany({ purpose: 'account', role, subject: String(cnic) });
+};
 
 const subject = (user) => user.cnic ?? user.id;
 const me = (req) => findBySubject(req.user.role, subject(req.user));
@@ -185,6 +196,7 @@ const purgePatient = async (cnic) => {
     ChatThread.deleteMany({ role: 'patient', cnic }),
     Affiliation.deleteMany({ patientCNIC: cnic }),
     AccessLog.deleteMany({ patientCNIC: cnic }),
+    purgeIdentity('patient', cnic),
     Prescription.deleteMany({ patientCNIC: cnic }),
     DoseLog.deleteMany({ patientCNIC: cnic }),
     ShareLink.deleteMany({ patientCNIC: cnic }),
@@ -215,6 +227,7 @@ const deleteAccount = expressAsyncHandler(async (req, res) => {
       Notification.deleteMany({ role: 'doctor', cnic }),
       ChatThread.deleteMany({ role: 'doctor', cnic }),
       Membership.updateMany({ doctorCNIC: cnic }, { status: 'removed' }),
+      purgeIdentity('doctor', cnic),
     ]);
     if (user.verification?.document?.gridId) await deleteFile(user.verification.document.gridId);
     await MODELS.doctor.Model.deleteOne({ doctorCNIC: cnic });

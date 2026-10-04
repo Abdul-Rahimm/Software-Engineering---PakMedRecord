@@ -1,4 +1,5 @@
 const express = require('express');
+const identity = require('../contollers/IdentityController');
 const router = express.Router();
 const a = require('../contollers/AdminController');
 const billing = require('../contollers/BillingController');
@@ -19,6 +20,9 @@ router.get('/reports', a.listReports);
 router.post('/reports/:id', a.resolveReport);
 router.get('/errors', a.errors);
 router.get('/orgs', a.listOrgs);
+router.get('/identity', identity.list);
+router.get('/identity/:id/:file', identity.file);
+router.post('/identity/:id/review', identity.review);
 router.get('/orgs/:orgId/document', a.orgDocument);
 router.post('/orgs/:orgId/review', a.reviewOrg);
 router.get('/partners', a.listPartners);

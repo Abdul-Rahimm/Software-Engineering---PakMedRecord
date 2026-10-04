@@ -299,7 +299,9 @@ export const downloadPrescriptionPDF = async ({ prescription: rx, doctor, patien
   value(doctor ? `Dr. ${doctor.firstName} ${doctor.lastName}` : '—', M, 149);
   doc.setFontSize(10);
   doc.setTextColor(90, 100, 115);
-  doc.text([doctor?.specialization, doctor?.hospital].filter(Boolean).join(' · '), M, 165);
+  // where it was issued (the visit's hospital branch), else the doctor's own practice
+  const issuedAt = rx.place?.name ? [rx.place.name, rx.place.branch].filter(Boolean).join(', ') : doctor?.hospital;
+  doc.text([doctor?.specialization, issuedAt].filter(Boolean).join(' · '), M, 165);
   if (doctor?.verification?.pmdcNumber) doc.text(`PMDC ${doctor.verification.pmdcNumber}`, M, 179);
   label('Patient', M, 206);
   value(patient ? `${patient.firstName} ${patient.lastName}` : '—', M, 223);

@@ -203,7 +203,7 @@ const flagRefund = async (appointment) => {
   appointment.payment.status = 'refund_due';
   if (appointment.payment.paymentId) await Payment.updateOne({ _id: appointment.payment.paymentId }, { status: 'refund_due' });
   notify('doctor', appointment.doctorCNIC, { type: 'payment', title: 'Refund due', body: `The paid appointment on ${describe(appointment)} was cancelled. Refund Rs ${appointment.fee} from your Safepay dashboard, then mark it refunded.`, link: `/appointments/fetch/${appointment.doctorCNIC}` });
-  notify('patient', appointment.patientCNIC, { type: 'payment', title: 'Refund on its way', body: `Your Rs ${appointment.fee} payment for ${describe(appointment)} will be refunded by the clinic.`, link: `/appointments/mine/${appointment.patientCNIC}` });
+  notify('patient', appointment.patientCNIC, { type: 'payment', title: 'Refund on its way', body: `Your Rs ${appointment.fee} payment for ${describe(appointment)} will be refunded by the ${appointment.orgId ? 'hospital' : 'clinic'}.`, link: `/appointments/mine/${appointment.patientCNIC}` });
 };
 
 // POST /payments/:id/refunded { note } (doctor or their clinic's front desk, after refunding in Safepay)

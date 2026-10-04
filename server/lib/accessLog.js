@@ -9,7 +9,7 @@ const logAccess = (patientCNIC, actor, action, ip) => {
   const bucket = `${patientCNIC}:${actor.role}:${actor.cnic || actor.id || ''}:${action}:${Math.floor(Date.now() / WINDOW_MS)}`;
   return AccessLog.updateOne(
     { bucket },
-    { $setOnInsert: { patientCNIC: Number(patientCNIC), actor, action, ip }, $inc: { count: 1 }, $set: { lastAt: new Date() } },
+    { $setOnInsert: { patientCNIC: Number(patientCNIC), actor, action, ip, ...(actor.orgId && { orgId: actor.orgId }) }, $inc: { count: 1 }, $set: { lastAt: new Date() } },
     { upsert: true }
   ).catch((err) => console.error('Failed to log access:', err.message));
 };

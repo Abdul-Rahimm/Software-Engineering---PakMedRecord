@@ -1,3 +1,5 @@
+const mongoose = require('mongoose');
+
 // Account fields shared by doctors, patients, admins and clinic staff
 
 const accountFields = {
@@ -13,6 +15,13 @@ const accountFields = {
     secret: { type: String, select: false },
     pendingSecret: { type: String, select: false },
     recoveryHashes: { type: [String], select: false },
+  },
+  // CNIC photo + live face check (see IdentityCheck); 'verified' only after an admin review
+  identity: {
+    status: { type: String, enum: ['none', 'pending', 'verified', 'rejected'], default: 'none' },
+    checkId: { type: mongoose.Schema.Types.ObjectId },
+    verifiedAt: Date,
+    note: String,
   },
   // Terms & privacy acceptance at sign-up
   consentAt: { type: Date },

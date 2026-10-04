@@ -22,6 +22,7 @@ const TABS = [
   { id: 'overview', label: 'Overview', icon: FiActivity },
   { id: 'doctors', label: 'Doctor verification', icon: FiUserCheck },
   { id: 'orgs', label: 'Hospitals', icon: FiHome },
+  { id: 'identity', label: 'Identity', icon: FiShield },
   { id: 'users', label: 'Accounts', icon: FiUsers },
   { id: 'payments', label: 'Payments', icon: FiDollarSign },
   { id: 'reports', label: 'Reports', icon: FiFlag },
@@ -143,6 +144,7 @@ const VerificationTab = () => {
               </div>
               <div className="viewer-text stack gap-12">
                 <p className="muted" style={{ fontSize: 13.5 }}>Check that the name and registration number match the PMDC register at <a href="https://www.pmdc.pk" target="_blank" rel="noreferrer">pmdc.pk</a>, and that the certificate is current.</p>
+                <p className="subtle" style={{ fontSize: 13 }}>Identity check (CNIC + live face): <strong>{{ verified: 'verified', pending: 'waiting in the Identity tab', rejected: 'rejected' }[doc.doctor.identity?.status] || 'not done yet'}</strong></p>
                 {doc.doctor.verification?.note && <p className="subtle">Previous note: {doc.doctor.verification.note}</p>}
                 <label className="field-label" htmlFor="adm-note">Note to the doctor (required to reject)</label>
                 <textarea id="adm-note" className="textarea" style={{ minHeight: 100 }} value={note} onChange={(e) => setNote(e.target.value)} placeholder="e.g. Certificate image is blurry; please upload a clearer scan." />
@@ -244,6 +246,120 @@ const OrgsTab = () => {
                 <Button className="btn btn-ghost" loading={busy} onClick={async () => { if (doc.org.suspended || await confirm({ title: `Suspend ${doc.org.name}?`, message: 'It disappears from search and patients can no longer book there. Its staff keep read access.', confirmLabel: 'Suspend', danger: true })) decide({ suspended: !doc.org.suspended }); }}>{doc.org.suspended ? 'Restore' : 'Suspend'}</Button>
               </div>
             </div>
+          </div>
+        )}
+      </Modal>
+    </div>
+  );
+};
+
+// CNIC + live face checks (accounts) and "this CNIC is mine" claims
+const pct = (n) => (n == null ? '—' : `${Math.round(n * 100)}%`);
+const IdentityImg = ({ id, file, alt }) => {
+  const [url, setUrl] = useState(null);
+  useEffect(() => {
+    let u;
+    api.get(`/admin/identity/${id}/${file}`, { responseType: 'blob' }).then((r) => { u = URL.createObjectURL(r.data); setUrl(u); }).catch(() => setUrl(''));
+    return () => u && URL.revokeObjectURL(u);
+  }, [id, file]);
+  if (url === null) return <Skeleton height={110} />;
+  return url ? <a href={url} target="_blank" rel="noreferrer"><img src={url} alt={alt} /></a> : null;
+};
+const IdentityTab = () => {
+  const { toast } = useFeedback();
+  const [status, setStatus] = useState('pending');
+  const [purpose, setPurpose] = useState('');
+  const { data, loading, reload } = useFetch(async () => (await api.get('/admin/identity', { params: { status, purpose: purpose || undefined } })).data, [status, purpose]);
+  const [open, setOpen] = useState(null);
+  const [note, setNote] = useState('');
+  const [busy, setBusy] = useState(false);
+  const decide = async (body) => {
+    setBusy(true);
+    try {
+      const { data: r } = await api.post(`/admin/identity/${open._id}/review`, { note, ...body });
+      toast(r.message);
+      setOpen(null);
+      reload(true);
+    } catch (err) {
+      toast(apiError(err), 'error');
+    } finally {
+      setBusy(false);
+    }
+  };
+  const flag = (c) => [
+    c.device?.faceMatch != null && c.device.faceMatch < 0.42 && 'weak face match',
+    c.device?.realness != null && c.device.realness < 0.5 && 'possible photo/screen',
+    c.device?.ocrMatches === false && 'CNIC number differs',
+  ].filter(Boolean);
+  return (
+    <div className="stack gap-16">
+      <div className="row between wrap gap-12">
+        <div className="chips">{['pending', 'verified', 'rejected'].map((s) => <button key={s} className="chip" aria-pressed={status === s} onClick={() => setStatus(s)}>{s[0].toUpperCase() + s.slice(1)}</button>)}</div>
+        <div className="chips">{[['', 'All'], ['account', 'Accounts'], ['claim', 'CNIC claims']].map(([v, l]) => <button key={v} className="chip" aria-pressed={purpose === v} onClick={() => setPurpose(v)}>{l}</button>)}</div>
+      </div>
+      {loading ? <Skeleton height={200} /> : !data.length ? <div className="glass"><EmptyState icon={FiShield} title="Nothing here">No identity checks with this status.</EmptyState></div> : (
+        <div className="glass table-wrap">
+          <table className="table">
+            <thead><tr><th>Who</th><th>CNIC</th><th>Face match</th><th>Live / real</th><th>Submitted</th><th /></tr></thead>
+            <tbody>
+              {data.map((c) => (
+                <tr key={c._id}>
+                  <td><strong>{c.name}</strong> <span className="badge">{c.purpose === 'claim' ? 'Claim' : c.role}</span><div className="subtle" style={{ fontSize: 12 }}>{c.purpose === 'claim' ? `Account holder: ${c.account?.name || '—'}` : c.account?.email}</div>{flag(c).length > 0 && <div style={{ fontSize: 12, color: 'var(--rose-text)' }}>{flag(c).join(' · ')}</div>}</td>
+                  <td className="mono">{formatCNIC(c.cnic)}{c.device?.ocrMatches === true && ' ✓'}</td>
+                  <td>{pct(c.device?.faceMatch)}</td>
+                  <td>{pct(c.device?.liveness)} / {pct(c.device?.realness)}</td>
+                  <td>{formatDate(c.createdAt)}</td>
+                  <td><button className="btn btn-sm" onClick={() => { setNote(''); setOpen(c); }}>Review</button></td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+      <Modal open={Boolean(open)} onClose={() => setOpen(null)} title={open && (open.purpose === 'claim' ? `CNIC claim by ${open.name}` : `${open.name} (${open.role})`)} subtitle={open && `CNIC ${formatCNIC(open.cnic)}${open.device?.ocrCnic ? ` · read from card: ${formatCNIC(open.device.ocrCnic)}` : ''}`} width={980}>
+        {open && (
+          <div className="stack gap-16">
+            <div className="idc-admin">
+              {['cnicFront', 'cnicBack', 'selfie'].filter((f) => open.files?.[f]).map((f) => <IdentityImg key={f} id={open._id} file={f} alt={f} />)}
+              {(open.files?.frames || []).map((_, n) => <IdentityImg key={n} id={open._id} file={`frame${n}`} alt={`Live frame ${n + 1}`} />)}
+            </div>
+            <div className="grid grid-2" style={{ gap: 12 }}>
+              <div className="stack gap-4" style={{ fontSize: 13.5 }}>
+                <div className="summary-row"><span className="k">Face vs card</span><span>{pct(open.device?.faceMatch)}</span></div>
+                <div className="summary-row"><span className="k">Liveness</span><span>{pct(open.device?.liveness)}</span></div>
+                <div className="summary-row"><span className="k">Anti-spoof</span><span>{pct(open.device?.realness)}</span></div>
+                <div className="summary-row"><span className="k">Challenges</span><span>{(open.device?.challenges || []).join(', ') || '—'}</span></div>
+              </div>
+              <div className="stack gap-4" style={{ fontSize: 13.5 }}>
+                {open.purpose === 'claim' ? (
+                  <>
+                    <div className="summary-row"><span className="k">Claimant</span><span>{open.contact?.email}{open.contact?.phone ? ` · ${open.contact.phone}` : ''}</span></div>
+                    <div className="summary-row"><span className="k">Account holder</span><span>{open.account?.name} · {open.account?.email}</span></div>
+                    {open.contact?.message && <p className="subtle">“{open.contact.message}”</p>}
+                  </>
+                ) : (
+                  <>
+                    <div className="summary-row"><span className="k">Account name</span><span>{open.account?.name}</span></div>
+                    <div className="summary-row"><span className="k">Gender</span><span>{open.account?.gender || '—'}</span></div>
+                  </>
+                )}
+                <p className="subtle" style={{ fontSize: 12 }}>Scores come from the user&apos;s device and can be faked; judge the photos. Check the name, photo and number on the card match the person and account.</p>
+              </div>
+            </div>
+            {open.status === 'pending' && (
+              <>
+                <textarea className="textarea" style={{ minHeight: 70 }} value={note} onChange={(e) => setNote(e.target.value)} placeholder="Note (required to reject), e.g. Card photo is blurry" aria-label="Note" />
+                <div className="row gap-8 wrap">
+                  {open.purpose === 'claim' ? (
+                    <>
+                      <Button className="btn btn-primary" loading={busy} onClick={() => decide({ decision: 'verified', action: 'hand_over' })}><FiCheck /> Confirm & hand account over</Button>
+                      <Button className="btn" loading={busy} onClick={() => decide({ decision: 'verified', action: 'freeze' })}>Confirm & freeze account</Button>
+                    </>
+                  ) : <Button className="btn btn-primary" loading={busy} onClick={() => decide({ decision: 'verified' })}><FiCheck /> Verify</Button>}
+                  <Button className="btn btn-danger" loading={busy} disabled={!note.trim()} onClick={() => decide({ decision: 'rejected' })}><FiX /> Reject</Button>
+                </div>
+              </>
+            )}
           </div>
         )}
       </Modal>
@@ -444,7 +560,7 @@ const AdminApp = () => {
     if (session?.role !== 'admin') navigate('/admin/signin', { replace: true });
   }, [session, navigate]);
   if (session?.role !== 'admin') return null;
-  const Tab = { overview: Overview, doctors: VerificationTab, orgs: OrgsTab, users: UsersTab, payments: BillingTab, account: AccountTab, reports: ReportsTab, partners: PartnersTab, errors: ErrorsTab }[tab];
+  const Tab = { overview: Overview, doctors: VerificationTab, orgs: OrgsTab, identity: IdentityTab, users: UsersTab, payments: BillingTab, account: AccountTab, reports: ReportsTab, partners: PartnersTab, errors: ErrorsTab }[tab];
   return (
     <div className="admin">
       <header className="public-head">

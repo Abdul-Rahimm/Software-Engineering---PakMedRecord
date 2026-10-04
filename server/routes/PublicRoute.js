@@ -3,6 +3,8 @@ const express = require('express');
 const { rateLimit } = require('express-rate-limit');
 const router = express.Router();
 const directory = require('../contollers/DirectoryController');
+const identity = require('../contollers/IdentityController');
+const { signinLimiter } = require('../middleware/rateLimit');
 const share = require('../contollers/ShareController');
 const rx = require('../contollers/PrescriptionController');
 
@@ -11,6 +13,7 @@ router.use(rateLimit({ windowMs: 60 * 1000, limit: Number(process.env.PUBLIC_RAT
 router.get('/doctors', directory.search);
 router.get('/doctors/:id', directory.profile);
 router.get('/hospitals', directory.hospitals);
+router.post('/cnic-claim', signinLimiter, identity.claim);
 router.get('/hospitals/:id', directory.hospital);
 router.get('/emergency/:token', share.viewEmergency);
 router.get('/share/:token', share.viewShare);

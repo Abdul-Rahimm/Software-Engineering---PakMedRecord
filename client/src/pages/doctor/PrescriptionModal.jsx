@@ -23,6 +23,13 @@ const PrescriptionModal = ({ open, onClose, patient, onCreated }) => {
   const [check, setCheck] = useState(null); // { warnings, aiChecked } | 'loading'
   const [busy, setBusy] = useState(false);
   const [issued, setIssued] = useState(null);
+  // where it's issued: '' = automatic (today's appointment), 'private', or 'orgId:facilityId'
+  const [where, setWhere] = useState('');
+  const [places, setPlaces] = useState([]);
+  useEffect(() => {
+    if (!open) return;
+    api.get('/orgs/mine').then((r) => setPlaces(r.data.memberships.filter((m) => m.status === 'active').flatMap((m) => m.facilities.filter((f) => m.facilityIds.includes(f._id)).map((f) => ({ value: `${m.orgId}:${f._id}`, label: `${m.org?.name}, ${f.name}` }))))).catch(() => setPlaces([]));
+  }, [open]);
 
   useEffect(() => {
     if (open) {
@@ -53,7 +60,8 @@ const PrescriptionModal = ({ open, onClose, patient, onCreated }) => {
   const issue = async () => {
     setBusy(true);
     try {
-      const { data } = await api.post('/prescriptions', { patientCNIC: patient.patientCNIC, diagnosis, items: valid, notes });
+      const [orgId, facilityId] = where && where !== 'private' ? where.split(':') : [];
+      const { data } = await api.post('/prescriptions', { patientCNIC: patient.patientCNIC, diagnosis, items: valid, notes, orgId, facilityId, privatePractice: where === 'private' || undefined });
       setIssued(data.prescription);
       onCreated?.(data);
       window.dispatchEvent(new Event('pakmed:prescriptions'));
@@ -83,6 +91,13 @@ const PrescriptionModal = ({ open, onClose, patient, onCreated }) => {
   return (
     <Modal open={open} onClose={onClose} title="Write prescription" subtitle={patient && `${patient.firstName} ${patient.lastName}${patient.allergies?.length ? ` · Allergies: ${patient.allergies.join(', ')}` : ''}`} width={820}>
       <div className="stack gap-16">
+        {places.length > 0 && (
+          <Field as="select" label="Issued at" value={where} onChange={(e) => setWhere(e.target.value)} hint="Printed on the prescription. Automatic uses today's appointment with this patient.">
+            <option value="">Automatic</option>
+            <option value="private">Private practice</option>
+            {places.map((p) => <option key={p.value} value={p.value}>{p.label}</option>)}
+          </Field>
+        )}
         <Field label="Diagnosis" value={diagnosis} onChange={(e) => setDiagnosis(e.target.value)} placeholder="e.g. Essential hypertension" />
         <div className="stack gap-12">
           {items.map((it, n) => (

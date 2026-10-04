@@ -48,6 +48,8 @@ const DoctorDirectory = lazyNamed(directory, 'DoctorDirectory');
 const HospitalDirectory = lazyNamed(directory, 'HospitalDirectory');
 const HospitalProfile = lazyNamed(directory, 'HospitalProfile');
 const HospitalRegister = lazy(() => import('./pages/public/HospitalRegister'));
+const VerifyIdentity = lazy(() => import('./pages/identity/VerifyIdentity'));
+const ClaimCnic = lazy(() => import('./pages/identity/ClaimCnic'));
 const DoctorPublicProfile = lazyNamed(directory, 'DoctorPublicProfile');
 const publicRecords = () => import('./pages/public/PublicRecords');
 const EmergencyPage = lazyNamed(publicRecords, 'EmergencyPage');
@@ -83,6 +85,8 @@ const Routes = () => (
     <Route path="/developers" element={<Developers />} />
     <Route path="/find-doctors" element={<DoctorDirectory />} />
     <Route path="/hospitals" element={<HospitalDirectory />} />
+    <Route path="/verify-identity" element={<VerifyIdentity />} />
+    <Route path="/claim-cnic" element={<ClaimCnic />} />
     <Route path="/hospitals/register" element={<HospitalRegister />} />
     <Route path="/hospitals/:id" element={<HospitalProfile />} />
     <Route path="/find-doctors/:id" element={<DoctorPublicProfile />} />

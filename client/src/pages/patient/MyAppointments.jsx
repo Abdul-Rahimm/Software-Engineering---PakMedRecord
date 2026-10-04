@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { AnimatePresence, motion } from 'framer-motion';
-import { FiCalendar, FiClock, FiCreditCard, FiDownload, FiHome, FiPlus, FiVideo, FiX } from 'react-icons/fi';
+import { FiAlertTriangle, FiCalendar, FiClock, FiCreditCard, FiDownload, FiHome, FiPlus, FiRepeat, FiVideo, FiX } from 'react-icons/fi';
 import api from '../../api';
 import { useShell } from '../../layout/ShellContext';
 import { useFetch, fetchAllDoctors, indexBy } from '../../lib/data';
@@ -28,6 +28,12 @@ const videoOpen = (a) => {
   d.setHours(h, m, 0, 0);
   const diff = d.getTime() - Date.now();
   return diff < 15 * 60000 && diff > -2 * 3600000;
+};
+
+const NOTICE = {
+  doctor_left: 'The doctor no longer works at this hospital.',
+  branch_closed: 'This branch has closed.',
+  org_suspended: 'This hospital is not taking appointments right now.',
 };
 
 const MyAppointments = () => {
@@ -146,8 +152,11 @@ const MyAppointments = () => {
                       {a.fee ? <span><FiCreditCard /> Rs {a.fee.toLocaleString('en-PK')} · {PAY_LABEL[a.payment?.status] || 'unpaid'}</span> : null}
                     </div>
                     {a.reason && <p className="muted" style={{ fontSize: 13.5 }}>“{a.reason}”</p>}
+                    {isUpcoming(a) && a.notice && (
+                      <p className="auth-notice" style={{ fontSize: 13 }}><FiAlertTriangle /> {NOTICE[a.notice]} Move it to another hospital or time with the same doctor, or cancel.</p>
+                    )}
                     {a.status === 'cancelled' && (
-                      <p className="subtle" style={{ fontSize: 12.5 }}>Cancelled by {a.cancelledBy === 'patient' ? 'you' : 'the doctor'}{a.cancelReason ? `: ${a.cancelReason}` : ''}</p>
+                      <p className="subtle" style={{ fontSize: 12.5 }}>{a.movedTo ? 'Moved to a new time or place' : <>Cancelled by {a.cancelledBy === 'patient' ? 'you' : 'the doctor'}{a.cancelReason ? `: ${a.cancelReason}` : ''}</>}</p>
                     )}
                   </div>
                   <div className="stack gap-8 appt-actions" style={{ alignItems: 'flex-end' }}>
@@ -163,6 +172,7 @@ const MyAppointments = () => {
                       </Button>
                     ))}
                     {['paid', 'refund_due', 'refunded'].includes(a.payment?.status) && a.payment.paymentId && <button className="btn btn-ghost btn-sm" onClick={() => receipt(a)}><FiDownload /> Receipt</button>}
+                    {isUpcoming(a) && <Link to={`/appointments/book/${cnic}`} state={{ moveFrom: a._id, doctorCNIC: a.doctorCNIC, mode: a.mode }} className={`btn btn-sm ${a.notice ? 'btn-primary' : ''}`}><FiRepeat /> Move</Link>}
                     {isUpcoming(a) && <button className="btn btn-danger btn-sm" onClick={() => setCancelling(a)}><FiX /> Cancel</button>}
                   </div>
                 </motion.div>

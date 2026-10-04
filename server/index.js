@@ -23,6 +23,7 @@ const ShareRoutes = require('./routes/ShareRoute');
 const PublicRoutes = require('./routes/PublicRoute');
 const HealthTools = require('./routes/HealthToolsRoute');
 const OrgRoutes = require('./routes/OrgRoute');
+const IdentityRoutes = require('./routes/IdentityRoute');
 const { staffSignin } = require('./contollers/ClinicController');
 const { signinLimiter } = require('./middleware/rateLimit');
 const CallRoutes = require('./routes/CallRoute');
@@ -78,6 +79,8 @@ app.use(async (req, res, next) => {
 app.use('/partners', PartnerRoutes);
 // Safepay webhooks are verified against the exact raw body, so they skip the JSON parser
 app.post('/payments/safepay/webhook/:accountId', express.raw({ type: () => true, limit: '100kb' }), safepayWebhook);
+// identity checks carry a few compressed photos
+app.use(['/identity', '/public/cnic-claim'], express.json({ limit: '4mb' }));
 app.use(express.json({ limit: '200kb' }));
 app.use('/doctor', DoctorRoutes);
 app.use('/patient', PatientRoutes);
@@ -101,6 +104,7 @@ app.use('/vaccines', HealthTools.vaccines);
 app.use('/labs', HealthTools.labs);
 app.use('/followups', HealthTools.followups);
 app.use('/orgs', OrgRoutes);
+app.use('/identity', IdentityRoutes);
 app.post('/desk/signin', signinLimiter, staffSignin); // hospital staff sign-in
 app.use('/calls', CallRoutes);
 app.use('/payments', PaymentRoutes);

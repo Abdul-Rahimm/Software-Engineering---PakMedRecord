@@ -3,6 +3,7 @@
 // All tenant routes run behind requireOrg(), so req.tenant = { orgId, org, roles, facilityIds, isAdmin }.
 
 const bcrypt = require('bcrypt');
+const crypto = require('crypto');
 const mongoose = require('mongoose');
 const expressAsyncHandler = require('express-async-handler');
 const Organization = require('../models/OrganizationModel');
@@ -14,11 +15,18 @@ const Doctor = require('../models/DoctorModel');
 const Patient = require('../models/PatientModel');
 const Appointment = require('../models/AppointmentModel');
 const { notify } = require('../lib/notify');
+const { deliver } = require('../lib/messaging');
+const { logAccess } = require('../lib/accessLog');
+const AccessLog = require('../models/AccessLogModel');
+const ConsentCode = require('../models/ConsentCodeModel');
+
+const hashCode = (code) => crypto.createHash('sha256').update(`${process.env.JWT_SECRET}:${code}`).digest('hex');
 const { isCNIC, isEmail } = require('../lib/validate');
 const { completeSignIn } = require('../lib/session');
-const { createAppointment, describe } = require('../lib/appointments');
+const { createAppointment, describe, flagFutureAppointments, clearNotice } = require('../lib/appointments');
 const { membershipSlots, cleanMembershipSchedule } = require('../lib/availability');
 const { canUseFacility, facilityFilter } = require('../lib/tenancy');
+const { blockedSlots, scheduleClash } = require('../lib/conflicts');
 const { saveFile, deleteFile } = require('../lib/files');
 const { forgetAccountStatus } = require('../middleware/auth');
 const { TERMS_VERSION } = require('../lib/accounts');
@@ -179,6 +187,8 @@ const updateFacility = expressAsyncHandler(async (req, res) => {
   Object.assign(facility, facilityFields({ ...facility.toObject(), ...req.body }));
   if (typeof req.body?.active === 'boolean') {
     if (!req.body.active && (await Facility.countDocuments({ orgId: req.tenant.org._id, active: true })) <= 1) return res.status(400).json({ error: 'An organization needs at least one open branch' });
+    if (facility.active && !req.body.active) await flagFutureAppointments({ facilityId: facility._id }, 'branch_closed');
+    if (!facility.active && req.body.active) await clearNotice({ facilityId: facility._id }, 'branch_closed');
     facility.active = req.body.active;
   }
   await facility.save();
@@ -211,12 +221,19 @@ const ownFacilities = async (orgId, ids) => {
 const doctors = expressAsyncHandler(async (req, res) => {
   const ms = await Membership.find({ orgId: req.tenant.org._id, status: { $in: ['active', 'invited'] } }).lean();
   const docs = await Doctor.find({ doctorCNIC: { $in: ms.map((m) => m.doctorCNIC) } }).select('doctorCNIC firstName lastName specialization email phone verification yearsExperience').lean();
-  res.status(200).json(ms.map((m) => ({ ...m, doctor: docs.find((d) => d.doctorCNIC === m.doctorCNIC) || null })));
+  res.status(200).json(ms.map((m) => {
+    const d = docs.find((x) => x.doctorCNIC === m.doctorCNIC);
+    // contact details only once the doctor has accepted
+    const doctor = d && (m.status === 'active' ? d : { doctorCNIC: d.doctorCNIC, firstName: d.firstName, lastName: d.lastName, specialization: d.specialization });
+    return { ...m, doctor: doctor || null };
+  }));
 });
 
 // POST /orgs/:orgId/doctors { doctorCNIC | pmdcNumber, facilityIds, departmentId, fee }
 const inviteDoctor = expressAsyncHandler(async (req, res) => {
   const { org } = req.tenant;
+  // unverified (possibly fake) organizations can't probe which CNICs belong to doctors
+  if (!requireVerifiedOrg(req.tenant, res)) return;
   const { doctorCNIC, pmdcNumber } = req.body || {};
   const cnic = String(doctorCNIC || '').replace(/\D/g, '');
   const doctor = isCNIC(cnic)
@@ -246,10 +263,15 @@ const updateDoctor = expressAsyncHandler(async (req, res) => {
     if (m.roles.includes('org_admin') && !(await Membership.exists({ orgId: org._id, status: 'active', roles: 'org_admin', _id: { $ne: m._id } })) && !(await Staff.exists({ clinicId: org._id, role: 'org_admin', disabled: { $ne: true } }))) {
       return res.status(400).json({ error: 'Make someone else an administrator first' });
     }
+    const wasActive = m.status === 'active';
     m.status = 'removed';
     await m.save();
-    notify('doctor', m.doctorCNIC, { type: 'clinic', title: `Removed from ${org.name}`, body: `You no longer see patients at ${org.name}. Existing appointments there are unchanged.`, link: `/clinic/${m.doctorCNIC}` });
-    return res.status(200).json({ message: 'Doctor removed' });
+    if (wasActive) {
+      const affected = await flagFutureAppointments({ orgId: org._id, doctorCNIC: m.doctorCNIC }, 'doctor_left');
+      notify('doctor', m.doctorCNIC, { type: 'clinic', title: `Removed from ${org.name}`, body: `You no longer see patients at ${org.name}.${affected ? ` ${affected} upcoming patient${affected > 1 ? 's were' : ' was'} asked to move their appointment.` : ''}`, link: `/clinic/${m.doctorCNIC}` });
+      return res.status(200).json({ message: affected ? `Doctor removed. ${affected} patient${affected > 1 ? 's' : ''} with upcoming appointments ${affected > 1 ? 'were' : 'was'} told to move them.` : 'Doctor removed' });
+    }
+    return res.status(200).json({ message: 'Invitation cancelled' });
   }
   if (b.facilityIds !== undefined) {
     const ids = await ownFacilities(org._id, b.facilityIds);
@@ -257,8 +279,10 @@ const updateDoctor = expressAsyncHandler(async (req, res) => {
     m.facilityIds = ids;
     // drop schedule blocks at branches the doctor no longer works at
     m.availability.blocks = (m.availability?.blocks || []).filter((x) => ids.map(String).includes(String(x.facilityId)));
+    if (m.status === 'active') await flagFutureAppointments({ orgId: org._id, doctorCNIC: m.doctorCNIC, facilityId: { $nin: ids } }, 'doctor_left');
   }
   if (b.departmentId !== undefined) m.departmentId = b.departmentId && (await Department.exists({ _id: oid(b.departmentId), orgId: org._id })) ? oid(b.departmentId) : undefined;
+  const oldFee = m.fee;
   if (b.fee !== undefined) m.fee = b.fee === '' || b.fee === null ? undefined : Math.max(0, Number(b.fee) || 0);
   if (b.availability !== undefined) {
     try {
@@ -266,6 +290,13 @@ const updateDoctor = expressAsyncHandler(async (req, res) => {
     } catch (err) {
       return res.status(400).json({ error: err.message });
     }
+    const doctor = await Doctor.findOne({ doctorCNIC: m.doctorCNIC }).lean();
+    const clash = await scheduleClash(doctor, m.availability.blocks, { orgId: org._id });
+    if (clash) return res.status(400).json({ error: `The doctor already works elsewhere then: ${clash}` });
+    if (m.status === 'active') notify('doctor', m.doctorCNIC, { type: 'clinic', title: `${org.name} changed your hours`, body: 'Check your hours there on your Hospitals page.', link: `/clinic/${m.doctorCNIC}` });
+  }
+  if (b.fee !== undefined && m.status === 'active' && m.fee !== oldFee) {
+    notify('doctor', m.doctorCNIC, { type: 'clinic', title: `${org.name} changed your fee`, body: `Your consultation fee there is now Rs ${Number(b.fee) || 0}.`, link: `/clinic/${m.doctorCNIC}` });
   }
   if (Array.isArray(b.roles)) m.roles = ['doctor', ...(b.roles.includes('org_admin') ? ['org_admin'] : [])];
   await m.save();
@@ -294,7 +325,8 @@ const leave = expressAsyncHandler(async (req, res) => {
   }
   m.status = 'removed';
   await m.save();
-  res.status(200).json({ message: 'You left this organization' });
+  const affected = await flagFutureAppointments({ orgId: m.orgId, doctorCNIC: m.doctorCNIC }, 'doctor_left');
+  res.status(200).json({ message: affected ? `You left. ${affected} patient${affected > 1 ? 's' : ''} with upcoming appointments there ${affected > 1 ? 'were' : 'was'} asked to move them.` : 'You left this organization' });
 });
 
 const myHours = expressAsyncHandler(async (req, res) => {
@@ -305,6 +337,8 @@ const myHours = expressAsyncHandler(async (req, res) => {
   } catch (err) {
     return res.status(400).json({ error: err.message });
   }
+  const clash = await scheduleClash(await Doctor.findOne({ doctorCNIC: req.user.cnic }).lean(), m.availability.blocks, { orgId: m.orgId });
+  if (clash) return res.status(400).json({ error: `These hours clash with your hours elsewhere: ${clash}` });
   await m.save();
   res.status(200).json({ message: 'Hours saved', membership: m });
 });
@@ -374,38 +408,115 @@ const deskDay = expressAsyncHandler(async (req, res) => {
     Membership.find({ orgId: t.org._id, status: 'active', roles: 'doctor' }).lean(),
     Appointment.find({ orgId: t.org._id, date, ...facilityQ }).sort({ time: 1 }).lean(),
   ]);
-  const doctorsInfo = await Doctor.find({ doctorCNIC: { $in: memberships.map((m) => m.doctorCNIC) } }).select('doctorCNIC firstName lastName specialization').lean();
+  const doctorsInfo = await Doctor.find({ doctorCNIC: { $in: memberships.map((m) => m.doctorCNIC) } }).select('doctorCNIC firstName lastName specialization travelBufferMinutes').lean();
   const patients = await Patient.find({ patientCNIC: { $in: appointments.map((a) => a.patientCNIC) } }).select('patientCNIC firstName lastName gender phone').lean();
   res.status(200).json({
     date,
     org: { _id: t.org._id, name: t.org.name, verification: { status: t.org.verification?.status } },
     roles: t.roles,
     facilities,
-    doctors: memberships.map((m) => {
+    doctors: await Promise.all(memberships.map(async (m) => {
       const d = doctorsInfo.find((x) => x.doctorCNIC === m.doctorCNIC);
+      const slots = {};
+      const blocked = {};
+      for (const fid of m.facilityIds || []) {
+        slots[String(fid)] = membershipSlots(m, fid, date);
+        // busy here or elsewhere (other hospitals, travel time)
+        blocked[String(fid)] = d ? await blockedSlots({ doctor: d, date, slots: slots[String(fid)], durationMinutes: m.availability?.slotMinutes || 30, place: { facilityId: fid } }) : [];
+      }
       return {
         doctorCNIC: m.doctorCNIC, firstName: d?.firstName, lastName: d?.lastName, specialization: d?.specialization, fee: m.fee,
-        facilityIds: (m.facilityIds || []).map(String),
-        slots: Object.fromEntries((m.facilityIds || []).map((fid) => [String(fid), membershipSlots(m, fid, date)])),
+        facilityIds: (m.facilityIds || []).map(String), slots, blocked,
       };
-    }),
+    })),
     appointments: appointments.map((a) => ({ ...a, patient: patients.find((p) => p.patientCNIC === a.patientCNIC) || null })),
   });
 });
 
+// Only verified hospitals may look patients up by CNIC, they see a masked name (enough to confirm
+// with the person at the counter), every lookup shows in the patient's "who viewed my record", and
+// each organization is limited to LOOKUPS_PER_HOUR distinct look-ups.
+const LOOKUPS_PER_HOUR = Number(process.env.DESK_LOOKUPS_PER_HOUR) || 60;
+const mask = (s = '') => (s.length <= 2 ? `${s[0] || ''}*` : `${s.slice(0, 2)}${'*'.repeat(Math.min(6, s.length - 2))}`);
+const requireVerifiedOrg = (t, res) => {
+  if (t.org.verification?.status === 'verified') return true;
+  res.status(403).json({ error: 'Your hospital must be verified by PakMedRecord before it can do this.', code: 'ORG_NOT_VERIFIED' });
+  return false;
+};
+const hospitalActor = (t) => ({ role: 'hospital', id: t.actor.id, name: `${t.org.name} (front desk)`, orgId: String(t.org._id) });
+
 const deskPatient = expressAsyncHandler(async (req, res) => {
-  const cnic = Number(String(req.params.cnic).replace(/\D/g, ''));
-  const p = await Patient.findOne({ patientCNIC: cnic }).select('patientCNIC firstName lastName gender phone dateOfBirth').lean();
+  const t = req.tenant;
+  if (!requireVerifiedOrg(t, res)) return;
+  const raw = String(req.params.cnic).replace(/\D/g, '');
+  if (!isCNIC(raw)) return res.status(400).json({ error: 'Enter a 13-digit CNIC' });
+  const since = new Date(Date.now() - 3600 * 1000);
+  if ((await AccessLog.countDocuments({ orgId: String(t.org._id), action: 'Looked you up at the front desk', createdAt: { $gte: since } })) >= LOOKUPS_PER_HOUR) {
+    return res.status(429).json({ error: 'Too many patient look-ups this hour. Try again later.' });
+  }
+  const p = await Patient.findOne({ patientCNIC: Number(raw) }).select('patientCNIC firstName lastName gender phone dateOfBirth').lean();
   if (!p) return res.status(404).json({ error: 'No patient with that CNIC. Ask them to sign up on PakMedRecord first.' });
-  res.status(200).json(p);
+  await logAccess(p.patientCNIC, hospitalActor(t), 'Looked you up at the front desk', req.ip);
+  const returning = await Appointment.exists({ orgId: t.org._id, patientCNIC: p.patientCNIC, status: { $in: ['pending', 'completed'] } });
+  const age = p.dateOfBirth ? Math.floor((Date.now() - new Date(p.dateOfBirth)) / (365.25 * 86400000)) : null;
+  res.status(200).json({
+    patientCNIC: p.patientCNIC,
+    name: `${mask(p.firstName)} ${mask(p.lastName)}`,
+    gender: p.gender,
+    age,
+    phoneEnding: p.phone ? String(p.phone).replace(/\D/g, '').slice(-4) : null,
+    returning: Boolean(returning), // seen here before: no consent code needed
+  });
 });
+
+// POST /orgs/:orgId/desk/consent { patientCNIC } - sends the patient a 6-digit code to read out
+const deskConsent = expressAsyncHandler(async (req, res) => {
+  const t = req.tenant;
+  if (!requireVerifiedOrg(t, res)) return;
+  const cnic = Number(String(req.body?.patientCNIC || '').replace(/\D/g, ''));
+  const patient = await Patient.findOne({ patientCNIC: cnic });
+  if (!patient) return res.status(404).json({ error: 'Patient not found' });
+  const recent = await ConsentCode.findOne({ orgId: t.org._id, patientCNIC: cnic, createdAt: { $gte: new Date(Date.now() - 60 * 1000) } });
+  if (recent) return res.status(429).json({ error: 'A code was just sent. Wait a minute before sending another.' });
+  const code = String(crypto.randomInt(0, 1000000)).padStart(6, '0');
+  await ConsentCode.create({ orgId: t.org._id, patientCNIC: cnic, codeHash: hashCode(code), expiresAt: new Date(Date.now() + 10 * 60 * 1000) });
+  const guardian = patient.guardianCNIC ? await Patient.findOne({ patientCNIC: patient.guardianCNIC }) : null;
+  const channels = await deliver(patient, {
+    type: 'appointment',
+    title: `Booking code: ${code}`,
+    body: `${t.org.name} wants to book an appointment for you. If you are at their counter or on the phone with them, tell them this code: ${code}. It expires in 10 minutes. If you didn't ask for this, ignore it.`,
+    link: `/appointments/mine/${cnic}`,
+  }, guardian);
+  logAccess(cnic, hospitalActor(t), 'Asked to book an appointment for you', req.ip);
+  res.status(200).json({ message: 'Code sent to the patient', channels });
+});
+
+const checkConsent = async (orgId, patientCNIC, code) => {
+  const c = await ConsentCode.findOne({ orgId, patientCNIC, usedAt: { $exists: false }, expiresAt: { $gt: new Date() } }).sort({ createdAt: -1 });
+  if (!c || c.attempts >= 5) return false;
+  if (c.codeHash !== hashCode(String(code || '').trim())) {
+    c.attempts += 1;
+    await c.save();
+    return false;
+  }
+  c.usedAt = new Date();
+  await c.save();
+  return true;
+};
 
 const deskBook = expressAsyncHandler(async (req, res) => {
   const t = req.tenant;
   const facilityId = req.body?.facilityId;
   if (!facilityId || !canUseFacility(t, facilityId)) return res.status(403).json({ error: 'Choose one of your branches' });
+  if (!requireVerifiedOrg(t, res)) return;
+  const patientCNIC = Number(String(req.body?.patientCNIC || '').replace(/\D/g, ''));
+  // new patients must agree: they read out the code we sent them; returning patients don't need one
+  const returning = await Appointment.exists({ orgId: t.org._id, patientCNIC, status: { $in: ['pending', 'completed'] } });
+  if (!returning && !(await checkConsent(t.org._id, patientCNIC, req.body?.consentCode))) {
+    return res.status(403).json({ error: 'Enter the booking code the patient received (send one first).', code: 'CONSENT_REQUIRED' });
+  }
   const { status, body } = await createAppointment({
-    ...req.body, orgId: t.org._id, facilityId, patientCNIC: Number(String(req.body?.patientCNIC || '').replace(/\D/g, '')), doctorCNIC: Number(req.body?.doctorCNIC),
+    ...req.body, orgId: t.org._id, facilityId, patientCNIC, doctorCNIC: Number(req.body?.doctorCNIC),
     bookedBy: { role: 'staff', id: t.actor.id },
   });
   res.status(status).json(body);
@@ -436,5 +547,5 @@ const deskUpdate = expressAsyncHandler(async (req, res) => {
 
 module.exports = {
   signup, createByDoctor, mine, overview, update, submitVerification, addFacility, updateFacility, addDepartment, removeDepartment,
-  doctors, inviteDoctor, updateDoctor, respond, leave, myHours, staffList, addStaff, updateStaff, deskDay, deskPatient, deskBook, deskUpdate,
+  doctors, inviteDoctor, updateDoctor, respond, leave, myHours, staffList, addStaff, updateStaff, deskDay, deskPatient, deskConsent, deskBook, deskUpdate,
 };

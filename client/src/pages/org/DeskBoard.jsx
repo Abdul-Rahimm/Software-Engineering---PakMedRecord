@@ -26,8 +26,10 @@ const BookModal = ({ open, onClose, day, onBooked, orgId }) => {
   const [time, setTime] = useState('');
   const [reason, setReason] = useState('');
   const [busy, setBusy] = useState(false);
+  const [code, setCode] = useState('');
+  const [codeSent, setCodeSent] = useState(false);
 
-  useEffect(() => { if (open) { setCnic(''); setPatient(null); setDoctor(''); setTime(''); setReason(''); setFacility(day?.facilities.length === 1 ? day.facilities[0]._id : ''); } }, [open]); // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => { if (open) { setCnic(''); setPatient(null); setDoctor(''); setTime(''); setReason(''); setCode(''); setCodeSent(false); setFacility(day?.facilities.length === 1 ? day.facilities[0]._id : ''); } }, [open]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const lookup = async () => {
     try {
@@ -42,12 +44,23 @@ const BookModal = ({ open, onClose, day, onBooked, orgId }) => {
   const doctorsHere = (day?.doctors || []).filter((d) => !facility || d.facilityIds.includes(facility));
   const doc = doctorsHere.find((d) => String(d.doctorCNIC) === doctor);
   const slots = (doc && facility && doc.slots[facility]) || [];
+  // busy here or at another hospital (visit length + travel time)
+  const blocked = (doc && facility && doc.blocked?.[facility]) || [];
+  const sendCode = async () => {
+    try {
+      const { data } = await api.post(`/orgs/${orgId}/desk/consent`, { patientCNIC: patient.patientCNIC });
+      setCodeSent(true);
+      toast(`${data.message} (${data.channels.join(', ')})`);
+    } catch (err) {
+      toast(apiError(err), 'error');
+    }
+  };
   const taken = day?.appointments.filter((a) => String(a.doctorCNIC) === doctor && a.status !== 'cancelled').map((a) => a.time) || [];
 
   const book = async () => {
     setBusy(true);
     try {
-      await api.post(`/orgs/${orgId}/desk/book`, { patientCNIC: patient.patientCNIC, doctorCNIC: Number(doctor), facilityId: facility, date: day.date, time, reason });
+      await api.post(`/orgs/${orgId}/desk/book`, { patientCNIC: patient.patientCNIC, doctorCNIC: Number(doctor), facilityId: facility, date: day.date, time, reason, consentCode: code || undefined });
       toast('Appointment booked. The patient was notified.');
       onBooked();
       onClose();
@@ -65,7 +78,19 @@ const BookModal = ({ open, onClose, day, onBooked, orgId }) => {
           <Field className="grow" label="Patient CNIC" placeholder="42101-1234567-1" value={cnic} onChange={(e) => { setCnic(maskCNIC(e.target.value)); setPatient(null); }} inputMode="numeric" />
           <button className="btn" type="button" onClick={lookup} disabled={parseCNIC(cnic).length !== 13}><FiSearch /> Find</button>
         </div>
-        {patient && <div className="feed-item"><FiUserCheck /> <span><strong>{patient.firstName} {patient.lastName}</strong> · {patient.gender}{patient.phone ? ` · ${patient.phone}` : ''}</span></div>}
+        {patient && (
+          <div className="feed-item"><FiUserCheck /> <span><strong data-no-translate>{patient.name}</strong> · {patient.gender}{patient.age != null ? ` · ${patient.age} yrs` : ''}{patient.phoneEnding ? ` · phone ending ${patient.phoneEnding}` : ''}<div className="subtle" style={{ fontSize: 12 }}>Confirm with the patient that this is them.</div></span></div>
+        )}
+        {patient && !patient.returning && (
+          <div className="stack gap-8 consent-box">
+            <span className="field-label">Patient&apos;s permission</span>
+            <p className="subtle" style={{ fontSize: 13 }}>First visit here: send the patient a 6-digit code (app, email, SMS or WhatsApp) and type the code they read out to you.</p>
+            <div className="row gap-8 wrap">
+              <button type="button" className="btn btn-sm" onClick={sendCode}>{codeSent ? 'Send again' : 'Send code'}</button>
+              <input className="input mono" style={{ width: 130 }} inputMode="numeric" maxLength={6} placeholder="123456" value={code} onChange={(e) => setCode(e.target.value.replace(/\D/g, ''))} aria-label="Booking code" />
+            </div>
+          </div>
+        )}
         {day?.facilities.length > 1 && (
           <Field as="select" label="Branch" value={facility} onChange={(e) => { setFacility(e.target.value); setDoctor(''); setTime(''); }}>
             <option value="">Choose a branch</option>
@@ -81,13 +106,13 @@ const BookModal = ({ open, onClose, day, onBooked, orgId }) => {
             <span className="field-label">Time</span>
             {slots.length ? (
               <div className="chips">
-                {slots.map((s) => <button key={s} type="button" className="chip" aria-pressed={time === s} disabled={taken.includes(s)} style={taken.includes(s) ? { opacity: 0.3, textDecoration: 'line-through' } : undefined} onClick={() => setTime(s)}>{formatTime(s)}</button>)}
+                {slots.map((s) => { const off = taken.includes(s) || blocked.includes(s); return <button key={s} type="button" className="chip" aria-pressed={time === s} disabled={off} title={off ? 'Doctor busy (here or at another hospital)' : undefined} style={off ? { opacity: 0.3, textDecoration: 'line-through' } : undefined} onClick={() => setTime(s)}>{formatTime(s)}</button>; })}
               </div>
             ) : <span className="subtle">Not working at this branch on this day.</span>}
           </div>
         )}
         <Field label="Reason (optional)" value={reason} onChange={(e) => setReason(e.target.value)} placeholder="e.g. Walk-in, fever" />
-        <Button className="btn btn-primary btn-block" disabled={!patient || !doctor || !facility || !time} loading={busy} onClick={book}>Book appointment</Button>
+        <Button className="btn btn-primary btn-block" disabled={!patient || !doctor || !facility || !time || (!patient.returning && code.length !== 6)} loading={busy} onClick={book}>Book appointment</Button>
       </div>
     </Modal>
   );
@@ -232,7 +257,6 @@ const DeskBoard = ({ orgId }) => {
           </div>
           </>
         )}
-        <p className="subtle" style={{ fontSize: 12.5 }}>Front-desk accounts manage the schedule and payments only. Medical records stay private to the patient and their doctors.</p>
       <BookModal open={booking} onClose={() => setBooking(false)} day={data} onBooked={() => reload(true)} orgId={orgId} />
     </div>
   );

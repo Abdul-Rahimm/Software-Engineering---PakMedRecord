@@ -327,3 +327,31 @@
   .appt-card > .appt-actions > span.subtle { grid-column: 1 / -1; }
   .appt-card .tl-meta { gap: 6px 14px; }
 }
+
+/* ---------- identity check (CNIC + live face) ---------- */
+.idc-stages { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
+.idc-stage { display: flex; align-items: center; gap: 6px; font-size: 12.5px; color: var(--text-3); padding: 8px 10px; border: 1px solid var(--border); border-radius: 12px; }
+.idc-stage span { display: inline-flex; }
+.idc-stage.on { color: var(--text); border-color: rgba(61,255,176,.55); box-shadow: var(--glow); }
+.idc-stage.done { color: var(--emerald); }
+.idc-camera { position: relative; width: 100%; max-width: 560px; margin: 0 auto; border-radius: 18px; overflow: hidden; background: #0b1220; aspect-ratio: 4 / 3; }
+.idc-camera.face { aspect-ratio: 3 / 4; max-width: 380px; }
+.idc-camera video { width: 100%; height: 100%; object-fit: cover; display: block; }
+.idc-camera video.mirror { transform: scaleX(-1); }
+.idc-overlay { position: absolute; inset: 0; display: grid; place-items: center; color: #fff; }
+.idc-oval { position: absolute; left: 50%; top: 46%; width: 62%; aspect-ratio: 3 / 4; transform: translate(-50%, -50%); border-radius: 50%; border: 3px dashed rgba(61,255,176,.85); box-shadow: 0 0 0 999px rgba(5,10,20,.45); pointer-events: none; }
+.idc-card-guide { position: absolute; inset: 12% 8%; border: 3px dashed rgba(61,255,176,.85); border-radius: 14px; box-shadow: 0 0 0 999px rgba(5,10,20,.35); pointer-events: none; }
+.idc-steps { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; justify-content: center; text-align: center; }
+.idc-steps strong { flex-basis: 100%; font-size: 16px; }
+.idc-step { width: 28px; height: 28px; border-radius: 50%; display: inline-grid; place-items: center; font-size: 12px; border: 1px solid var(--border); color: var(--text-3); }
+.idc-step.now { border-color: var(--emerald); color: var(--text); }
+.idc-step.done { background: var(--grad); color: #04121c; border-color: transparent; }
+.idc-review { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.idc-review figure { margin: 0; }
+.idc-review img { width: 100%; border-radius: 12px; aspect-ratio: 4 / 3; object-fit: cover; background: #0b1220; }
+.idc-review figcaption { font-size: 12px; color: var(--text-3); margin-top: 4px; text-align: center; }
+.idc-admin { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 10px; }
+.idc-admin img { width: 100%; aspect-ratio: 4 / 3; object-fit: cover; border-radius: 10px; background: #0b1220; cursor: zoom-in; }
+@media (max-width: 560px) {
+  .idc-stages { grid-template-columns: repeat(2, 1fr); }
+}

@@ -1,5 +1,10 @@
 // E-prescriptions: written by the doctor, added to the patient's record and medicine list,
 // verifiable by pharmacies through the QR code.
+const Membership = require('../models/MembershipModel');
+const Facility = require('../models/FacilityModel');
+const Organization = require('../models/OrganizationModel');
+const Appointment = require('../models/AppointmentModel');
+const mongoose = require('mongoose');
 
 const crypto = require('crypto');
 const expressAsyncHandler = require('express-async-handler');
@@ -105,6 +110,31 @@ const check = expressAsyncHandler(async (req, res) => {
 });
 
 // POST /prescriptions { patientCNIC, diagnosis, items, notes }
+// Where this prescription is issued: the visit's hospital branch (given or today's appointment),
+// else a hospital the doctor chose and works at, else their private practice
+const issuePlace = async (doctor, patientCNIC, body) => {
+  if (body?.privatePractice) return { place: { name: doctor.clinicAddress ? `Private clinic, ${doctor.clinicAddress}` : doctor.hospital, address: doctor.clinicAddress, phone: doctor.phone } };
+  let appt = mongoose.isValidObjectId(body?.appointmentId)
+    && await Appointment.findOne({ _id: body.appointmentId, doctorCNIC: doctor.doctorCNIC, patientCNIC }).lean();
+  if (!appt && !body?.orgId) {
+    const today = new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Karachi' });
+    appt = await Appointment.findOne({ doctorCNIC: doctor.doctorCNIC, patientCNIC, date: new Date(`${today}T00:00:00Z`), status: { $ne: 'cancelled' } }).lean();
+  }
+  let orgId = appt?.orgId;
+  let facilityId = appt?.facilityId;
+  if (!appt && mongoose.isValidObjectId(body?.orgId)) {
+    const m = await Membership.findOne({ orgId: body.orgId, doctorCNIC: doctor.doctorCNIC, status: 'active' }).lean();
+    if (m) {
+      orgId = m.orgId;
+      facilityId = (m.facilityIds || []).map(String).includes(String(body.facilityId)) ? body.facilityId : m.facilityIds?.[0];
+    }
+  }
+  const base = { appointmentId: appt?._id };
+  if (!orgId) return { ...base, place: { name: doctor.clinicAddress ? `Private clinic, ${doctor.clinicAddress}` : doctor.hospital, address: doctor.clinicAddress, phone: doctor.phone } };
+  const [org, f] = await Promise.all([Organization.findById(orgId).lean(), Facility.findById(facilityId).lean()]);
+  return { ...base, place: { orgId, facilityId, name: org?.name, branch: f?.name, address: [f?.address, f?.city].filter(Boolean).join(', '), phone: f?.phone || org?.phone } };
+};
+
 const create = expressAsyncHandler(async (req, res) => {
   const patientCNIC = Number(req.body?.patientCNIC);
   const items = cleanItems(req.body?.items);
@@ -126,7 +156,7 @@ const create = expressAsyncHandler(async (req, res) => {
     recordData: [diagnosis && `Diagnosis: ${diagnosis}`, ...items.map((i, n) => `${n + 1}. ${describeItem(i)}`), notes && `Notes: ${notes}`, `Prescription code: ${code}`].filter(Boolean).join('\n'),
     source: 'doctor',
   });
-  const prescription = await Prescription.create({ code, patientCNIC, doctorCNIC: req.user.cnic, diagnosis, items, notes, recordId: record._id });
+  const prescription = await Prescription.create({ code, patientCNIC, doctorCNIC: req.user.cnic, diagnosis, items, notes, recordId: record._id, ...(await issuePlace(doctor, patientCNIC, req.body)) });
 
   // Keep the patient's medicine list (and tracker) in step with the prescription
   const today = new Date();
@@ -186,7 +216,8 @@ const verifyPublic = expressAsyncHandler(async (req, res) => {
     items: p.items,
     notes: p.notes,
     doctor: doctor ? {
-      name: `Dr. ${doctor.firstName} ${doctor.lastName}`, specialization: doctor.specialization, hospital: doctor.hospital,
+      name: `Dr. ${doctor.firstName} ${doctor.lastName}`, specialization: doctor.specialization,
+      hospital: p.place?.name ? [p.place.name, p.place.branch].filter(Boolean).join(', ') : doctor.hospital,
       verified: !doctor.verification?.status || doctor.verification.status === 'verified', pmdcNumber: doctor.verification?.pmdcNumber || null,
     } : null,
     patient: patient ? { initials: `${patient.firstName[0]}. ${patient.lastName[0]}.`, gender: patient.gender, age: ageYears(patient.dateOfBirth) } : null,

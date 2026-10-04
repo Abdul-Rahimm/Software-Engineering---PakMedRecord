@@ -6,7 +6,7 @@ const expressAsyncHandler = require('express-async-handler');
 const Patient = require('../models/PatientModel');
 const Doctor = require('../models/DoctorModel');
 const { signToken } = require('../middleware/auth');
-const { isCNIC, isEmail } = require('../lib/validate');
+const { cnicProblem, isCNIC, isEmail } = require('../lib/validate');
 const { purgePatient } = require('./AccountController');
 const { startEmailVerification, TERMS_VERSION } = require('../lib/accounts');
 
@@ -35,10 +35,12 @@ const add = expressAsyncHandler(async (req, res) => {
   if (!isCNIC(cnic)) return res.status(400).json({ error: 'Enter the 13-digit B-Form or CNIC number' });
   if (!String(firstName || '').trim() || !String(lastName || '').trim()) return res.status(400).json({ error: 'Enter their name' });
   if (!['Male', 'Female', 'Other'].includes(gender)) return res.status(400).json({ error: 'Select a gender' });
+  const cnicError = cnicProblem(cnic, gender);
+  if (cnicError) return res.status(400).json({ error: cnicError.replace('CNIC', 'B-Form/CNIC') });
   const dob = dateOfBirth ? new Date(dateOfBirth) : null;
   if (!dob || Number.isNaN(dob.getTime()) || dob > new Date()) return res.status(400).json({ error: 'Enter a valid date of birth' });
   const n = Number(cnic);
-  if (n === req.user.cnic || (await Patient.exists({ patientCNIC: n })) || (await Doctor.exists({ doctorCNIC: n }))) {
+  if (n === req.user.cnic || (await Patient.exists({ patientCNIC: n }))) {
     return res.status(409).json({ error: 'This B-Form/CNIC is already registered.' });
   }
   if ((await Patient.countDocuments({ guardianCNIC: req.user.cnic })) >= 10) return res.status(400).json({ error: 'You can manage up to 10 family members' });

@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import {
-  FiActivity, FiAlertTriangle, FiCalendar, FiCheckCircle, FiClock, FiCreditCard, FiEdit2, FiGrid, FiLayers, FiMapPin, FiPlus, FiSettings, FiUploadCloud, FiUserPlus, FiUsers, FiX,
+  FiActivity, FiAlertTriangle, FiShield, FiCalendar, FiCheckCircle, FiClock, FiCreditCard, FiEdit2, FiGrid, FiLayers, FiMapPin, FiPlus, FiSettings, FiUploadCloud, FiUserPlus, FiUsers, FiX,
 } from 'react-icons/fi';
 import api from '../../api';
 import { useFetch } from '../../lib/data';
@@ -104,6 +104,9 @@ const SetupTab = ({ ov, reload }) => {
           </>
         )}
         {status === 'verified' && <p className="subtle">Registration {org.registrationNo}. Changing the registration number sends it back for review.</p>}
+        <div className="auth-notice" style={{ borderColor: 'var(--border)', background: 'var(--tint-1)' }}>
+          <FiShield /> <span>Administrators: verify your own identity with your CNIC and a live face check. It speeds up approval. <a href="/verify-identity">Verify my identity</a></span>
+        </div>
       </section>
     </div>
   );
@@ -202,8 +205,9 @@ const DoctorsTab = ({ ov, reload: reloadOv }) => {
     <section className="glass card-pad-lg stack gap-16">
       <div className="row between wrap gap-8">
         <h2 className="section-title row gap-8"><FiUsers /> Doctors</h2>
-        <button className="btn btn-primary btn-sm" onClick={() => setInvite({ id: '', facilityIds: open.length === 1 ? [open[0]._id] : [], departmentId: '', fee: '' })}><FiUserPlus /> Invite doctor</button>
+        <button className="btn btn-primary btn-sm" disabled={org.verification?.status !== 'verified'} onClick={() => setInvite({ id: '', facilityIds: open.length === 1 ? [open[0]._id] : [], departmentId: '', fee: '' })}><FiUserPlus /> Invite doctor</button>
       </div>
+      {org.verification?.status !== 'verified' && <p className="subtle" style={{ fontSize: 13 }}>You can invite doctors once PakMedRecord has verified your registration (Settings tab). This stops fake hospitals from looking doctors up.</p>}
       {!data.length ? <EmptyState icon={FiUsers} title="No doctors yet">Invite doctors by CNIC or PMDC number. They accept from their own account, then you set where and when they see patients.</EmptyState> : data.map((m) => {
         const noHours = m.status === 'active' && !(m.availability?.blocks || []).length;
         return (
