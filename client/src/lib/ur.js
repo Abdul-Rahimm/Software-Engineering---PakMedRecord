@@ -1404,6 +1404,8 @@ const lookupTime = (t) => {
 
 // Phrases with values in them: [regex, (...groups) => urdu]
 export const UR_PATTERNS = [
+  [/^(\d+) branch(?:es)?: (.+)$/, (n, c) => `${n} شاخیں: ${c}`],
+  [/^Private practice \((.+)\)$/, (x) => `نجی پریکٹس (${x})`],
   [/^(\d+) steps passed$/, (n) => `${n} مراحل مکمل`],
   [/^(\d+) locations$/, (n) => `${n} مقامات`],
   [/^(\d+) branch(?:es)?$/, (n) => `${n} شاخیں`],

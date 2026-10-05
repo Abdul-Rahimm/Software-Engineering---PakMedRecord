@@ -99,7 +99,14 @@ const AppShell = ({ role }) => {
     }
   }, [role, cnic]);
 
-  useEffect(() => { loadProfile(); }, [loadProfile]);
+  // refresh on every page change and when the app comes back to the foreground, so approvals
+  // (PMDC verification, identity) show up without signing out
+  useEffect(() => { loadProfile(); }, [loadProfile, location.pathname]);
+  useEffect(() => {
+    const onFocus = () => document.visibilityState === 'visible' && loadProfile();
+    document.addEventListener('visibilitychange', onFocus);
+    return () => document.removeEventListener('visibilitychange', onFocus);
+  }, [loadProfile]);
   useEffect(() => { refreshCounts(); setDrawer(false); }, [refreshCounts, location.pathname]);
 
   // ⌘K / Ctrl+K opens the command palette

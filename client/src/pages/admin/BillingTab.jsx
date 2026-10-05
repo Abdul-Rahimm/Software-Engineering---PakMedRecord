@@ -99,7 +99,7 @@ const BillingTab = () => {
         <h2 className="section-title">Commission by clinic · {monthLabel(month)}</h2>
         {!s ? <Skeleton height={100} /> : !s.payees.length ? <EmptyState icon={FiDollarSign} title="No online payments this month">Commission appears once patients pay clinics through Safepay.</EmptyState> : (
           <div className="table-wrap">
-            <table className="table">
+            <table className="table stack-sm">
               <thead><tr><th>Clinic / doctor</th><th>Payments</th><th>Fees received</th><th>Commission</th><th>Not yet invoiced</th><th /></tr></thead>
               <tbody>
                 {s.payees.map((p) => (
@@ -122,7 +122,7 @@ const BillingTab = () => {
         <h2 className="section-title">Invoices</h2>
         {invs.loading ? <Skeleton height={100} /> : !invs.data.length ? <p className="subtle">No invoices yet. Create one from the table above.</p> : (
           <div className="table-wrap">
-            <table className="table">
+            <table className="table stack-sm">
               <thead><tr><th>Invoice</th><th>To</th><th>Month</th><th>Fees</th><th>Amount due</th><th>Status</th><th /></tr></thead>
               <tbody>
                 {invs.data.map((i) => (
@@ -161,7 +161,7 @@ const BillingTab = () => {
         </div>
         {pays.loading ? <Skeleton height={160} /> : !pays.data.length ? <p className="subtle">No payments match.</p> : (
           <div className="table-wrap">
-            <table className="table">
+            <table className="table stack-sm">
               <thead><tr><th>When</th><th>Patient</th><th>Doctor · paid to</th><th>Method</th><th>Amount</th><th>Commission</th><th>Status</th></tr></thead>
               <tbody>
                 {pays.data.map((p) => (

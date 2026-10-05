@@ -39,7 +39,8 @@ const accountStatus = async (role, subject) => {
         clinicId: doc.clinicId ? String(doc.clinicId) : undefined,
       }
     : { exists: false };
-  statusCache.set(key, { at: Date.now(), value });
+  // a doctor waiting for PMDC approval is re-checked every time, so approval takes effect at once
+  if (value.verified !== false) statusCache.set(key, { at: Date.now(), value });
   return value;
 };
 const forgetAccountStatus = (role, subject) => statusCache.delete(`${role}:${subject}`);

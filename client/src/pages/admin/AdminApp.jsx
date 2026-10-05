@@ -51,7 +51,7 @@ const Overview = ({ go }) => {
           {data.openReports > 0 && <button className="btn" onClick={() => go('reports')}><FiFlag /> {data.openReports} open report{data.openReports > 1 ? 's' : ''}</button>}
         </div>
       )}
-      <div className="grid grid-auto">
+      <div className="grid grid-auto admin-stats">
         <Stat label="Patients" value={data.patients} />
         <Stat label="Doctors" value={data.doctors} />
         <Stat label="New patients (30 days)" value={data.newPatients} />
@@ -116,7 +116,7 @@ const VerificationTab = () => {
         <div className="glass"><EmptyState icon={FiShield} title="Nothing here">No doctors with this status.</EmptyState></div>
       ) : (
         <div className="glass table-wrap">
-          <table className="table">
+          <table className="table stack-sm">
             <thead><tr><th>Doctor</th><th>PMDC no.</th><th>Specialty / hospital</th><th>Submitted</th><th>Status</th><th /></tr></thead>
             <tbody>
               {data.map((d) => (
@@ -124,7 +124,7 @@ const VerificationTab = () => {
                   <td><strong>Dr. {d.firstName} {d.lastName}</strong><div className="subtle mono" style={{ fontSize: 12 }}>{formatCNIC(d.doctorCNIC)} · {d.email}</div></td>
                   <td className="mono">{d.verification?.pmdcNumber || '—'}</td>
                   <td>{d.specialization}<div className="subtle" style={{ fontSize: 12.5 }}>{d.hospital}</div></td>
-                  <td>{formatDate(d.verification?.submittedAt || d.createdAt)}</td>
+                  <td data-label="Submitted">{formatDate(d.verification?.submittedAt || d.createdAt)}</td>
                   <td><span className={`badge ${{ verified: 'badge-green', pending: 'badge-amber', rejected: 'badge-rose' }[d.verification?.status || 'verified'] || ''}`}>{d.verification?.status || 'verified (legacy)'}</span></td>
                   <td><button className="btn btn-sm" onClick={() => open(d)}>Review</button></td>
                 </tr>
@@ -209,7 +209,7 @@ const OrgsTab = () => {
         <div className="glass"><EmptyState icon={FiHome} title="Nothing here">No hospitals or clinics with this status.</EmptyState></div>
       ) : (
         <div className="glass table-wrap">
-          <table className="table">
+          <table className="table stack-sm">
             <thead><tr><th>Organization</th><th>Registration</th><th>Size</th><th>Submitted</th><th>Status</th><th /></tr></thead>
             <tbody>
               {data.map((o) => (
@@ -217,7 +217,7 @@ const OrgsTab = () => {
                   <td><strong>{o.name}</strong>{o.suspended && <span className="badge badge-rose" style={{ marginInlineStart: 6 }}>Suspended</span>}<div className="subtle" style={{ fontSize: 12 }}>{o.type} · {[o.city, o.province].filter(Boolean).join(', ')}</div><div className="subtle" style={{ fontSize: 12 }}>{o.admins.map((a) => a.email).join(', ') || o.email}</div></td>
                   <td className="mono">{o.registrationNo || '—'}<div className="subtle" style={{ fontSize: 12, fontFamily: 'inherit' }}>{o.regulator}</div></td>
                   <td>{o.branches} branch{o.branches === 1 ? '' : 'es'} · {o.doctors} doctor{o.doctors === 1 ? '' : 's'}</td>
-                  <td>{formatDate(o.verification?.submittedAt || o.createdAt)}</td>
+                  <td data-label="Submitted">{formatDate(o.verification?.submittedAt || o.createdAt)}</td>
                   <td><span className={`badge ${{ verified: 'badge-green', pending: 'badge-amber', rejected: 'badge-rose' }[o.verification?.status] || ''}`}>{o.verification?.status || 'unverified'}</span></td>
                   <td><button className="btn btn-sm" onClick={() => open(o)}>Review</button></td>
                 </tr>
@@ -300,16 +300,16 @@ const IdentityTab = () => {
       </div>
       {loading ? <Skeleton height={200} /> : !data.length ? <div className="glass"><EmptyState icon={FiShield} title="Nothing here">No identity checks with this status.</EmptyState></div> : (
         <div className="glass table-wrap">
-          <table className="table">
+          <table className="table stack-sm">
             <thead><tr><th>Who</th><th>CNIC</th><th>Face match</th><th>Live / real</th><th>Submitted</th><th /></tr></thead>
             <tbody>
               {data.map((c) => (
                 <tr key={c._id}>
                   <td><strong>{c.name}</strong> <span className="badge">{c.purpose === 'claim' ? 'Claim' : c.role}</span><div className="subtle" style={{ fontSize: 12 }}>{c.purpose === 'claim' ? `Account holder: ${c.account?.name || '—'}` : c.account?.email}</div>{flag(c).length > 0 && <div style={{ fontSize: 12, color: 'var(--rose-text)' }}>{flag(c).join(' · ')}</div>}</td>
-                  <td className="mono">{formatCNIC(c.cnic)}{c.device?.ocrMatches === true && ' ✓'}</td>
-                  <td>{pct(c.device?.faceMatch)}</td>
-                  <td>{pct(c.device?.liveness)} / {pct(c.device?.realness)}</td>
-                  <td>{formatDate(c.createdAt)}</td>
+                  <td className="mono" data-label="CNIC">{formatCNIC(c.cnic)}{c.device?.ocrMatches === true && ' ✓'}</td>
+                  <td data-label="Face match">{pct(c.device?.faceMatch)}</td>
+                  <td data-label="Live / real">{pct(c.device?.liveness)} / {pct(c.device?.realness)}</td>
+                  <td data-label="Submitted">{formatDate(c.createdAt)}</td>
                   <td><button className="btn btn-sm" onClick={() => { setNote(''); setOpen(c); }}>Review</button></td>
                 </tr>
               ))}
@@ -399,7 +399,7 @@ const UsersTab = () => {
       </div>
       {loading ? <Skeleton height={200} /> : (
         <div className="glass table-wrap">
-          <table className="table">
+          <table className="table stack-sm">
             <thead><tr><th>Name</th><th>CNIC</th><th>Email</th><th>Joined</th><th>Status</th><th /></tr></thead>
             <tbody>
               {data.map((u) => (
@@ -493,7 +493,7 @@ const PartnersTab = () => {
       </form>
       {loading ? <Skeleton height={120} /> : (
         <div className="glass table-wrap">
-          <table className="table">
+          <table className="table stack-sm">
             <thead><tr><th>Partner</th><th>Type</th><th>Key</th><th>Last used</th><th>Status</th><th /></tr></thead>
             <tbody>
               {data.map((p) => (

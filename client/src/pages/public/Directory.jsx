@@ -304,8 +304,8 @@ export const HospitalDirectory = () => {
                 </div>
                 <div className="row gap-8 wrap"><span className="badge badge-green badge-plain"><FiCheckCircle size={12} /> Verified</span></div>
                 <div className="stack gap-4 subtle" style={{ fontSize: 13.5 }}>
-                  <span className="row gap-8"><FiMapPin size={14} /> <span className="truncate">{o.branches.length} branch{o.branches.length === 1 ? '' : 'es'}: {[...new Set(o.branches.map((b) => b.city).filter(Boolean))].join(', ') || o.city}</span></span>
-                  <span className="row gap-8"><FiUsers size={14} /> {o.doctors} doctor{o.doctors === 1 ? '' : 's'}</span>
+                  <span className="row gap-8"><FiMapPin size={14} /> <span className="truncate">{`${o.branches.length} ${o.branches.length === 1 ? 'branch' : 'branches'}: ${[...new Set(o.branches.map((b) => b.city).filter(Boolean))].join(', ') || o.city}`}</span></span>
+                  <span className="row gap-8"><FiUsers size={14} /> {`${o.doctors} ${o.doctors === 1 ? 'doctor' : 'doctors'}`}</span>
                 </div>
               </Link>
             </motion.div>

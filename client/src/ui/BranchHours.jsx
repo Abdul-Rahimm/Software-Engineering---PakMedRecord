@@ -37,13 +37,13 @@ const BranchHours = ({ facilities, value, onSave, saving }) => {
               </div>
             </div>
             {!mine.length ? <span className="subtle" style={{ fontSize: 13 }}>No hours here, so patients can&apos;t book at this branch.</span> : mine.map((b) => (
-              <div key={b.i} className="row gap-8 wrap">
-                <select className="select" style={{ width: 90 }} value={b.day} onChange={(e) => update(b.i, { day: Number(e.target.value) })} aria-label="Day">
+              <div key={b.i} className="hours-block">
+                <select className="select" value={b.day} onChange={(e) => update(b.i, { day: Number(e.target.value) })} aria-label="Day">
                   {ORDER.map((d) => <option key={d} value={d}>{DAYS[d]}</option>)}
                 </select>
-                <input type="time" className="input" style={{ width: 120 }} value={b.start} onChange={(e) => update(b.i, { start: e.target.value })} aria-label="Start" />
+                <input type="time" className="input" value={b.start} onChange={(e) => update(b.i, { start: e.target.value })} aria-label="Start" />
                 <span className="subtle">to</span>
-                <input type="time" className="input" style={{ width: 120 }} value={b.end} onChange={(e) => update(b.i, { end: e.target.value })} aria-label="End" />
+                <input type="time" className="input" value={b.end} onChange={(e) => update(b.i, { end: e.target.value })} aria-label="End" />
                 <button type="button" className="btn btn-ghost btn-icon btn-sm" onClick={() => setBlocks((l) => l.filter((_, j) => j !== b.i))} aria-label="Remove hours"><FiMinus /></button>
               </div>
             ))}

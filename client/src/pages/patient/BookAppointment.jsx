@@ -267,7 +267,7 @@ const BookAppointment = () => {
             <aside className="glass card-pad stack gap-8" style={{ position: 'sticky', top: 24 }}>
               <h2 className="section-title" style={{ marginBottom: 8 }}>Summary</h2>
               <div className="summary-row"><span className="k">Doctor</span><span className="row gap-8 truncate"><FiUser className="subtle" /> {chosen ? doctorName(chosen) : '—'}</span></div>
-              <div className="summary-row"><span className="k">Where</span><span className="row gap-8 truncate"><FiHome className="subtle" /> {place ? (place.orgId ? `${place.orgName}, ${place.facilityName}` : place.facilityName) : '—'}</span></div>
+              <div className="summary-row"><span className="k">Where</span><span className="row gap-8" style={{ minWidth: 0 }}><FiHome className="subtle" style={{ flexShrink: 0 }} /> <span style={{ whiteSpace: 'normal', overflowWrap: 'anywhere' }}>{place ? (place.orgId ? `${place.orgName}, ${place.facilityName}` : `Private practice${place.facilityName ? ` (${place.facilityName})` : ''}`) : '—'}</span></span></div>
               <div className="summary-row"><span className="k">Date</span><span className="row gap-8"><FiCalendar className="subtle" /> {dateObj ? dateObj.toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' }) : '—'}</span></div>
               <div className="summary-row"><span className="k">Time</span><span className="row gap-8"><FiClock className="subtle" /> {time ? formatTime(time) : '—'}</span></div>
               <div className="summary-row"><span className="k">Visit</span><span className="row gap-8">{mode === 'video' ? <><FiVideo className="subtle" /> Video call</> : <><FiMapPin className="subtle" /> In person</>}</span></div>
