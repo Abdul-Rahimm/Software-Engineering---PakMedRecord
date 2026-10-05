@@ -63,6 +63,43 @@ const removeFiles = async (check) => {
   await Promise.all([f.cnicFront, f.cnicBack, f.selfie, ...(f.frames || [])].filter(Boolean).map((id) => deleteFile(id).catch(() => {})));
 };
 
+// ---------- at sign-up ----------
+// Every self-registered account (patient, doctor, hospital administrator) sends its CNIC photo and
+// live face check with the sign-up request: body.identity = { cnicFront, cnicBack?, selfie, frames, device }.
+// signupCapture() validates and stores the photos before the account is created (throws on bad input);
+// recordSignupIdentity() links them to the new account; dropCapture() cleans up if creation fails.
+const signupCapture = async (body, { cnic, role, userAgent }) => {
+  if (!body?.identity) throw new Error('Complete the CNIC photo and live face check to create your account');
+  return storeCapture(body.identity, { cnic, role, userAgent });
+};
+const dropCapture = (capture) => capture && removeFiles(capture);
+const recordSignupIdentity = async ({ role, account, cnic, name, capture, ip }) => {
+  const { Model, key } = MODELS[role];
+  const subject = key === '_id' ? String(account._id) : String(account[key]);
+  const check = await IdentityCheck.create({ purpose: 'account', role, subject, cnic: Number(cnic), name, ...capture, ip });
+  await Model.updateOne({ _id: account._id }, { $set: { identity: { status: 'pending', checkId: check._id } } });
+  return check;
+};
+
+// POST /auth/precheck { role: 'patient'|'doctor'|'staff', cnic?, email?, gender? }
+// Run before the camera step, so nobody does the face check only to learn the CNIC is taken.
+const precheck = expressAsyncHandler(async (req, res) => {
+  const { role, cnic, email, gender } = req.body || {};
+  if (!['patient', 'doctor', 'staff'].includes(role)) return res.status(400).json({ error: 'Unknown account type' });
+  const digits = String(cnic || '').replace(/\D/g, '');
+  const problem = cnicProblem(digits, role === 'patient' ? gender : undefined);
+  if (problem) return res.status(400).json({ error: problem, field: 'cnic' });
+  if (role === 'staff') {
+    if (!isEmail(email)) return res.status(400).json({ error: 'Enter a valid email', field: 'email' });
+    if (await MODELS.staff.Model.exists({ email: String(email).trim().toLowerCase() })) {
+      return res.status(409).json({ error: 'That email already has a hospital account. Sign in instead.', field: 'email' });
+    }
+  } else if (await MODELS[role].Model.exists({ [MODELS[role].key]: Number(digits) })) {
+    return res.status(409).json({ error: 'Already registered. Sign in, or if this CNIC is yours and someone else used it, claim it below.', field: 'cnic', code: 'CNIC_TAKEN' });
+  }
+  res.status(200).json({ ok: true });
+});
+
 // POST /identity  { cnic? (staff only), cnicFront, cnicBack?, selfie, frames[], device{} }
 const submit = expressAsyncHandler(async (req, res) => {
   const { role } = req.user;
@@ -222,4 +259,4 @@ const review = expressAsyncHandler(async (req, res) => {
   res.status(200).json({ message, check: c });
 });
 
-module.exports = { submit, mine, claim, list, file, review };
+module.exports = { submit, mine, claim, list, file, review, precheck, signupCapture, recordSignupIdentity, dropCapture };

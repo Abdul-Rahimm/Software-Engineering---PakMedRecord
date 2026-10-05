@@ -80,7 +80,8 @@ app.use('/partners', PartnerRoutes);
 // Safepay webhooks are verified against the exact raw body, so they skip the JSON parser
 app.post('/payments/safepay/webhook/:accountId', express.raw({ type: () => true, limit: '100kb' }), safepayWebhook);
 // identity checks carry a few compressed photos
-app.use(['/identity', '/public/cnic-claim'], express.json({ limit: '4mb' }));
+// identity checks and sign-ups (which include the CNIC photo + live face check) carry a few compressed photos
+app.use(['/identity', '/public/cnic-claim', '/patient/signup', '/doctor/signup', '/orgs/signup', '/auth/google/complete'], express.json({ limit: '4mb' }));
 app.use(express.json({ limit: '200kb' }));
 app.use('/doctor', DoctorRoutes);
 app.use('/patient', PatientRoutes);

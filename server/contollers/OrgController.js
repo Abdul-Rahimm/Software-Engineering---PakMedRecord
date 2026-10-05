@@ -21,7 +21,7 @@ const AccessLog = require('../models/AccessLogModel');
 const ConsentCode = require('../models/ConsentCodeModel');
 
 const hashCode = (code) => crypto.createHash('sha256').update(`${process.env.JWT_SECRET}:${code}`).digest('hex');
-const { isCNIC, isEmail } = require('../lib/validate');
+const { isCNIC, isEmail, cnicProblem } = require('../lib/validate');
 const { completeSignIn } = require('../lib/session');
 const { createAppointment, describe, flagFutureAppointments, clearNotice } = require('../lib/appointments');
 const { membershipSlots, cleanMembershipSchedule } = require('../lib/availability');
@@ -31,6 +31,7 @@ const { saveFile, deleteFile } = require('../lib/files');
 const { forgetAccountStatus } = require('../middleware/auth');
 const { TERMS_VERSION } = require('../lib/accounts');
 const { flagRefund } = require('./PaymentController');
+const { signupCapture, recordSignupIdentity } = require('./IdentityController');
 
 const PROVINCES = ['Punjab', 'Sindh', 'Khyber Pakhtunkhwa', 'Balochistan', 'Islamabad Capital Territory', 'Gilgit-Baltistan', 'Azad Kashmir'];
 const TYPES = ['hospital', 'clinic', 'lab', 'diagnostic'];
@@ -64,15 +65,26 @@ const signup = expressAsyncHandler(async (req, res) => {
   if (!acceptTerms) return res.status(400).json({ error: 'Please accept the Terms of Service and Privacy Policy' });
   const email = String(admin.email).trim().toLowerCase();
   if (await Staff.exists({ email })) return res.status(409).json({ error: 'That email already has a hospital account. Sign in instead.' });
+  const adminCnic = String(admin.cnic || '').replace(/\D/g, '');
+  const cnicError = cnicProblem(adminCnic);
+  if (cnicError) return res.status(400).json({ error: `Administrator CNIC: ${cnicError}` });
+  // the administrator proves who they are (CNIC photo + live face check) as part of registering
+  let capture;
+  try {
+    capture = await signupCapture(req.body, { cnic: adminCnic, role: 'staff', userAgent: req.get('user-agent') });
+  } catch (err) {
+    return res.status(400).json({ error: err.message, code: 'IDENTITY_REQUIRED' });
+  }
 
   const org = await Organization.create({ ...fields, email: fields.email || email, createdBy: { role: 'staff' } });
   await Facility.create({ orgId: org._id, name: str(o.branchName, 120) || 'Main branch', city: fields.city, province: fields.province, address: fields.address, phone: fields.phone });
   const staff = await Staff.create({
     clinicId: org._id, name: str(admin.name, 80), email, password: await bcrypt.hash(String(admin.password), 10),
-    role: 'org_admin', consentAt: new Date(), termsVersion: TERMS_VERSION,
+    role: 'org_admin', cnic: Number(adminCnic), consentAt: new Date(), termsVersion: TERMS_VERSION,
   });
   org.createdBy = { role: 'staff', id: String(staff._id) };
   await org.save();
+  await recordSignupIdentity({ role: 'staff', account: staff, cnic: adminCnic, name: staff.name, capture, ip: req.ip });
   const { status, body } = completeSignIn('staff', staff, 'Hospital registered');
   res.status(status === 200 ? 201 : status).json({ ...body, org });
 });

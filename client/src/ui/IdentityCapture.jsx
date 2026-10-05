@@ -3,6 +3,7 @@ import { FiAlertTriangle, FiCamera, FiCheckCircle, FiCreditCard, FiEye, FiRefres
 import { Button, Spinner } from './Bits';
 import { detectFace, eyeOpenness, loadHuman, loadImage, readCnicNumber, similarity, snapshot, yawDegrees } from '../lib/faceKit';
 import { formatCNIC } from '../lib/format';
+import '../pages/dashboard.css'; // summary rows etc. (also used on the public sign-up pages)
 
 const STEP_TIMEOUT_MS = 25000;
 const shuffle = (a) => a.map((v) => [Math.random(), v]).sort((x, y) => x[0] - y[0]).map((x) => x[1]);

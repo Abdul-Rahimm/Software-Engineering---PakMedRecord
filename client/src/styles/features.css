@@ -405,3 +405,9 @@
   .hours-block > :nth-child(3) { grid-row: 2; grid-column: 2; }
   .hours-block > :nth-child(4) { grid-row: 2; grid-column: 3; }
 }
+
+/* two-step sign-up indicator */
+.signup-steps { display: flex; gap: 8px; flex-wrap: wrap; font-size: 12.5px; }
+.signup-steps span { padding: 6px 10px; border-radius: 999px; border: 1px solid var(--border); color: var(--text-3); }
+.signup-steps .done { color: var(--emerald); border-color: rgba(61,255,176,.4); }
+.signup-steps .on { color: var(--text); border-color: rgba(61,255,176,.7); box-shadow: var(--glow); }

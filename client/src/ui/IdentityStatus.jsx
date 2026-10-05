@@ -15,7 +15,7 @@ const IdentityStatus = () => {
           : status === 'pending' ? <span className="badge badge-cyan"><FiClock /> Under review</span>
             : <span className="badge badge-amber">Not verified</span>}
       </div>
-      <p className="subtle" style={{ fontSize: 13.5 }}>Confirm this account is yours with a photo of your CNIC and a short live face check on your camera. It protects your CNIC from being used by someone else.</p>
+      <p className="subtle" style={{ fontSize: 13.5 }}>{status === 'pending' ? 'The CNIC photo and live face check from your sign-up are with our team.' : status === 'rejected' ? 'Your identity check was not approved. Please do it again with a clear CNIC photo.' : status === 'verified' ? 'Your CNIC and live face check were confirmed.' : 'Confirm this account is yours with a photo of your CNIC and a short live face check on your camera.'}</p>
       {status !== 'verified' && <Link to="/verify-identity" className="btn btn-sm" style={{ alignSelf: 'flex-start' }}>{status === 'pending' ? 'View status' : status === 'rejected' ? 'Try again' : 'Verify my identity'}</Link>}
     </section>
   );

@@ -5,6 +5,7 @@ const Patient = require('../models/PatientModel');
 const { jwt_secret } = require('../config');
 const { signToken } = require('../middleware/auth');
 const bcrypt = require('bcrypt');
+const { signupCapture, recordSignupIdentity, dropCapture } = require('./IdentityController');
 const { ROLES, TERMS_VERSION, hashToken, emailQuery, startEmailVerification, startPasswordReset } = require('../lib/accounts');
 const { completeSignIn, verifySecondFactor } = require('../lib/session');
 const { forgetAccountStatus } = require('../middleware/auth');
@@ -114,6 +115,12 @@ const googleComplete = expressAsyncHandler(async (req, res) => {
     return res.status(409).json({ error: 'An account with this Google email already exists. Continue with Google to sign in.' });
   }
 
+  let capture;
+  try {
+    capture = await signupCapture(req.body, { cnic: n, role: claims.role, userAgent: req.get('user-agent') });
+  } catch (err) {
+    return res.status(400).json({ error: err.message, code: 'IDENTITY_REQUIRED' });
+  }
   const user = await r.Model.create({
     [r.cnicKey]: n,
     firstName: String(firstName).trim(),
@@ -125,7 +132,11 @@ const googleComplete = expressAsyncHandler(async (req, res) => {
     emailVerified: true,
     consentAt: new Date(),
     termsVersion: TERMS_VERSION,
+  }).catch((err) => {
+    dropCapture(capture);
+    throw err;
   });
+  await recordSignupIdentity({ role: claims.role, account: user, cnic: n, name: `${user.firstName} ${user.lastName}`, capture, ip: req.ip });
   res.status(201).json({ message: 'Account created with Google', token: signToken(claims.role, user[r.cnicKey]), [claims.role]: user });
 });
 

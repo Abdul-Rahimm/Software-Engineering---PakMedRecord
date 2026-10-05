@@ -9,6 +9,7 @@ const { cleanSchedule, scheduleOf } = require('../lib/availability');
 const { scheduleClash } = require('../lib/conflicts');
 const { forgetAccountStatus } = require('../middleware/auth');
 const { startEmailVerification } = require('../lib/accounts');
+const { signupCapture, recordSignupIdentity, dropCapture } = require('./IdentityController');
 const { cnicProblem, isCNIC, isEmail, cleanList } = require('../lib/validate');
 const { SPECIALIZATIONS } = require('../models/constants');
 
@@ -31,6 +32,13 @@ const Signup = expressAsyncHandler(async (req, res) => {
       return res.status(409).json({ error: 'Doctor already registered!', code: 'CNIC_TAKEN' });
     }
 
+    let capture;
+    try {
+      capture = await signupCapture(req.body, { cnic: doctorCNIC, role: 'doctor', userAgent: req.get('user-agent') });
+    } catch (err) {
+      return res.status(400).json({ error: err.message, code: 'IDENTITY_REQUIRED' });
+    }
+
     const hashedPassword = await bcrypt.hash(password, 10);
 
     const newDoctor = new Doctor({
@@ -46,7 +54,13 @@ const Signup = expressAsyncHandler(async (req, res) => {
       termsVersion: TERMS_VERSION,
     });
 
-    await newDoctor.save();
+    try {
+      await newDoctor.save();
+    } catch (err) {
+      dropCapture(capture);
+      throw err;
+    }
+    await recordSignupIdentity({ role: 'doctor', account: newDoctor, cnic: doctorCNIC, name: `${firstName} ${lastName}`, capture, ip: req.ip });
     const verification = await startEmailVerification(newDoctor, 'doctor');
 
     res.status(201).json({

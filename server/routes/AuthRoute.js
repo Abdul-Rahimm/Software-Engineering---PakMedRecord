@@ -12,5 +12,6 @@ router.post('/google/complete', signinLimiter, googleComplete);
 router.post('/forgot-password', signinLimiter, forgotPassword);
 router.post('/reset-password', signinLimiter, resetPassword);
 router.post('/2fa', signinLimiter, twoFactor);
+router.post('/precheck', signinLimiter, require('../contollers/IdentityController').precheck);
 
 module.exports = router;

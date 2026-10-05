@@ -18,6 +18,7 @@ import { apiError, cnicProblem, isValidCNIC, maskCNIC, parseCNIC } from '../lib/
 import { SPECIALIZATIONS } from '../lib/constants';
 import { googleConfigured, signInWithGoogle } from '../lib/firebase';
 import GoogleButton from '../ui/GoogleButton';
+import IdentityCapture from '../ui/IdentityCapture';
 import TwoFactorStep from '../ui/TwoFactorStep';
 import Consent from '../ui/Consent';
 import './auth.css';
@@ -67,6 +68,7 @@ const Auth = ({ role, mode }) => {
   const [showPw, setShowPw] = useState(false);
   const [errors, setErrors] = useState({});
   const [claimable, setClaimable] = useState(false);
+  const [idStep, setIdStep] = useState(false); // step 2 of sign-up: CNIC photo + live face check
   const [loading, setLoading] = useState(false);
   const [googleOn, setGoogleOn] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
@@ -85,7 +87,59 @@ const Auth = ({ role, mode }) => {
     setUnverified(null);
     setGoogleReg(null);
     setChallenge(null);
+    setIdStep(false);
   }, [role, mode]);
+
+  // Before the camera step: is this CNIC free? (so nobody does the face check for nothing)
+  const precheck = async () => {
+    try {
+      await api.post('/auth/precheck', { role, cnic: parseCNIC(form.cnic), gender: role === 'patient' ? form.gender : undefined });
+      return true;
+    } catch (err) {
+      const d = err?.response?.data;
+      if (d?.field === 'cnic') {
+        setErrors((er) => ({ ...er, cnic: d.error }));
+        if (d.code === 'CNIC_TAKEN') setClaimable(true);
+      } else toast(apiError(err), 'error');
+      return false;
+    }
+  };
+
+  // Step 2 done: create the account with the identity check attached
+  const createAccount = async (identity) => {
+    const cnic = parseCNIC(form.cnic);
+    try {
+      if (googleReg) {
+        const { data } = await api.post('/auth/google/complete', {
+          ticket: googleReg.ticket, cnic, firstName: form.firstName.trim(), lastName: form.lastName.trim(), hospital: form.hospital.trim(), acceptTerms: form.acceptTerms,
+          ...(role === 'patient' ? { gender: form.gender } : { specialization: form.specialization }), identity,
+        });
+        finishSignIn(data, role);
+        return;
+      }
+      const body = {
+        [cnicKey]: cnic, firstName: form.firstName.trim(), lastName: form.lastName.trim(), email: form.email.trim(), password: form.password,
+        hospital: form.hospital.trim(), acceptTerms: form.acceptTerms,
+        ...(role === 'patient' && { gender: form.gender }), ...(role === 'doctor' && { specialization: form.specialization }), identity,
+      };
+      const { data } = await api.post(`/${role}/signup`, body);
+      setIdStep(false);
+      if (data.verificationRequired) {
+        setInbox({ email: body.email, cnic, sent: data.emailSent });
+      } else {
+        toast('Account created. Your identity check is with our team. Sign in to continue.');
+        navigate(`/${role}/signin`, { state: { cnic } });
+      }
+    } catch (err) {
+      if (err?.response?.data?.code === 'CNIC_TAKEN') {
+        setIdStep(false);
+        setErrors((er) => ({ ...er, cnic: 'Already registered. Sign in, or if this CNIC is yours and someone else used it, claim it below.' }));
+        setClaimable(true);
+        return;
+      }
+      toast(apiError(err, 'Could not create your account'), 'error');
+    }
+  };
 
   const finishSignIn = (data, as) => {
     if (data.twoFactorRequired) {
@@ -142,27 +196,8 @@ const Auth = ({ role, mode }) => {
     setErrors(er);
     if (Object.keys(er).length) return;
     setLoading(true);
-    try {
-      const { data } = await api.post('/auth/google/complete', {
-        ticket: googleReg.ticket,
-        cnic: parseCNIC(form.cnic),
-        firstName: form.firstName.trim(),
-        lastName: form.lastName.trim(),
-        hospital: form.hospital.trim(),
-        acceptTerms: form.acceptTerms,
-        ...(role === 'patient' ? { gender: form.gender } : { specialization: form.specialization }),
-      });
-      finishSignIn(data, role);
-    } catch (err) {
-      if (err?.response?.data?.code === 'CNIC_TAKEN') {
-        setErrors((er) => ({ ...er, cnic: 'Already registered. If this CNIC is yours and someone else used it, claim it below.' }));
-        setClaimable(true);
-        return;
-      }
-      toast(apiError(err, 'Could not create your account'), 'error');
-    } finally {
-      setLoading(false);
-    }
+    if (await precheck()) { setIdStep(true); window.scrollTo({ top: 0, behavior: 'smooth' }); }
+    setLoading(false);
   };
 
   const set = (key) => (e) => {
@@ -198,29 +233,12 @@ const Auth = ({ role, mode }) => {
     const cnic = parseCNIC(form.cnic);
     try {
       if (isSignup) {
-        const body = {
-          [cnicKey]: cnic,
-          firstName: form.firstName.trim(),
-          lastName: form.lastName.trim(),
-          email: form.email.trim(),
-          password: form.password,
-          hospital: form.hospital.trim(),
-          acceptTerms: form.acceptTerms,
-          ...(role === 'patient' && { gender: form.gender }),
-          ...(role === 'doctor' && { specialization: form.specialization }),
-        };
-        const { data } = await api.post(`/${role}/signup`, body);
-        if (data.verificationRequired) {
-          setInbox({ email: body.email, cnic, sent: data.emailSent });
-        } else {
-          toast('Account created. Sign in to continue.');
-          navigate(`/${role}/signin`, { state: { cnic } });
-        }
-      } else {
-        setUnverified(null);
-        const { data } = await api.post(`/${role}/signin`, { [cnicKey]: cnic, password: form.password });
-        finishSignIn(data, role);
+        if (await precheck()) { setIdStep(true); window.scrollTo({ top: 0, behavior: 'smooth' }); }
+        return;
       }
+      setUnverified(null);
+      const { data } = await api.post(`/${role}/signin`, { [cnicKey]: cnic, password: form.password });
+      finishSignIn(data, role);
     } catch (err) {
       if (err?.response?.data?.code === 'EMAIL_NOT_VERIFIED') {
         setUnverified(cnic);
@@ -285,9 +303,9 @@ const Auth = ({ role, mode }) => {
               ]}
             />
             <div className="stack gap-8">
-              <h1 style={{ fontSize: 32 }}>{challenge ? 'Two-step sign-in' : inbox ? 'Check your inbox' : googleReg ? 'Almost done' : isSignup ? 'Create your account' : 'Welcome back'}</h1>
+              <h1 style={{ fontSize: 32 }}>{idStep ? 'Verify it\u2019s you' : challenge ? 'Two-step sign-in' : inbox ? 'Check your inbox' : googleReg ? 'Almost done' : isSignup ? 'Create your account' : 'Welcome back'}</h1>
               <p className="muted">
-                {challenge ? 'One more step to keep your account safe.' : inbox
+                {idStep ? 'Last step before your account is created.' : challenge ? 'One more step to keep your account safe.' : inbox
                   ? 'One last step before you can sign in.'
                   : googleReg
                     ? `Finish setting up your ${role} account for ${googleReg.profile.email}.`
@@ -296,7 +314,14 @@ const Auth = ({ role, mode }) => {
             </div>
           </div>
 
-          {challenge ? (
+          {idStep ? (
+            <div className="stack gap-16">
+              <div className="signup-steps"><span className="done">1. Your details</span><span className="on">2. Verify it&apos;s you</span></div>
+              <p className="muted" style={{ fontSize: 14 }}>Take a photo of your CNIC, then do a short live face check on your camera. It proves the account is yours and stops anyone else using your CNIC. Our team reviews it.</p>
+              <IdentityCapture expectedCnic={parseCNIC(form.cnic)} onSubmit={createAccount} submitLabel="Create account" />
+              <button type="button" className="btn btn-ghost btn-sm" onClick={() => setIdStep(false)}><FiArrowLeft /> Back to your details</button>
+            </div>
+          ) : challenge ? (
             <TwoFactorStep challenge={challenge} onDone={(data) => { setChallenge(null); finishSignIn(data, role); }} onCancel={() => setChallenge(null)} />
           ) : inbox ? (
             <div className="stack gap-16" style={{ textAlign: 'center' }}>
@@ -329,7 +354,7 @@ const Auth = ({ role, mode }) => {
                 </div>
               )}
               <Consent checked={form.acceptTerms} onChange={(v) => { setForm((f) => ({ ...f, acceptTerms: v })); setErrors((er) => ({ ...er, acceptTerms: undefined })); }} error={errors.acceptTerms} />
-              <Button type="submit" className="btn btn-primary btn-lg btn-block" loading={loading}>Create account {!loading && <FiArrowRight />}</Button>
+              <Button type="submit" className="btn btn-primary btn-lg btn-block" loading={loading}>Continue {!loading && <FiArrowRight />}</Button>
               <button type="button" className="btn btn-ghost btn-sm" onClick={() => setGoogleReg(null)}>Use a different method</button>
             </form>
           ) : (
@@ -401,7 +426,7 @@ const Auth = ({ role, mode }) => {
             {isSignup && <Consent checked={form.acceptTerms} onChange={(v) => { setForm((f) => ({ ...f, acceptTerms: v })); setErrors((er) => ({ ...er, acceptTerms: undefined })); }} error={errors.acceptTerms} />}
 
             <Button type="submit" className="btn btn-primary btn-lg btn-block" loading={loading} style={{ marginTop: 6 }}>
-              {isSignup ? 'Create account' : 'Sign in'} {!loading && <FiArrowRight />}
+              {isSignup ? 'Continue' : 'Sign in'} {!loading && <FiArrowRight />}
             </Button>
           </form>
 

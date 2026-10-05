@@ -1389,6 +1389,22 @@ export const UR = {
   "Submitted. Our team reviews it, usually within one working day.": "جمع ہو گیا۔ ہماری ٹیم عموماً ایک کاروباری دن میں جائزہ لیتی ہے۔",
   "No face found on the card photo": "کارڈ کی تصویر پر چہرہ نہیں ملا",
   "← Back": "← واپس",
+  // identity at sign-up
+  "Continue": "جاری رکھیں",
+  "Verify it’s you": "تصدیق کریں کہ یہ آپ ہیں",
+  "1. Your details": "1۔ آپ کی تفصیلات",
+  "2. Verify it's you": "2۔ تصدیق کریں کہ یہ آپ ہیں",
+  "1. Hospital details": "1۔ ہسپتال کی تفصیلات",
+  "Back to your details": "اپنی تفصیلات پر واپس جائیں",
+  "← Back to the details": "← تفصیلات پر واپس",
+  "Last step before your account is created.": "اکاؤنٹ بننے سے پہلے آخری مرحلہ۔",
+  "Take a photo of your CNIC, then do a short live face check on your camera. It proves the account is yours and stops anyone else using your CNIC. Our team reviews it.": "اپنے شناختی کارڈ کی تصویر لیں، پھر کیمرے پر چہرے کی مختصر لائیو جانچ کریں۔ اس سے ثابت ہوتا ہے کہ اکاؤنٹ آپ کا ہے اور کوئی اور آپ کا شناختی کارڈ استعمال نہیں کر سکتا۔ ہماری ٹیم اس کا جائزہ لیتی ہے۔",
+  "As the administrator, take a photo of your CNIC and do a short live face check. Our team checks it together with your hospital's registration.": "منتظم کے طور پر اپنے شناختی کارڈ کی تصویر لیں اور چہرے کی مختصر لائیو جانچ کریں۔ ہماری ٹیم اسے آپ کے ہسپتال کی رجسٹریشن کے ساتھ جانچتی ہے۔",
+  "Register hospital": "ہسپتال رجسٹر کریں",
+  "The CNIC photo and live face check from your sign-up are with our team.": "سائن اَپ کے وقت کی شناختی کارڈ کی تصویر اور لائیو جانچ ہماری ٹیم کے پاس ہے۔",
+  "Your identity check was not approved. Please do it again with a clear CNIC photo.": "آپ کی شناختی جانچ منظور نہیں ہوئی۔ براہِ کرم واضح تصویر کے ساتھ دوبارہ کریں۔",
+  "Your CNIC and live face check were confirmed.": "آپ کے شناختی کارڈ اور لائیو جانچ کی تصدیق ہو گئی۔",
+  "Account created. Your identity check is with our team. Sign in to continue.": "اکاؤنٹ بن گیا۔ آپ کی شناختی جانچ ہماری ٹیم کے پاس ہے۔ جاری رکھنے کے لیے سائن اِن کریں۔",
 };
 
 const DAYS = { Sun: 'اتوار', Mon: 'پیر', Tue: 'منگل', Wed: 'بدھ', Thu: 'جمعرات', Fri: 'جمعہ', Sat: 'ہفتہ' };
@@ -1404,6 +1420,7 @@ const lookupTime = (t) => {
 
 // Phrases with values in them: [regex, (...groups) => urdu]
 export const UR_PATTERNS = [
+  [/^Verify it’s you, (.+)$/, (n) => `تصدیق کریں کہ یہ آپ ہیں، ${n}`],
   [/^(\d+) branch(?:es)?: (.+)$/, (n, c) => `${n} شاخیں: ${c}`],
   [/^Private practice \((.+)\)$/, (x) => `نجی پریکٹس (${x})`],
   [/^(\d+) steps passed$/, (n) => `${n} مراحل مکمل`],
