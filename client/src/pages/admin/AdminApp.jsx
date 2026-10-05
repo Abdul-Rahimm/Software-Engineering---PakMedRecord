@@ -7,6 +7,7 @@ import api from '../../api';
 import { clearSession, getSession } from '../../session';
 import Logo from '../../ui/Logo';
 import Modal from '../../ui/Modal';
+import Field from '../../ui/Field';
 import AvatarUpload from '../../ui/AvatarUpload';
 import PdfPreview from '../../ui/PdfPreview';
 import { Button, CountUp, EmptyState, Skeleton, Spinner } from '../../ui/Bits';
@@ -554,6 +555,38 @@ const ErrorsTab = () => {
   );
 };
 
+// Display name and sign-in email (needs the current password)
+const AdminIdentityCard = ({ admin, onSaved }) => {
+  const { toast } = useFeedback();
+  const [form, setForm] = useState({ name: admin.name, email: admin.email, currentPassword: '' });
+  const [busy, setBusy] = useState(false);
+  const save = async (e) => {
+    e.preventDefault();
+    setBusy(true);
+    try {
+      await api.put('/admin/me', form);
+      toast('Saved. Use the new email next time you sign in.');
+      setForm((f) => ({ ...f, currentPassword: '' }));
+      onSaved();
+    } catch (err) {
+      toast(apiError(err), 'error');
+    } finally {
+      setBusy(false);
+    }
+  };
+  return (
+    <form className="glass card-pad-lg stack gap-16" onSubmit={save}>
+      <h2 className="section-title">Name and sign-in email</h2>
+      <div className="grid grid-2" style={{ gap: 14 }}>
+        <Field label="Name" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} />
+        <Field label="Sign-in email" type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} />
+      </div>
+      <Field label="Current password" type="password" autoComplete="current-password" value={form.currentPassword} onChange={(e) => setForm({ ...form, currentPassword: e.target.value })} />
+      <Button className="btn btn-primary" style={{ alignSelf: 'flex-start' }} loading={busy} disabled={!form.currentPassword || (form.name === admin.name && form.email === admin.email)}>Save</Button>
+    </form>
+  );
+};
+
 const AccountTab = () => {
   const { data, reload } = useFetch(async () => (await api.get('/admin/me')).data, []);
   return (
@@ -564,6 +597,7 @@ const AccountTab = () => {
           <AvatarUpload person={data} first={data.name} last="" seed={data._id} onChange={() => reload(true)} />
         </section>
       )}
+      {data && <AdminIdentityCard admin={data} onSaved={() => reload(true)} />}
       <TwoFactorCard />
       <PasswordCard minLength={12} />
     </div>

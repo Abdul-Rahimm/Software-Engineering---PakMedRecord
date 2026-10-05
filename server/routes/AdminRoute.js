@@ -10,6 +10,7 @@ router.post('/signin', signinLimiter, a.signin);
 
 router.use(requireAuth, requireRole('admin'));
 router.get('/me', a.me);
+router.put('/me', a.updateMe);
 router.get('/stats', a.stats);
 router.get('/doctors', a.listDoctors);
 router.get('/doctors/:doctorCNIC/document', a.doctorDocument);

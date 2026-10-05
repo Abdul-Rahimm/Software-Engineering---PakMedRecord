@@ -49,6 +49,27 @@ const me = expressAsyncHandler(async (req, res) => {
   res.status(200).json(await Admin.findById(req.user.id));
 });
 
+// PUT /admin/me { name?, email?, currentPassword } - change the admin's display name or sign-in email
+const updateMe = expressAsyncHandler(async (req, res) => {
+  const admin = await Admin.findById(req.user.id);
+  if (!admin) return res.status(404).json({ error: 'Not found' });
+  const { name, email, currentPassword } = req.body || {};
+  if (!(await bcrypt.compare(String(currentPassword || ''), admin.password))) return res.status(401).json({ error: 'Current password is not correct' });
+  if (email !== undefined) {
+    const next = String(email).trim().toLowerCase();
+    if (!/^\S+@\S+\.\S+$/.test(next)) return res.status(400).json({ error: 'Enter a valid email' });
+    if (next !== admin.email && (await Admin.exists({ email: next }))) return res.status(409).json({ error: 'Another admin uses that email' });
+    admin.email = next;
+  }
+  if (name !== undefined) {
+    const n = String(name).trim().slice(0, 80);
+    if (!n) return res.status(400).json({ error: 'Enter a name' });
+    admin.name = n;
+  }
+  await admin.save();
+  res.status(200).json({ message: 'Saved', admin });
+});
+
 const stats = expressAsyncHandler(async (req, res) => {
   const since = new Date(Date.now() - 30 * 86400000);
   const [patients, doctors, pendingDoctors, records, appointments, openReports, newPatients, newDoctors, errors, files, prescriptions, clinics, pendingOrgs, storage] = await Promise.all([
@@ -305,7 +326,7 @@ const resetAllData = expressAsyncHandler(async (req, res) => {
 });
 
 module.exports = {
-  resetAllData,
+  resetAllData, updateMe,
   listOrgs, orgDocument, reviewOrg,
   signin, me, stats, listDoctors, doctorDocument, reviewDoctor, users, setDisabled, listReports, resolveReport, errors,
   listPartners, createPartner, updatePartner,
