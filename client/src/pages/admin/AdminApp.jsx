@@ -388,6 +388,18 @@ const UsersTab = () => {
     }
   };
 
+  const remove = async (u) => {
+    const ok = await confirm({ title: `Delete ${u.firstName} ${u.lastName}?`, message: `This permanently deletes the ${role} account${role === 'patient' ? ', its family profiles' : ''} and all its data, freeing the CNIC. It cannot be undone.`, confirmLabel: 'Delete for good', danger: true });
+    if (!ok) return;
+    try {
+      await api.post(`/admin/users/${role}/${u[key]}/delete`, { confirm: 'DELETE' });
+      toast('Account deleted');
+      reload(true);
+    } catch (err) {
+      toast(apiError(err), 'error');
+    }
+  };
+
   return (
     <div className="stack gap-16">
       <div className="row between wrap gap-12">
@@ -409,7 +421,7 @@ const UsersTab = () => {
                   <td>{u.email || '—'}{u.emailVerified === false && <span className="badge badge-amber badge-plain" style={{ marginLeft: 6 }}>unverified</span>}</td>
                   <td>{formatDate(u.createdAt)}</td>
                   <td>{u.disabled ? <span className="badge badge-rose">Suspended</span> : <span className="badge badge-green">Active</span>}</td>
-                  <td><button className={`btn btn-sm ${u.disabled ? '' : 'btn-danger'}`} onClick={() => toggle(u)}>{u.disabled ? 'Restore' : 'Suspend'}</button></td>
+                  <td><div className="row gap-4 wrap"><button className={`btn btn-sm ${u.disabled ? '' : 'btn-danger'}`} onClick={() => toggle(u)}>{u.disabled ? 'Restore' : 'Suspend'}</button><button className="btn btn-sm btn-ghost" onClick={() => remove(u)}>Delete</button></div></td>
                 </tr>
               ))}
             </tbody>

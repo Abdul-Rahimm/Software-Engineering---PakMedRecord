@@ -16,6 +16,7 @@ router.get('/doctors/:doctorCNIC/document', a.doctorDocument);
 router.post('/doctors/:doctorCNIC/review', a.reviewDoctor);
 router.get('/users', a.users);
 router.post('/users/:role/:cnic/disabled', a.setDisabled);
+router.post('/users/:role/:cnic/delete', require('../contollers/AccountController').adminDeleteAccount);
 router.get('/reports', a.listReports);
 router.post('/reports/:id', a.resolveReport);
 router.get('/errors', a.errors);

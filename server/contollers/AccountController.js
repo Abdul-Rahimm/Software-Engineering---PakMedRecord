@@ -198,6 +198,7 @@ const purgePatient = async (cnic) => {
     Affiliation.deleteMany({ patientCNIC: cnic }),
     AccessLog.deleteMany({ patientCNIC: cnic }),
     purgeIdentity('patient', cnic),
+    Patient.findOne({ patientCNIC: cnic }).select('avatar').lean().then((p) => p?.avatar?.gridId && deleteFile(p.avatar.gridId).catch(() => {})),
     Prescription.deleteMany({ patientCNIC: cnic }),
     DoseLog.deleteMany({ patientCNIC: cnic }),
     ShareLink.deleteMany({ patientCNIC: cnic }),
@@ -221,21 +222,48 @@ const deleteAccount = expressAsyncHandler(async (req, res) => {
     for (const d of dependents) await purgePatient(d.patientCNIC);
     await purgePatient(cnic);
   } else {
-    // Records doctors wrote belong to the patients' histories and are kept
-    await Promise.all([
-      Affiliation.updateMany({ doctorCNIC: cnic }, { $pull: { doctorCNIC: cnic } }),
-      Appointment.updateMany({ doctorCNIC: cnic, status: 'pending' }, { status: 'cancelled', cancelledBy: 'doctor', cancelReason: 'Doctor account closed' }),
-      Notification.deleteMany({ role: 'doctor', cnic }),
-      ChatThread.deleteMany({ role: 'doctor', cnic }),
-      Membership.updateMany({ doctorCNIC: cnic }, { status: 'removed' }),
-      purgeIdentity('doctor', cnic),
-    ]);
-    if (user.verification?.document?.gridId) await deleteFile(user.verification.document.gridId);
-    await MODELS.doctor.Model.deleteOne({ doctorCNIC: cnic });
-    await Affiliation.deleteMany({ doctorCNIC: { $size: 0 } });
+    await purgeDoctor(user);
   }
   forgetAccountStatus(role, cnic);
   res.status(200).json({ message: 'Your account and data have been deleted.' });
+});
+
+// Records doctors wrote belong to the patients' histories and are kept
+const purgeDoctor = async (user) => {
+  const cnic = user.doctorCNIC;
+  await Promise.all([
+    Affiliation.updateMany({ doctorCNIC: cnic }, { $pull: { doctorCNIC: cnic } }),
+    Appointment.updateMany({ doctorCNIC: cnic, status: 'pending' }, { status: 'cancelled', cancelledBy: 'doctor', cancelReason: 'Doctor account closed' }),
+    Notification.deleteMany({ role: 'doctor', cnic }),
+    ChatThread.deleteMany({ role: 'doctor', cnic }),
+    Membership.updateMany({ doctorCNIC: cnic }, { status: 'removed' }),
+    purgeIdentity('doctor', cnic),
+  ]);
+  if (user.verification?.document?.gridId) await deleteFile(user.verification.document.gridId);
+  if (user.avatar?.gridId) await deleteFile(user.avatar.gridId).catch(() => {});
+  await MODELS.doctor.Model.deleteOne({ doctorCNIC: cnic });
+  await Affiliation.deleteMany({ doctorCNIC: { $size: 0 } });
+};
+
+// POST /admin/users/:role/:cnic/delete { confirm: 'DELETE' } - admin removes a fake or abandoned
+// account (and a patient's dependents) with all its data. Cannot be undone.
+const adminDeleteAccount = expressAsyncHandler(async (req, res) => {
+  const { role } = req.params;
+  const cnic = Number(req.params.cnic);
+  if (!['doctor', 'patient'].includes(role)) return res.status(400).json({ error: 'Unknown account type' });
+  if (req.body?.confirm !== 'DELETE') return res.status(400).json({ error: 'Type DELETE to confirm' });
+  const user = await MODELS[role].Model.findOne({ [MODELS[role].key]: cnic });
+  if (!user) return res.status(404).json({ error: 'Account not found' });
+  if (role === 'patient') {
+    const dependents = await Patient.find({ guardianCNIC: cnic }).select('patientCNIC').lean();
+    for (const d of dependents) await purgePatient(d.patientCNIC);
+    await purgePatient(cnic);
+  } else {
+    await purgeDoctor(user);
+  }
+  forgetAccountStatus(role, cnic);
+  console.warn(`Admin ${req.user.id} deleted ${role} account ${cnic}`);
+  res.status(200).json({ message: 'Account and its data deleted' });
 });
 
 // ---------- profile photo ----------
@@ -289,5 +317,6 @@ const serveAvatar = expressAsyncHandler(async (req, res) => {
 
 module.exports = {
   setAvatar, removeAvatar, serveAvatar,
+  adminDeleteAccount,
   changePassword, accessLog, noDependents, twoFactorStatus, twoFactorSetup, twoFactorEnable, twoFactorDisable, exportData, deleteAccount, purgePatient, patientBundle,
 };
