@@ -124,7 +124,7 @@ const PatientHistory = () => {
       {back}
       <section className="glass dash-hero history-hero">
         <div className="row gap-20 wrap">
-          <Avatar first={patient.firstName} last={patient.lastName} seed={patient.patientCNIC} size={76} />
+          <Avatar photo={patient} first={patient.firstName} last={patient.lastName} seed={patient.patientCNIC} size={76} />
           <div className="stack gap-8" style={{ minWidth: 0 }}>
             <span className="eyebrow">Patient file</span>
             <h1 style={{ fontSize: 'clamp(26px, 3vw, 38px)' }}>{fullName(patient)}</h1>

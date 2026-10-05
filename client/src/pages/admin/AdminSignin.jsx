@@ -58,6 +58,7 @@ const StaffSignin = ({ kind }) => {
         </form>
       )}
       {kind !== 'admin' && !challenge && <p className="subtle" style={{ fontSize: 13, textAlign: 'center' }}>New hospital or clinic? <Link to="/hospitals/register">Register it here</Link></p>}
+      {!challenge && <p className="subtle" style={{ fontSize: 13, textAlign: 'center' }}><Link to="/signin">Other ways to sign in</Link></p>}
     </CenterCard>
   );
 };

@@ -126,7 +126,7 @@ export const DoctorDirectory = () => {
               <motion.div key={d.id} variants={rise}>
                 <Link to={`/find-doctors/${d.id}`} className="glass card-pad stack gap-12 doctor-card">
                   <div className="row gap-12">
-                    <Avatar first={d.firstName} last={d.lastName} seed={d.id} size={48} />
+                    <Avatar photo={d} first={d.firstName} last={d.lastName} seed={d.id} size={48} />
                     <div className="grow">
                       <div style={{ fontWeight: 600 }} className="truncate">Dr. {d.firstName} {d.lastName}</div>
                       <div className="subtle truncate" style={{ fontSize: 13 }}>{d.specialization}{d.yearsExperience ? ` · ${d.yearsExperience} yrs` : ''}</div>
@@ -176,7 +176,7 @@ export const DoctorPublicProfile = () => {
       <Link to="/find-doctors" className="btn btn-ghost btn-sm" style={{ marginBottom: 16 }}>← All doctors</Link>
       <section className="glass card-pad-lg stack gap-20">
         <div className="row gap-16 wrap">
-          <Avatar first={doc.firstName} last={doc.lastName} seed={doc.id} size={72} />
+          <Avatar photo={doc} first={doc.firstName} last={doc.lastName} seed={doc.id} size={72} />
           <div className="stack gap-8 grow">
             <h1 style={{ fontSize: 30 }}>Dr. {doc.firstName} {doc.lastName}</h1>
             <span className="muted">{doc.specialization}{doc.qualifications ? ` · ${doc.qualifications}` : ''}</span>
@@ -387,7 +387,7 @@ export const HospitalProfile = () => {
             {doctors.map((d) => (
               <div key={d.id} className="glass card-pad stack gap-12">
                 <div className="row gap-12">
-                  <Avatar first={d.firstName} last={d.lastName} seed={d.id} size={48} />
+                  <Avatar photo={d} first={d.firstName} last={d.lastName} seed={d.id} size={48} />
                   <div className="grow" style={{ minWidth: 0 }}>
                     <Link to={`/find-doctors/${d.id}`} style={{ fontWeight: 600 }} className="truncate">Dr. {d.firstName} {d.lastName}</Link>
                     <div className="subtle truncate" style={{ fontSize: 13 }}>{d.specialization}{org.departments.find((x) => x.id === d.departmentId) ? ` · ${org.departments.find((x) => x.id === d.departmentId).name}` : ''}</div>

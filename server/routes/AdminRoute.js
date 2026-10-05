@@ -19,6 +19,7 @@ router.post('/users/:role/:cnic/disabled', a.setDisabled);
 router.get('/reports', a.listReports);
 router.post('/reports/:id', a.resolveReport);
 router.get('/errors', a.errors);
+router.post('/danger/reset', a.resetAllData);
 router.get('/orgs', a.listOrgs);
 router.get('/identity', identity.list);
 router.get('/identity/:id/:file', identity.file);

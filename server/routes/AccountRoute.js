@@ -12,6 +12,8 @@ router.post('/2fa/disable', c.noDependents, signinLimiter, c.twoFactorDisable);
 router.post('/password', c.noDependents, signinLimiter, c.changePassword);
 router.get('/export', c.exportData);
 router.get('/access-log', c.accessLog);
+router.put('/avatar', express.raw({ type: () => true, limit: '700kb' }), c.setAvatar);
+router.delete('/avatar', c.removeAvatar);
 router.post('/delete', signinLimiter, c.deleteAccount);
 
 module.exports = router;

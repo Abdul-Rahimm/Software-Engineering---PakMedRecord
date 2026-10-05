@@ -54,6 +54,7 @@ const Landing = () => {
         <div className="land-links">
           <a href="#features">Features</a>
           <a href="#how">How it works</a>
+          <a href="#hospitals">For hospitals</a>
           <a href="#security">Security</a>
         </div>
         <div className="row gap-8">
@@ -61,8 +62,8 @@ const Landing = () => {
           <ThemeToggle />
           <Link to="/find-doctors" className="btn btn-ghost hide-sm">Find a doctor</Link>
           <Link to="/hospitals" className="btn btn-ghost hide-sm">Hospitals</Link>
-          <Link to="/doctor/signin" className="btn btn-ghost hide-sm">Doctor sign in</Link>
-          <Link to="/patient/signin" className="btn btn-primary"><span className="hide-sm">Patient sign in</span><span className="show-sm">Sign in</span></Link>
+          <Link to="/signin" className="btn btn-ghost">Sign in</Link>
+          <Link to="/get-started" className="btn btn-primary hide-sm">Get started</Link>
         </div>
       </motion.nav>
 
@@ -108,6 +109,7 @@ const Landing = () => {
               Create patient account <FiArrowRight />
             </Link>
             <Link to="/doctor/signup" className="btn btn-lg">I&apos;m a doctor</Link>
+            <Link to="/hospitals/register" className="btn btn-lg">Register a hospital</Link>
           </motion.div>
           <motion.div className="hero-trust" initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.8 }}>
             <span><FiLock /> Encrypted passwords</span>
@@ -164,6 +166,28 @@ const Landing = () => {
         </div>
       </section>
 
+      {/* Hospitals */}
+      <section className="land-section" id="hospitals">
+        <motion.div className="glass land-hospitals" variants={reveal} initial="hidden" whileInView="show" viewport={{ once: true, amount: 0.3 }}>
+          <div className="stack gap-16">
+            <span className="eyebrow">For hospitals &amp; clinics</span>
+            <h2>Bring your hospital online <span className="grad-text">in minutes.</span></h2>
+            <ul>
+              <li><FiCheckCircle /> Register, upload your healthcare-commission licence, get verified</li>
+              <li><FiCheckCircle /> Add branches across Pakistan and enrol your doctors</li>
+              <li><FiCheckCircle /> Logins for your front desk, branch managers and billing</li>
+              <li><FiCheckCircle /> Patients find you by city and book a branch and doctor</li>
+              <li><FiCheckCircle /> Take consultation fees online, straight to your account</li>
+            </ul>
+          </div>
+          <div className="stack gap-12">
+            <Link to="/hospitals/register" className="btn btn-primary btn-lg">Register your hospital <FiArrowRight /></Link>
+            <Link to="/desk/signin" className="btn btn-lg">Hospital staff sign in</Link>
+            <Link to="/hospitals" className="btn btn-ghost">Browse hospitals</Link>
+          </div>
+        </motion.div>
+      </section>
+
       {/* Security */}
       <section className="land-section" id="security">
         <div className="security glass">
@@ -181,7 +205,7 @@ const Landing = () => {
             </ul>
             <div className="row gap-12 wrap" style={{ marginTop: 28 }}>
               <Link to="/patient/signup" className="btn btn-primary btn-lg">Get started <FiArrowRight /></Link>
-              <Link to="/patient/signin" className="btn btn-lg">Sign in</Link>
+              <Link to="/signin" className="btn btn-lg">Sign in</Link>
             </div>
           </motion.div>
         </div>
@@ -198,6 +222,7 @@ const Landing = () => {
           <Link to="/privacy" className="muted">Privacy</Link>
           <Link to="/developers" className="muted">Labs &amp; pharmacies</Link>
           <Link to="/desk/signin" className="muted">Hospital staff sign-in</Link>
+          <Link to="/admin/signin" className="muted">PakMedRecord team</Link>
         </span>
       </footer>
     </div>

@@ -7,6 +7,7 @@ import api from '../../api';
 import { clearSession, getSession } from '../../session';
 import Logo from '../../ui/Logo';
 import Modal from '../../ui/Modal';
+import AvatarUpload from '../../ui/AvatarUpload';
 import PdfPreview from '../../ui/PdfPreview';
 import { Button, CountUp, EmptyState, Skeleton, Spinner } from '../../ui/Bits';
 import { useFeedback } from '../../ui/Feedback';
@@ -542,10 +543,15 @@ const ErrorsTab = () => {
 };
 
 const AccountTab = () => {
-  const { data } = useFetch(async () => (await api.get('/admin/me')).data, []);
+  const { data, reload } = useFetch(async () => (await api.get('/admin/me')).data, []);
   return (
     <div className="stack gap-20" style={{ maxWidth: 820 }}>
-      {data && <p className="muted">Signed in as <strong>{data.name}</strong> · {data.email}</p>}
+      {data && (
+        <section className="glass card-pad-lg stack gap-12">
+          <p className="muted">Signed in as <strong>{data.name}</strong> · {data.email}</p>
+          <AvatarUpload person={data} first={data.name} last="" seed={data._id} onChange={() => reload(true)} />
+        </section>
+      )}
       <TwoFactorCard />
       <PasswordCard minLength={12} />
     </div>

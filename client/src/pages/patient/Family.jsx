@@ -88,7 +88,7 @@ const Family = () => {
           {data.guardian && (
             <div className={`glass card-pad stack gap-12 family-card ${!acting ? 'current' : ''}`}>
               <div className="row gap-12">
-                <Avatar first={data.guardian.firstName} last={data.guardian.lastName} seed={data.guardian.patientCNIC} size={48} />
+                <Avatar photo={data.guardian} first={data.guardian.firstName} last={data.guardian.lastName} seed={data.guardian.patientCNIC} size={48} />
                 <div className="grow"><strong>{data.guardian.firstName} {data.guardian.lastName}</strong><div className="subtle" style={{ fontSize: 13 }}>You · {ageText(data.guardian.dateOfBirth)}</div></div>
               </div>
               {acting ? <button className="btn btn-sm" onClick={() => switchProfile(data.guardian.patientCNIC)}>Switch back to me <FiArrowRight /></button> : <span className="badge badge-green" style={{ alignSelf: 'flex-start' }}>Current profile</span>}
@@ -97,7 +97,7 @@ const Family = () => {
           {data.dependents.map((d) => (
             <div key={d.patientCNIC} className={`glass card-pad stack gap-12 family-card ${data.actingFor === d.patientCNIC ? 'current' : ''}`}>
               <div className="row gap-12">
-                <Avatar first={d.firstName} last={d.lastName} seed={d.patientCNIC} size={48} />
+                <Avatar photo={d} first={d.firstName} last={d.lastName} seed={d.patientCNIC} size={48} />
                 <div className="grow" style={{ minWidth: 0 }}>
                   <strong className="truncate">{d.firstName} {d.lastName}</strong>
                   <div className="subtle" style={{ fontSize: 13 }}>{d.relation || 'Family'} · {ageText(d.dateOfBirth)}{d.bloodGroup ? ` · ${d.bloodGroup}` : ''}</div>

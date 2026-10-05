@@ -140,7 +140,7 @@ const MyAppointments = () => {
                   </div>
                   <div className="grow stack gap-8" style={{ minWidth: 0 }}>
                     <div className="row gap-12 wrap">
-                      <Avatar first={doc?.firstName} last={doc?.lastName} seed={a.doctorCNIC} size={34} />
+                      <Avatar photo={doc} first={doc?.firstName} last={doc?.lastName} seed={a.doctorCNIC} size={34} />
                       <div style={{ minWidth: 0 }}>
                         <div style={{ fontWeight: 600 }} className="truncate">{doctorName(doc)}</div>
                         <div className="subtle" style={{ fontSize: 12.5 }}>{doc?.specialization}</div>

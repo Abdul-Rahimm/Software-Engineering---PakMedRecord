@@ -212,7 +212,7 @@ const DoctorsTab = ({ ov, reload: reloadOv }) => {
         const noHours = m.status === 'active' && !(m.availability?.blocks || []).length;
         return (
           <div key={m._id} className="item-row wrap">
-            <Avatar first={m.doctor?.firstName} last={m.doctor?.lastName} seed={m.doctorCNIC} size={38} />
+            <Avatar photo={m.doctor} first={m.doctor?.firstName} last={m.doctor?.lastName} seed={m.doctorCNIC} size={38} />
             <div className="grow" style={{ minWidth: 180 }}>
               <strong className="truncate">{m.doctor ? `Dr. ${m.doctor.firstName} ${m.doctor.lastName}` : formatCNIC(m.doctorCNIC)}</strong>
               <div className="subtle" style={{ fontSize: 12.5 }}>
@@ -355,13 +355,13 @@ const ALL_TABS = [
 ];
 
 // The whole organization console: used by hospital staff (/desk) and by doctors who administer one.
-const OrgManager = ({ orgId, initialTab }) => {
+const OrgManager = ({ orgId, initialTab, extraTabs = [] }) => {
   const { data: ov, loading, reload } = useFetch(async () => (await api.get(`/orgs/${orgId}`)).data, [orgId]);
-  const tabs = ov ? ALL_TABS.filter((t) => ov.isAdmin || t.roles.some((r) => ov.roles.includes(r))) : [];
+  const tabs = ov ? [...ALL_TABS.filter((t) => ov.isAdmin || t.roles.some((r) => ov.roles.includes(r))), ...extraTabs] : [];
   const [tab, setTab] = useState(initialTab);
   if (loading || !ov) return <Skeleton height={320} />;
   const current = tabs.find((t) => t.id === tab) ? tab : tabs[0]?.id;
-  const Panel = { desk: DeskBoard, doctors: DoctorsTab, branches: BranchesTab, staff: StaffTab, payments: ({ ov: o }) => <PaymentAccountCard path={`/payments/account/clinic/${o.org._id}`} owner={`${o.org.name}'s Safepay account`} />, insights: InsightsTab, setup: SetupTab }[current];
+  const Panel = extraTabs.find((t) => t.id === current)?.panel || { desk: DeskBoard, doctors: DoctorsTab, branches: BranchesTab, staff: StaffTab, payments: ({ ov: o }) => <PaymentAccountCard path={`/payments/account/clinic/${o.org._id}`} owner={`${o.org.name}'s Safepay account`} />, insights: InsightsTab, setup: SetupTab }[current];
   return (
     <div className="stack gap-20">
       {ov.isAdmin && <VerificationBanner org={ov.org} go={setTab} />}

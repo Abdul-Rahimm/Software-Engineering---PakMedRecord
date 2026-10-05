@@ -289,7 +289,23 @@ const reviewOrg = expressAsyncHandler(async (req, res) => {
   res.status(200).json({ message: verified ? 'Organization verified' : 'Organization rejected', org });
 });
 
+// POST /admin/danger/reset { confirm: 'DELETE EVERYTHING' }
+// Wipes every collection (accounts, records, files, hospitals, payments...). Only works while the
+// ALLOW_DATA_RESET=1 environment variable is set, so it can't be used by accident in normal running.
+// The first admin is re-created from ADMIN_EMAIL / ADMIN_PASSWORD on the next sign-in.
+const resetAllData = expressAsyncHandler(async (req, res) => {
+  if (process.env.ALLOW_DATA_RESET !== '1') return res.status(404).json({ error: 'Not found' });
+  if (req.body?.confirm !== 'DELETE EVERYTHING') return res.status(400).json({ error: 'Type DELETE EVERYTHING to confirm' });
+  const db = mongoose.connection.db;
+  const names = (await db.listCollections({}, { nameOnly: true }).toArray()).map((c) => c.name).filter((n) => !n.startsWith('system.'));
+  const counts = {};
+  for (const n of names) counts[n] = (await db.collection(n).deleteMany({})).deletedCount;
+  console.warn('ALL DATA RESET by admin', req.user.id, counts);
+  res.status(200).json({ message: 'All data deleted', counts });
+});
+
 module.exports = {
+  resetAllData,
   listOrgs, orgDocument, reviewOrg,
   signin, me, stats, listDoctors, doctorDocument, reviewDoctor, users, setDisabled, listReports, resolveReport, errors,
   listPartners, createPartner, updatePartner,

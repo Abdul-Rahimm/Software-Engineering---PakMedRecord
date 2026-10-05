@@ -1,3 +1,4 @@
+const crypto = require('crypto');
 // Things every signed-in person can do with their own account:
 // two-step sign-in, download all their data, delete the account.
 
@@ -6,7 +7,7 @@ const expressAsyncHandler = require('express-async-handler');
 const { MODELS, findBySubject, newRecoveryCodes } = require('../lib/session');
 const { generateSecret, verifyTotp, otpauthUrl } = require('../lib/totp');
 const { forgetAccountStatus, signToken } = require('../middleware/auth');
-const { deleteFile } = require('../lib/files');
+const { deleteFile, saveFile, openFileStream } = require('../lib/files');
 const MedicalRecord = require('../models/RecordModel');
 const TempRecord = require('../models/tempRecordModel');
 const Appointment = require('../models/AppointmentModel');
@@ -237,6 +238,56 @@ const deleteAccount = expressAsyncHandler(async (req, res) => {
   res.status(200).json({ message: 'Your account and data have been deleted.' });
 });
 
+// ---------- profile photo ----------
+
+const sniffImage = (b) => {
+  if (b[0] === 0xff && b[1] === 0xd8 && b[2] === 0xff) return 'image/jpeg';
+  if (b[0] === 0x89 && b.subarray(1, 4).toString('latin1') === 'PNG') return 'image/png';
+  if (b.subarray(0, 4).toString('latin1') === 'RIFF' && b.subarray(8, 12).toString('latin1') === 'WEBP') return 'image/webp';
+  return null;
+};
+const AVATAR_MAX = 600 * 1024;
+
+// PUT /account/avatar  raw image bytes (the app sends a 512px square JPEG)
+const setAvatar = expressAsyncHandler(async (req, res) => {
+  const buf = req.body;
+  if (!Buffer.isBuffer(buf) || !buf.length) return res.status(400).json({ error: 'Choose a photo' });
+  if (buf.length > AVATAR_MAX) return res.status(413).json({ error: 'Photo is too large (max 600 KB)' });
+  const mime = sniffImage(buf);
+  if (!mime) return res.status(415).json({ error: 'Use a JPG, PNG or WebP image' });
+  const user = await findBySubject(req.user.role, req.user.cnic ?? req.user.id);
+  if (!user) return res.status(404).json({ error: 'Account not found' });
+  const gridId = await saveFile(buf, { name: 'avatar', mime, metadata: { kind: 'avatar', role: req.user.role } });
+  const old = user.avatar?.gridId;
+  const avatar = { key: crypto.randomBytes(12).toString('hex'), gridId, updatedAt: new Date() };
+  await user.constructor.updateOne({ _id: user._id }, { $set: { avatar } });
+  if (old) deleteFile(old).catch(() => {});
+  res.status(200).json({ message: 'Photo updated', avatar: { key: avatar.key, updatedAt: avatar.updatedAt } });
+});
+
+const removeAvatar = expressAsyncHandler(async (req, res) => {
+  const user = await findBySubject(req.user.role, req.user.cnic ?? req.user.id);
+  if (!user) return res.status(404).json({ error: 'Account not found' });
+  if (user.avatar?.gridId) deleteFile(user.avatar.gridId).catch(() => {});
+  await user.constructor.updateOne({ _id: user._id }, { $unset: { avatar: '' } });
+  res.status(200).json({ message: 'Photo removed' });
+});
+
+// GET /avatars/:key (public; the key is random and changes with every upload)
+const serveAvatar = expressAsyncHandler(async (req, res) => {
+  const key = String(req.params.key || '');
+  if (!/^[a-f0-9]{24}$/.test(key)) return res.status(404).end();
+  let found;
+  for (const { Model } of Object.values(MODELS)) {
+    found = await Model.findOne({ 'avatar.key': key }).select('avatar').lean();
+    if (found) break;
+  }
+  if (!found?.avatar?.gridId) return res.status(404).end();
+  res.set({ 'Content-Type': 'image/jpeg', 'Cache-Control': 'public, max-age=604800, immutable', 'Cross-Origin-Resource-Policy': 'cross-origin' });
+  openFileStream(found.avatar.gridId).on('error', () => !res.headersSent && res.status(404).end()).pipe(res);
+});
+
 module.exports = {
+  setAvatar, removeAvatar, serveAvatar,
   changePassword, accessLog, noDependents, twoFactorStatus, twoFactorSetup, twoFactorEnable, twoFactorDisable, exportData, deleteAccount, purgePatient, patientBundle,
 };

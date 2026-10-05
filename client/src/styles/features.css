@@ -355,3 +355,16 @@
 @media (max-width: 560px) {
   .idc-stages { grid-template-columns: repeat(2, 1fr); }
 }
+
+/* sign in / get started role chooser */
+.role-card { display: flex; align-items: center; gap: 16px; color: inherit; text-decoration: none; transition: transform .15s ease, border-color .15s ease; }
+.role-card:hover { transform: translateY(-2px); border-color: rgba(61,255,176,.5); }
+.land-hospitals { display: grid; grid-template-columns: 1.2fr 1fr; gap: 28px; align-items: center; padding: clamp(24px, 4vw, 48px); }
+.land-hospitals ul { display: grid; gap: 10px; padding: 0; list-style: none; }
+.land-hospitals li { display: flex; gap: 10px; align-items: flex-start; }
+.land-hospitals li svg { color: var(--emerald); margin-top: 3px; flex-shrink: 0; }
+@media (max-width: 760px) { .land-hospitals { grid-template-columns: 1fr; } }
+
+/* profile photos */
+.avatar-img { width: var(--size); height: var(--size); object-fit: cover; padding: 0; background: var(--tint-2); }
+.avatar-upload { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; }

@@ -30,6 +30,7 @@ const publicView = (d) => ({
   languages: d.languages || [],
   qualifications: d.qualifications || '',
   verified: Boolean(d.verification?.status === 'verified'),
+  avatarKey: d.avatar?.key || null,
   videoConsults: Boolean(d.availability?.videoConsults),
   hours: scheduleOf(d).days,
 });

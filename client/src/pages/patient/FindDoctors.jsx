@@ -89,7 +89,7 @@ const FindDoctors = () => {
                   disabled={linked}
                 >
                   <div className="row between">
-                    <Avatar first={d.firstName} last={d.lastName} seed={d.doctorCNIC} size={50} />
+                    <Avatar photo={d} first={d.firstName} last={d.lastName} seed={d.doctorCNIC} size={50} />
                     {linked ? <span className="badge badge-green">In your team</span> : <span className="select-tick">{isSel && <FiCheck size={15} />}</span>}
                   </div>
                   <div className="depth-1 stack gap-4">

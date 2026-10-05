@@ -55,7 +55,7 @@ const CareTeam = () => {
               <motion.div key={d.doctorCNIC} variants={rise} exit={{ opacity: 0, scale: 0.9, rotateY: 30 }} layout>
                 <TiltCard className="person-card card-pad">
                   <div className="row gap-16">
-                    <Avatar first={d.firstName} last={d.lastName} seed={d.doctorCNIC} size={54} />
+                    <Avatar photo={d} first={d.firstName} last={d.lastName} seed={d.doctorCNIC} size={54} />
                     <div className="grow depth-1">
                       <div style={{ fontWeight: 600, fontSize: 17 }} className="truncate">{doctorName(d)}</div>
                       <div className="row gap-8 wrap" style={{ marginTop: 6 }}>

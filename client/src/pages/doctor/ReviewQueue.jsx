@@ -77,7 +77,7 @@ const ReviewQueue = () => {
                   <TiltCard className="card-pad stack gap-16" max={3}>
                     <div className="row between wrap gap-12">
                       <div className="row gap-12">
-                        <Avatar first={p?.firstName} last={p?.lastName} seed={r.patientCNIC} size={44} />
+                        <Avatar photo={p} first={p?.firstName} last={p?.lastName} seed={r.patientCNIC} size={44} />
                         <div>
                           {p ? <Link to={`/records/getrecords/${r.patientCNIC}`} style={{ fontWeight: 600, color: 'var(--text)' }}>{fullName(p)}</Link> : <span style={{ fontWeight: 600 }}>Patient</span>}
                           <div className="mono subtle" style={{ fontSize: 12 }}>{formatCNIC(r.patientCNIC)}</div>

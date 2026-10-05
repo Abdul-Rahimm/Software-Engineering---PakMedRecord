@@ -170,7 +170,7 @@ const AppShell = ({ role }) => {
       </div>
 
       <div className="user-card">
-        <Avatar first={profile?.firstName} last={profile?.lastName} seed={cnic} size={40} />
+        <Avatar photo={profile} first={profile?.firstName} last={profile?.lastName} seed={cnic} size={40} />
         <div className="grow" style={{ minWidth: 0 }}>
           <div className="truncate" style={{ fontWeight: 600, fontSize: 14 }}>{displayName}</div>
           <div className="mono subtle truncate" style={{ fontSize: 11.5 }}>{formatCNIC(cnic)}</div>

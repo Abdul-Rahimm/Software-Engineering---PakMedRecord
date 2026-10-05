@@ -101,7 +101,7 @@ const mine = expressAsyncHandler(async (req, res) => {
     const staff = await Staff.findById(req.user.id).lean();
     const org = staff && (await Organization.findById(staff.clinicId));
     if (!org) return res.status(404).json({ error: 'Organization not found' });
-    return res.status(200).json({ org, me: { name: staff.name, email: staff.email, role: staff.role, facilityIds: staff.facilityIds || [] } });
+    return res.status(200).json({ org, me: { name: staff.name, email: staff.email, role: staff.role, facilityIds: staff.facilityIds || [], avatar: staff.avatar?.key ? { key: staff.avatar.key } : null } });
   }
   const memberships = await Membership.find({ doctorCNIC: req.user.cnic, status: { $in: ['active', 'invited'] } }).lean();
   const [orgs, facilities] = await Promise.all([
@@ -220,11 +220,11 @@ const ownFacilities = async (orgId, ids) => {
 
 const doctors = expressAsyncHandler(async (req, res) => {
   const ms = await Membership.find({ orgId: req.tenant.org._id, status: { $in: ['active', 'invited'] } }).lean();
-  const docs = await Doctor.find({ doctorCNIC: { $in: ms.map((m) => m.doctorCNIC) } }).select('doctorCNIC firstName lastName specialization email phone verification yearsExperience').lean();
+  const docs = await Doctor.find({ doctorCNIC: { $in: ms.map((m) => m.doctorCNIC) } }).select('doctorCNIC firstName lastName specialization email phone verification yearsExperience avatar.key').lean();
   res.status(200).json(ms.map((m) => {
     const d = docs.find((x) => x.doctorCNIC === m.doctorCNIC);
     // contact details only once the doctor has accepted
-    const doctor = d && (m.status === 'active' ? d : { doctorCNIC: d.doctorCNIC, firstName: d.firstName, lastName: d.lastName, specialization: d.specialization });
+    const doctor = d && (m.status === 'active' ? d : { doctorCNIC: d.doctorCNIC, firstName: d.firstName, lastName: d.lastName, specialization: d.specialization, avatar: d.avatar });
     return { ...m, doctor: doctor || null };
   }));
 });
@@ -408,8 +408,8 @@ const deskDay = expressAsyncHandler(async (req, res) => {
     Membership.find({ orgId: t.org._id, status: 'active', roles: 'doctor' }).lean(),
     Appointment.find({ orgId: t.org._id, date, ...facilityQ }).sort({ time: 1 }).lean(),
   ]);
-  const doctorsInfo = await Doctor.find({ doctorCNIC: { $in: memberships.map((m) => m.doctorCNIC) } }).select('doctorCNIC firstName lastName specialization travelBufferMinutes').lean();
-  const patients = await Patient.find({ patientCNIC: { $in: appointments.map((a) => a.patientCNIC) } }).select('patientCNIC firstName lastName gender phone').lean();
+  const doctorsInfo = await Doctor.find({ doctorCNIC: { $in: memberships.map((m) => m.doctorCNIC) } }).select('doctorCNIC firstName lastName specialization travelBufferMinutes avatar.key').lean();
+  const patients = await Patient.find({ patientCNIC: { $in: appointments.map((a) => a.patientCNIC) } }).select('patientCNIC firstName lastName gender phone avatar.key').lean();
   res.status(200).json({
     date,
     org: { _id: t.org._id, name: t.org.name, verification: { status: t.org.verification?.status } },
@@ -425,7 +425,7 @@ const deskDay = expressAsyncHandler(async (req, res) => {
         blocked[String(fid)] = d ? await blockedSlots({ doctor: d, date, slots: slots[String(fid)], durationMinutes: m.availability?.slotMinutes || 30, place: { facilityId: fid } }) : [];
       }
       return {
-        doctorCNIC: m.doctorCNIC, firstName: d?.firstName, lastName: d?.lastName, specialization: d?.specialization, fee: m.fee,
+        doctorCNIC: m.doctorCNIC, firstName: d?.firstName, lastName: d?.lastName, specialization: d?.specialization, avatar: d?.avatar, fee: m.fee,
         facilityIds: (m.facilityIds || []).map(String), slots, blocked,
       };
     })),

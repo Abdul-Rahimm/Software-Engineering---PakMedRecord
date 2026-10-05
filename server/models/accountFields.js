@@ -23,6 +23,12 @@ const accountFields = {
     verifiedAt: Date,
     note: String,
   },
+  // Profile photo (GridFS). Served at /avatars/<key>; the random key changes on every upload.
+  avatar: {
+    key: { type: String, index: true, sparse: true },
+    gridId: { type: mongoose.Schema.Types.ObjectId },
+    updatedAt: Date,
+  },
   // Terms & privacy acceptance at sign-up
   consentAt: { type: Date },
   termsVersion: { type: String },

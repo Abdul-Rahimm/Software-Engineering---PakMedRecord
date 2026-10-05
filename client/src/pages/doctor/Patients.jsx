@@ -51,7 +51,7 @@ const Patients = () => {
             <motion.div key={p.patientCNIC} variants={rise}>
               <TiltCard className="person-card card-pad">
                 <div className="row gap-16">
-                  <Avatar first={p.firstName} last={p.lastName} seed={p.patientCNIC} size={54} />
+                  <Avatar photo={p} first={p.firstName} last={p.lastName} seed={p.patientCNIC} size={54} />
                   <div className="grow depth-1" style={{ minWidth: 0 }}>
                     <div className="truncate" style={{ fontWeight: 600, fontSize: 17 }}>{fullName(p)}</div>
                     <div className="mono subtle" style={{ fontSize: 12.5 }}>{formatCNIC(p.patientCNIC)}</div>

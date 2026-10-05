@@ -63,7 +63,9 @@ PakMedRecord gives every patient in Pakistan one verified medical record that fo
 - When a doctor leaves, a branch closes or a hospital is suspended, patients with upcoming visits are told on every channel; "Move" re-books with the same doctor at another hospital/time in one step (a paid fee moves with it when the same hospital is paid, otherwise it's refunded)
 - Prescriptions record and print the hospital branch where they were issued
 
-**Identity**
+**Accounts & identity**
+- One "Sign in" and one "Get started" page for every role (patient, doctor, hospital/clinic staff, PakMedRecord team), linked from the landing page
+- Profile photos for patients, doctors, hospital staff and admins (cropped to a square and resized on the device)
 - CNIC checks on every sign-up (NADRA layout: region digit, odd/even gender digit) to catch typos; one CNIC can hold both a doctor and a patient account
 - Identity check (`/verify-identity`): CNIC photo (number read by OCR) plus a live camera check with random head-turn and blink challenges, anti-spoof and liveness models, and face matching against the CNIC photo. It runs on the device (face models are served from this site); photos go to an admin for review (Admin → Identity)
 - "Claim my CNIC" (`/claim-cnic`): someone whose CNIC was used by another account proves it's theirs; an admin hands the account over (new email, everyone signed out, reset link) or freezes it

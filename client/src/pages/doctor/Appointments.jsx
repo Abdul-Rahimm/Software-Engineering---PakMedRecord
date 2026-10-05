@@ -161,7 +161,7 @@ const Appointments = () => {
                           <FiClock size={13} style={{ color: 'var(--cyan)' }} />
                           <span className="d" style={{ fontSize: 15, marginTop: 4 }}>{formatTime(a.time)}</span>
                         </div>
-                        <Avatar first={p?.firstName} last={p?.lastName} seed={a.patientCNIC} size={40} />
+                        <Avatar photo={p} first={p?.firstName} last={p?.lastName} seed={a.patientCNIC} size={40} />
                         <div className="grow" style={{ minWidth: 0 }}>
                           {p ? (
                             <Link to={`/records/getrecords/${a.patientCNIC}`} className="truncate" style={{ fontWeight: 600, color: 'var(--text)', display: 'block' }}>{fullName(p)}</Link>

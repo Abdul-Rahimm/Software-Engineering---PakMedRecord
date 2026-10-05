@@ -1,3 +1,4 @@
+import api from '../api';
 import { useEffect, useRef, useState } from 'react';
 import { motion, animate, useInView } from 'framer-motion';
 import { initials } from '../lib/format';
@@ -12,9 +13,18 @@ export const Button = ({ loading, children, className = 'btn', disabled, ...prop
 );
 
 const AVATAR_VARIANTS = ['', 'v2', 'v3'];
-export const Avatar = ({ first, last, size = 42, seed }) => {
+// Profile photo URL for anyone with an uploaded photo ({ avatarKey } or { avatar: { key } })
+export const avatarSrc = (person) => {
+  const key = person?.avatarKey || person?.avatar?.key;
+  return key ? `${api.defaults.baseURL}/avatars/${key}` : null;
+};
+
+// Photo if the person has one, else coloured initials. `photo` is the person object.
+export const Avatar = ({ first, last, size = 42, seed, photo, src }) => {
   const key = String(seed ?? `${first}${last}`);
   const variant = AVATAR_VARIANTS[[...key].reduce((a, c) => a + c.charCodeAt(0), 0) % 3];
+  const url = src || avatarSrc(photo);
+  if (url) return <img className="avatar avatar-img" src={url} alt="" style={{ '--size': `${size}px` }} loading="lazy" />;
   return (
     <span className={`avatar ${variant}`} style={{ '--size': `${size}px` }} aria-hidden>
       {initials(first, last)}

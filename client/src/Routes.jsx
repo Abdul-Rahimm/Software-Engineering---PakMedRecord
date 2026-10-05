@@ -48,6 +48,7 @@ const DoctorDirectory = lazyNamed(directory, 'DoctorDirectory');
 const HospitalDirectory = lazyNamed(directory, 'HospitalDirectory');
 const HospitalProfile = lazyNamed(directory, 'HospitalProfile');
 const HospitalRegister = lazy(() => import('./pages/public/HospitalRegister'));
+const RoleChooser = lazy(() => import('./pages/public/RoleChooser'));
 const VerifyIdentity = lazy(() => import('./pages/identity/VerifyIdentity'));
 const ClaimCnic = lazy(() => import('./pages/identity/ClaimCnic'));
 const DoctorPublicProfile = lazyNamed(directory, 'DoctorPublicProfile');
@@ -84,6 +85,8 @@ const Routes = () => (
     <Route path="/privacy" element={<Privacy />} />
     <Route path="/developers" element={<Developers />} />
     <Route path="/find-doctors" element={<DoctorDirectory />} />
+    <Route path="/signin" element={<RoleChooser mode="signin" />} />
+    <Route path="/get-started" element={<RoleChooser mode="signup" />} />
     <Route path="/hospitals" element={<HospitalDirectory />} />
     <Route path="/verify-identity" element={<VerifyIdentity />} />
     <Route path="/claim-cnic" element={<ClaimCnic />} />

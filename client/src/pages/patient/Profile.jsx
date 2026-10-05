@@ -4,6 +4,7 @@ import api from '../../api';
 import { useShell } from '../../layout/ShellContext';
 import { apiError, formatCNIC, formatDate } from '../../lib/format';
 import { Button, PageHeader } from '../../ui/Bits';
+import AvatarUpload from '../../ui/AvatarUpload';
 import Field from '../../ui/Field';
 import HealthCard from '../../ui/HealthCard';
 import { useFeedback } from '../../ui/Feedback';
@@ -52,6 +53,7 @@ const Profile = () => {
       <PageHeader eyebrow="Account" title="Profile" subtitle="Update your details. Your CNIC is your permanent health ID and can't be changed." />
       <div className="grid profile-grid">
         <div className="stack gap-20">
+          <div className="glass card-pad"><AvatarUpload person={profile} first={profile?.firstName} last={profile?.lastName} seed={cnic} onChange={reloadProfile} /></div>
           <HealthCard person={profile} cnic={cnic} />
           <div className="glass card-pad">
             {facts.map(([k, v]) => (

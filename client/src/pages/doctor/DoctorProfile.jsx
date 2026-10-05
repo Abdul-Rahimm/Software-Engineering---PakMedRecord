@@ -8,6 +8,7 @@ import { useShell } from '../../layout/ShellContext';
 import { apiError, formatCNIC } from '../../lib/format';
 import { SPECIALIZATIONS } from '../../lib/constants';
 import { Button, PageHeader } from '../../ui/Bits';
+import AvatarUpload from '../../ui/AvatarUpload';
 import Field from '../../ui/Field';
 import HealthCard from '../../ui/HealthCard';
 import { useFeedback } from '../../ui/Feedback';
@@ -76,6 +77,7 @@ const DoctorProfile = () => {
           </>
         }
       />
+      {profile && <div className="glass card-pad" style={{ marginBottom: 20 }}><AvatarUpload person={profile} first={profile.firstName} last={profile.lastName} seed={cnic} onChange={reloadProfile} /></div>}
       {profile && <div style={{ marginBottom: 20 }}><VerificationCard doctor={profile} onChange={reloadProfile} /></div>}
       {profile?.isVerified && <div style={{ marginBottom: 20 }}><PaymentAccountCard path="/payments/account/doctor" owner="your own Safepay account" /></div>}
       <div className="grid profile-grid">

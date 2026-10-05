@@ -37,8 +37,8 @@ const info = expressAsyncHandler(async (req, res) => {
   const a = await loadCall(req, res);
   if (!a) return;
   const [doctor, patient] = await Promise.all([
-    Doctor.findOne({ doctorCNIC: a.doctorCNIC }).select('firstName lastName specialization hospital').lean(),
-    Patient.findOne({ patientCNIC: a.patientCNIC }).select('patientCNIC firstName lastName gender dateOfBirth').lean(),
+    Doctor.findOne({ doctorCNIC: a.doctorCNIC }).select('firstName lastName specialization hospital avatar.key').lean(),
+    Patient.findOne({ patientCNIC: a.patientCNIC }).select('patientCNIC firstName lastName gender dateOfBirth avatar.key').lean(),
   ]);
   res.status(200).json({
     appointment: a,

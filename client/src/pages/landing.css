@@ -184,3 +184,5 @@
   -webkit-mask-image: radial-gradient(ellipse 55% 55% at 50% 50%, #000 50%, transparent 98%);
   mask-image: radial-gradient(ellipse 55% 55% at 50% 50%, #000 50%, transparent 98%);
 }
+.land-links a { white-space: nowrap; }
+@media (max-width: 1180px) { .land-links { display: none; } }

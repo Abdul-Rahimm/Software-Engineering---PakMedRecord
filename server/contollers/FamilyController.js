@@ -22,8 +22,8 @@ const loadDependent = async (req, res) => {
 const list = expressAsyncHandler(async (req, res) => {
   const guardian = guardianOf(req);
   const [me, dependents] = await Promise.all([
-    Patient.findOne({ patientCNIC: guardian }).select('patientCNIC firstName lastName gender dateOfBirth'),
-    Patient.find({ guardianCNIC: guardian }).select('patientCNIC firstName lastName gender dateOfBirth relation bloodGroup email').sort({ dateOfBirth: -1 }),
+    Patient.findOne({ patientCNIC: guardian }).select('patientCNIC firstName lastName gender dateOfBirth avatar.key'),
+    Patient.find({ guardianCNIC: guardian }).select('patientCNIC firstName lastName gender dateOfBirth relation bloodGroup email avatar.key').sort({ dateOfBirth: -1 }),
   ]);
   res.status(200).json({ guardian: me, dependents, actingFor: req.user.guardian ? req.user.cnic : null });
 });

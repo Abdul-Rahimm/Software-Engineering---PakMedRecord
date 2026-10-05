@@ -105,6 +105,7 @@ app.use('/labs', HealthTools.labs);
 app.use('/followups', HealthTools.followups);
 app.use('/orgs', OrgRoutes);
 app.use('/identity', IdentityRoutes);
+app.get('/avatars/:key', require('./contollers/AccountController').serveAvatar);
 app.post('/desk/signin', signinLimiter, staffSignin); // hospital staff sign-in
 app.use('/calls', CallRoutes);
 app.use('/payments', PaymentRoutes);

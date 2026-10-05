@@ -1,4 +1,5 @@
 import { Link } from 'react-router-dom';
+import { getSession } from '../session';
 import { motion } from 'framer-motion';
 import Logo from './Logo';
 import { ThemeToggle } from './Theme';
@@ -30,7 +31,7 @@ export const PublicPage = ({ children, wide = false, nav = true }) => (
       <div className="row gap-8 wrap" style={{ justifyContent: 'flex-end' }}>
         {nav && <Link to="/find-doctors" className="btn btn-ghost btn-sm hide-sm">Find a doctor</Link>}
         {nav && <Link to="/hospitals" className="btn btn-ghost btn-sm hide-sm">Hospitals</Link>}
-        {nav && <Link to="/patient/signin" className="btn btn-ghost btn-sm hide-sm">Sign in</Link>}
+        {nav && !getSession() && <Link to="/signin" className="btn btn-sm">Sign in</Link>}
         <LangToggle />
         <ThemeToggle />
       </div>

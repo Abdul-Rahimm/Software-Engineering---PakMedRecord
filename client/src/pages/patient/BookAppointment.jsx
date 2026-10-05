@@ -184,7 +184,7 @@ const BookAppointment = () => {
                 <div className="grid grid-2" style={{ gap: 12 }}>
                   {team.filter((d) => !moveFrom || d.doctorCNIC === doctor).map((d) => (
                     <button key={d.doctorCNIC} type="button" className={`feed-item ${doctor === d.doctorCNIC ? 'selected' : ''}`} style={doctor === d.doctorCNIC ? { borderColor: 'rgba(61,255,176,.55)', boxShadow: 'var(--glow)', font: 'inherit', cursor: 'pointer' } : { font: 'inherit', cursor: 'pointer' }} onClick={() => setDoctor(d.doctorCNIC)} aria-pressed={doctor === d.doctorCNIC}>
-                      <Avatar first={d.firstName} last={d.lastName} seed={d.doctorCNIC} size={40} />
+                      <Avatar photo={d} first={d.firstName} last={d.lastName} seed={d.doctorCNIC} size={40} />
                       <div className="grow" style={{ textAlign: 'left', minWidth: 0 }}>
                         <div className="truncate" style={{ fontWeight: 600 }}>{doctorName(d)}</div>
                         <div className="subtle truncate" style={{ fontSize: 13 }}>{d.hospital}</div>

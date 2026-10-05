@@ -409,11 +409,9 @@ const Auth = ({ role, mode }) => {
             {isSignup ? 'Already have an account? ' : 'New to PakMedRecord? '}
             <Link to={`/${role}/${isSignup ? 'signin' : 'signup'}`}>{isSignup ? 'Sign in' : 'Create an account'}</Link>
           </p>
-          {!isSignup && role === 'doctor' && (
-            <p className="subtle" style={{ textAlign: 'center', fontSize: 13 }}>
-              Hospital or clinic staff? <Link to="/desk/signin">Staff sign-in</Link>
-            </p>
-          )}
+          <p className="subtle" style={{ textAlign: 'center', fontSize: 13 }}>
+            {role === 'doctor' ? <>Not a doctor? <Link to={isSignup ? '/get-started' : '/signin'}>Choose another account type</Link></> : <>Not a patient? <Link to={isSignup ? '/get-started' : '/signin'}>Doctor, hospital or staff</Link></>}
+          </p>
           </>
           )}
         </motion.div>
