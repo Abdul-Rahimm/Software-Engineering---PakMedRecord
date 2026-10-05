@@ -3,8 +3,7 @@ This repo is made for our 6th semester SE project
 
 **Live demo: https://pakmedrecord.vercel.app**
 
-Demo accounts (password `demo1234`): patient CNIC `42101-9999999-1`, doctor CNIC `42101-1234567-1`.
-Hospital front desk (`/desk/signin`): `frontdesk@pakmedrecord.demo` / `desk-demo-1234`. Hospitals register themselves at `/hospitals/register`.
+Start from the landing page: **Get started** creates a patient, doctor or hospital account, and **Sign in** covers every role (patient, doctor, hospital/clinic staff, PakMedRecord team). Hospitals and doctors appear to patients once a PakMedRecord admin verifies them.
 
 PakMedRecord gives every patient in Pakistan one verified medical record that follows them across hospitals.
 
